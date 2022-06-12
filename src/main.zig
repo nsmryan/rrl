@@ -4,6 +4,7 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const comp = @import("comp.zig");
+const line = @import("line.zig");
 
 const Id = u64;
 
@@ -17,4 +18,12 @@ pub fn main() anyerror!void {
     var iter = c.iter();
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
+
+    var l = line.Line.new(line.Pos.new(0, 0), line.Pos.new(10, 10), true);
+    std.log.info("rustrl line {}", .{l.step()});
+}
+
+test "full test set" {
+    _ = @import("comp.zig");
+    _ = @import("line.zig");
 }

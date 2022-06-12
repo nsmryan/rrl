@@ -149,14 +149,14 @@ test "binary search location missing end" {
 }
 
 test "make comp" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
     _ = comp;
 }
 
 test "remove from comp" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
     try comp.insert(0, 1);
     try comp.insert(1, 1);
     try comp.insert(2, 1);
@@ -169,8 +169,8 @@ test "remove from comp" {
 }
 
 test "lookup key from comp" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
     try comp.insert(0, 1);
     try comp.insert(1, 1);
     try comp.insert(2, 1);
@@ -191,8 +191,8 @@ test "lookup key from comp" {
 }
 
 test "comp get" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
 
     try comp.insert(0, 10);
     try comp.insert(1, 11);
@@ -214,8 +214,8 @@ test "comp get" {
 }
 
 test "comp get_ptr" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
 
     try comp.insert(0, 10);
     try comp.insert(1, 11);
@@ -243,8 +243,8 @@ test "comp get_ptr" {
 }
 
 test "comp contains key" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
 
     try comp.insert(0, 10);
 
@@ -253,8 +253,8 @@ test "comp contains key" {
 }
 
 test "comp iterator" {
-    var allocator = std.heap.page_allocator;
-    var comp = Comp(u64).init(allocator);
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var comp = Comp(u64).init(allocator.allocator());
 
     try comp.insert(0, 10);
     try comp.insert(1, 11);

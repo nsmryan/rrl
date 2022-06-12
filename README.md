@@ -16,3 +16,13 @@ I'm glad to be able to handle allocation like this.
 This feels like it gives me a lot more control then Rust's temptation to use the global allocator,
 or C's constant cliff of whether I really need to allocate or just keep fixed size buffers.
 
+
+Ran into some compiler bugs when testing. Also the fact that numeric literals have a comptime_int type
+results in some verbosity, although its not such a big deal.
+
+
+Iterator is much simpler and smaller. There is weirdness to it, like the whole generics-are-functions thing,
+but its not nearly as baroque as Rust as it does not use lifetime parameters.
+
+
+My Zig ended up being more lines for Comp because of all the unit tests. Without them it was a little smaller.

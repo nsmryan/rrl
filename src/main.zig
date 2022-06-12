@@ -1,10 +1,10 @@
 const std = @import("std");
-const math = std.math;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const comp = @import("comp.zig");
 const line = @import("line.zig");
+const math = @import("math.zig");
 
 const Id = u64;
 
@@ -26,4 +26,5 @@ pub fn main() anyerror!void {
 test "full test set" {
     _ = @import("comp.zig");
     _ = @import("line.zig");
+    _ = @import("math.zig");
 }

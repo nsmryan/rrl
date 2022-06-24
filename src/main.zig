@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const comp = @import("comp.zig");
 const line = @import("line.zig");
 const math = @import("math.zig");
+const rand = @import("rand.zig");
 
 const Id = u64;
 
@@ -27,4 +28,5 @@ test "full test set" {
     _ = @import("comp.zig");
     _ = @import("line.zig");
     _ = @import("math.zig");
+    _ = @import("rand.zig");
 }

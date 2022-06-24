@@ -1,4 +1,4 @@
-== Notes
+== Notes ==
 
 I am finding that Zig encourages me to test each and every function as I write it.
 This seems like a combination of:
@@ -41,4 +41,13 @@ of comptime eql. However, this is in line with the Zig no-hidden-control-flow co
 Zig does not restrict floats the same. It also provides clamp, which I did in Rust.
 Also I believe I will be able to use Zig's random numebr generation, which I couldn't in Rust
 due to orphan rule serde support.
+
+
+=== Progress ===
+
+The roguelike_utils crate seems like it is basically ported to Zig. Perlin noise is no longer
+used, and random numbers might just come from the std library.
+
+Could do SDL2 next, maybe draw command executable. 
+Might also try roguelike_map to build upwards.
 

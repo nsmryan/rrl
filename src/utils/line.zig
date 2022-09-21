@@ -111,7 +111,7 @@ pub const Line = struct {
 
 // Take an arraylist as an argument?
 // does not include start position
-pub fn line(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {
+pub fn makeLine(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {
     lineArrayList.clearRetainingCapacity();
 
     var l = Line.init(start, end);
@@ -140,7 +140,7 @@ test "test_lines" {
 
             const start = Pos.new(0, 0);
             const end = Pos.new(x_offset, y_offset);
-            try line(start, end, &positions);
+            try makeLine(start, end, &positions);
 
             try std.testing.expect(std.meta.eql(positions.items[0], start));
             try std.testing.expect(std.meta.eql(positions.items[positions.items.len - 1], end));

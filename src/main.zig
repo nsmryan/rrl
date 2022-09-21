@@ -2,10 +2,11 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-const comp = @import("comp.zig");
-const line = @import("line.zig");
-const math = @import("math.zig");
-const rand = @import("rand.zig");
+const utils = @import("utils.zig");
+const comp = utils.comp;
+const line = utils.line;
+const math = utils.math;
+const rand = utils.rand;
 
 const Id = u64;
 
@@ -25,8 +26,8 @@ pub fn main() anyerror!void {
 }
 
 test "full test set" {
-    _ = @import("comp.zig");
-    _ = @import("line.zig");
-    _ = @import("math.zig");
-    _ = @import("rand.zig");
+    _ = @import("utils/comp.zig");
+    _ = @import("utils/line.zig");
+    _ = @import("utils/math.zig");
+    _ = @import("utils/rand.zig");
 }

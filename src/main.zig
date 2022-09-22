@@ -7,8 +7,7 @@ const comp = utils.comp;
 const line = utils.line;
 const math = utils.math;
 const rand = utils.rand;
-
-const Id = u64;
+const Pos = utils.pos.Pos;
 
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
@@ -21,7 +20,7 @@ pub fn main() anyerror!void {
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
 
-    var l = line.Line.new(line.Pos.new(0, 0), line.Pos.new(10, 10), true);
+    var l = line.Line.init(Pos.init(0, 0), Pos.init(10, 10), true);
     std.log.info("rustrl line {}", .{l.step()});
 }
 

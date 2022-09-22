@@ -9,3 +9,6 @@ pub usingnamespace math;
 
 pub const rand = @import("utils/rand.zig");
 pub usingnamespace rand;
+
+pub const pos = @import("utils/pos.zig");
+pub usingnamespace pos;

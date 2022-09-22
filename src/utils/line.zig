@@ -2,14 +2,7 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-pub const Pos = struct {
-    x: i32,
-    y: i32,
-
-    pub fn new(x: i32, y: i32) Pos {
-        return .{ .x = x, .y = y };
-    }
-};
+const Pos = @import("pos.zig").Pos;
 
 pub const Line = struct {
     step_x: i32 = 0,
@@ -24,11 +17,36 @@ pub const Line = struct {
 
     include_start: bool = true,
 
-    pub fn init(start: Pos, end: Pos) Line {
-        return Line.new(start, end, true);
+    pub fn distance(start: Pos, end: Pos, include_start: bool) i32 {
+        var ln = Line.init(start, end, include_start);
+        var length = 0;
+        while (ln.next()) {
+            length += 1;
+        }
+        return length;
     }
 
-    pub fn new(start: Pos, end: Pos, include_start: bool) Line {
+    pub fn mag(self: Pos) i32 {
+        return Line.distance(Pos.init(0, 0), self);
+    }
+
+    pub fn move_towards(self: Pos, end: Pos, dist: usize) Pos {
+        var ln = Line.init(self, end, false);
+        var pos = self;
+        var index = 0;
+        while (ln.next()) |new_pos| {
+            index += 1;
+            if (index >= dist) {
+                break;
+            }
+
+            pos = new_pos;
+        }
+
+        return pos;
+    }
+
+    pub fn init(start: Pos, end: Pos, include_start: bool) Line {
         var l = Line{};
 
         l.include_start = include_start;
@@ -74,7 +92,7 @@ pub const Line = struct {
     pub fn step(self: *Line) ?Pos {
         if (self.include_start) {
             self.include_start = false;
-            return Pos.new(self.orig_x, self.orig_y);
+            return Pos.init(self.orig_x, self.orig_y);
         }
 
         if (self.step_x * self.delta_x > self.step_y * self.delta_y) {
@@ -105,7 +123,7 @@ pub const Line = struct {
         const x: i32 = self.orig_x;
         const y: i32 = self.orig_y;
 
-        return Pos.new(x, y);
+        return Pos.init(x, y);
     }
 };
 
@@ -114,7 +132,7 @@ pub const Line = struct {
 pub fn makeLine(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {
     lineArrayList.clearRetainingCapacity();
 
-    var l = Line.init(start, end);
+    var l = Line.init(start, end, false);
 
     while (l.step()) |pos| {
         try lineArrayList.append(pos);
@@ -138,8 +156,8 @@ test "test_lines" {
                 continue;
             }
 
-            const start = Pos.new(0, 0);
-            const end = Pos.new(x_offset, y_offset);
+            const start = Pos.init(0, 0);
+            const end = Pos.init(x_offset, y_offset);
             try makeLine(start, end, &positions);
 
             try std.testing.expect(std.meta.eql(positions.items[0], start));

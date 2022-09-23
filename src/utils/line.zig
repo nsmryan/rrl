@@ -125,6 +125,20 @@ pub const Line = struct {
 
         return pos;
     }
+
+    pub fn moveNextTo(self: Pos, end: Pos) Pos {
+        var ln = Line.init(self, end, true);
+
+        // This should always be non-null as we included the start position in the Line.init call.
+        var second_to_last = ln.next().?;
+        while (ln.next()) |next_pos| {
+            if (!std.meta.eql(next_pos, end)) {
+                second_to_last = next_pos;
+            }
+        }
+
+        return second_to_last;
+    }
 };
 
 pub fn makeLine(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {
@@ -178,4 +192,13 @@ test "line move towards" {
     try std.testing.expectEqual(start, Line.moveTowards(start, end, 0));
     try std.testing.expectEqual(Pos.init(5, 5), Line.moveTowards(start, end, 5));
     try std.testing.expectEqual(Pos.init(10, 10), Line.moveTowards(start, end, 50));
+}
+
+test "test move next to" {
+    try std.testing.expectEqual(Pos.init(0, 0), Line.moveNextTo(Pos.init(0, 0), Pos.init(0, 0)));
+    try std.testing.expectEqual(Pos.init(4, 4), Line.moveNextTo(Pos.init(0, 0), Pos.init(5, 5)));
+    try std.testing.expectEqual(Pos.init(0, 0), Line.moveNextTo(Pos.init(0, 0), Pos.init(1, 1)));
+    try std.testing.expectEqual(Pos.init(-4, -4), Line.moveNextTo(Pos.init(0, 0), Pos.init(-5, -5)));
+    try std.testing.expectEqual(Pos.init(0, 4), Line.moveNextTo(Pos.init(0, 0), Pos.init(0, 5)));
+    try std.testing.expectEqual(Pos.init(4, 0), Line.moveNextTo(Pos.init(0, 0), Pos.init(5, 0)));
 }

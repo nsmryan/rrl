@@ -38,3 +38,7 @@ test "sort by distance" {
     try std.testing.expectEqual(pos.Pos.init(5, 5), positions.items[2]);
     try std.testing.expectEqual(pos.Pos.init(5, 10), positions.items[3]);
 }
+
+// TODO continue moving roguelike_map/src/utils.rs over with this function
+//pub fn visibleInDirection(start: Pos, end: Pos, dir: Direction) bool {
+//}

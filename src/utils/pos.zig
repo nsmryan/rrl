@@ -70,6 +70,32 @@ pub const Pos = struct {
     pub fn isOrdinal(self: Pos) bool {
         return (self.x == 0 and self.y != 0) or (self.y == 0 and self.x != 0);
     }
+
+    pub fn stepTowards(self: Pos, target: Pos) Pos {
+        const dx = target.x - self.x;
+        const dy = target.y - self.y;
+        const delta = Pos.init(std.math.sign(dx), std.math.sign(dy));
+        return delta;
+    }
+
+    pub fn onePassedDelta(self: Pos, delta: Pos) Pos {
+        var next_pos = self.add(delta);
+
+        if (delta.x != 0) {
+            next_pos.x += std.math.sign(delta.x);
+        }
+
+        if (delta.y != 0) {
+            next_pos.y += std.math.sign(delta.y);
+        }
+
+        return next_pos;
+    }
+
+    pub fn onePassedPos(self: Pos, end: Pos) Pos {
+        const diff = end.sub(self);
+        return self.onePassedDelta(diff);
+    }
 };
 
 test "test in direction of" {
@@ -82,4 +108,16 @@ test "test in direction of" {
     try std.testing.expectEqual(Pos.init(1, 0), start.inDirectionOf(Pos.init(1, -10)));
     try std.testing.expectEqual(Pos.init(0, 1), start.inDirectionOf(Pos.init(-10, 1)));
     try std.testing.expectEqual(Pos.init(0, 0), start.inDirectionOf(Pos.init(-10, -10)));
+}
+
+test "one passed pos" {
+    try std.testing.expectEqual(Pos.init(3, 3), Pos.init(1, 1).onePassedPos(Pos.init(2, 2)));
+    try std.testing.expectEqual(Pos.init(1, 3), Pos.init(1, 1).onePassedPos(Pos.init(1, 2)));
+}
+
+test "one passed delta" {
+    try std.testing.expectEqual(Pos.init(2, 2), Pos.init(0, 0).onePassedDelta(Pos.init(1, 1)));
+    try std.testing.expectEqual(Pos.init(0, 2), Pos.init(0, 0).onePassedDelta(Pos.init(0, 1)));
+    try std.testing.expectEqual(Pos.init(0, -2), Pos.init(0, 0).onePassedDelta(Pos.init(0, -1)));
+    try std.testing.expectEqual(Pos.init(-2, 0), Pos.init(0, 0).onePassedDelta(Pos.init(-1, 0)));
 }

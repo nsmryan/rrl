@@ -67,3 +67,15 @@ pub const Pos = struct {
         return self.add(Pos.init(dx, dy));
     }
 };
+
+test "test in direction of" {
+    const start = Pos.init(1, 1);
+
+    try std.testing.expectEqual(Pos.init(0, 0), start.in_direction_of(Pos.init(0, 0)));
+    try std.testing.expectEqual(Pos.init(2, 2), start.in_direction_of(Pos.init(10, 10)));
+    try std.testing.expectEqual(Pos.init(2, 1), start.in_direction_of(Pos.init(10, 1)));
+    try std.testing.expectEqual(Pos.init(1, 2), start.in_direction_of(Pos.init(1, 10)));
+    try std.testing.expectEqual(Pos.init(1, 0), start.in_direction_of(Pos.init(1, -10)));
+    try std.testing.expectEqual(Pos.init(0, 1), start.in_direction_of(Pos.init(-10, 1)));
+    try std.testing.expectEqual(Pos.init(0, 0), start.in_direction_of(Pos.init(-10, -10)));
+}

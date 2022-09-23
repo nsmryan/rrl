@@ -17,35 +17,6 @@ pub const Line = struct {
 
     include_start: bool = true,
 
-    pub fn distance(start: Pos, end: Pos, include_start: bool) i32 {
-        var ln = Line.init(start, end, include_start);
-        var length = 0;
-        while (ln.next()) {
-            length += 1;
-        }
-        return length;
-    }
-
-    pub fn mag(self: Pos) i32 {
-        return Line.distance(Pos.init(0, 0), self);
-    }
-
-    pub fn move_towards(self: Pos, end: Pos, dist: usize) Pos {
-        var ln = Line.init(self, end, false);
-        var pos = self;
-        var index = 0;
-        while (ln.next()) |new_pos| {
-            index += 1;
-            if (index >= dist) {
-                break;
-            }
-
-            pos = new_pos;
-        }
-
-        return pos;
-    }
-
     pub fn init(start: Pos, end: Pos, include_start: bool) Line {
         var l = Line{};
 
@@ -89,7 +60,7 @@ pub const Line = struct {
         return l;
     }
 
-    pub fn step(self: *Line) ?Pos {
+    pub fn next(self: *Line) ?Pos {
         if (self.include_start) {
             self.include_start = false;
             return Pos.init(self.orig_x, self.orig_y);
@@ -125,16 +96,43 @@ pub const Line = struct {
 
         return Pos.init(x, y);
     }
+
+    pub fn distance(start: Pos, end: Pos, include_start: bool) i32 {
+        var ln = Line.init(start, end, include_start);
+        var length: i32 = 0;
+        while (ln.next() != null) {
+            length += 1;
+        }
+        return length;
+    }
+
+    pub fn mag(self: Pos) i32 {
+        return Line.distance(Pos.init(0, 0), self);
+    }
+
+    pub fn move_towards(self: Pos, end: Pos, dist: usize) Pos {
+        var ln = Line.init(self, end, false);
+        var pos = self;
+        var index: usize = 0;
+        while (ln.next()) |new_pos| {
+            index += 1;
+            if (index > dist) {
+                break;
+            }
+
+            pos = new_pos;
+        }
+
+        return pos;
+    }
 };
 
-// Take an arraylist as an argument?
-// does not include start position
 pub fn makeLine(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {
     lineArrayList.clearRetainingCapacity();
 
-    var l = Line.init(start, end, false);
+    var l = Line.init(start, end, true);
 
-    while (l.step()) |pos| {
+    while (l.next()) |pos| {
         try lineArrayList.append(pos);
     }
 }
@@ -164,4 +162,20 @@ test "test_lines" {
             try std.testing.expect(std.meta.eql(positions.items[positions.items.len - 1], end));
         }
     }
+}
+
+test "line distance between positions" {
+    const start = Pos.init(0, 0);
+    const end = Pos.init(0, 1);
+
+    try std.testing.expectEqual(@intCast(i32, 2), Line.distance(start, end, true));
+    try std.testing.expectEqual(@intCast(i32, 1), Line.distance(start, end, false));
+}
+
+test "line move towards" {
+    const start = Pos.init(0, 0);
+    const end = Pos.init(10, 10);
+    try std.testing.expectEqual(start, Line.move_towards(start, end, 0));
+    try std.testing.expectEqual(Pos.init(5, 5), Line.move_towards(start, end, 5));
+    try std.testing.expectEqual(Pos.init(10, 10), Line.move_towards(start, end, 50));
 }

@@ -30,4 +30,5 @@ test "full test set" {
     _ = @import("utils/math.zig");
     _ = @import("utils/rand.zig");
     _ = @import("utils/pos.zig");
+    _ = @import("utils.zig");
 }

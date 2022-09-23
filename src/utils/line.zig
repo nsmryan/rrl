@@ -110,7 +110,7 @@ pub const Line = struct {
         return Line.distance(Pos.init(0, 0), self);
     }
 
-    pub fn move_towards(self: Pos, end: Pos, dist: usize) Pos {
+    pub fn moveTowards(self: Pos, end: Pos, dist: usize) Pos {
         var ln = Line.init(self, end, false);
         var pos = self;
         var index: usize = 0;
@@ -175,7 +175,7 @@ test "line distance between positions" {
 test "line move towards" {
     const start = Pos.init(0, 0);
     const end = Pos.init(10, 10);
-    try std.testing.expectEqual(start, Line.move_towards(start, end, 0));
-    try std.testing.expectEqual(Pos.init(5, 5), Line.move_towards(start, end, 5));
-    try std.testing.expectEqual(Pos.init(10, 10), Line.move_towards(start, end, 50));
+    try std.testing.expectEqual(start, Line.moveTowards(start, end, 0));
+    try std.testing.expectEqual(Pos.init(5, 5), Line.moveTowards(start, end, 5));
+    try std.testing.expectEqual(Pos.init(10, 10), Line.moveTowards(start, end, 50));
 }

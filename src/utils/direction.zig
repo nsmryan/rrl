@@ -175,3 +175,42 @@ test "test direction counterclockwise" {
     }
     try std.testing.expectEqual(Direction.right, dir);
 }
+
+pub const Offset = enum {
+    left,
+    right,
+    up,
+    down,
+    downLeft,
+    downRight,
+    upLeft,
+    upRight,
+    center,
+
+    pub fn fromDirection(dir: Direction) Offset {
+        return switch (dir) {
+            .left => Offset.left,
+            .right => Offset.right,
+            .up => Offset.up,
+            .down => Offset.down,
+            .downLeft => Offset.downLeft,
+            .downRight => Offset.downRight,
+            .upLeft => Offset.upLeft,
+            .upRight => Offset.upRight,
+        };
+    }
+
+    pub fn toDirection(self: Offset) ?Direction {
+        return switch (self) {
+            .left => .left,
+            .right => .right,
+            .up => .up,
+            .down => .down,
+            .downLeft => .downLeft,
+            .downRight => .downRight,
+            .upLeft => .upLeft,
+            .upRight => .upRight,
+            .center => null,
+        };
+    }
+};

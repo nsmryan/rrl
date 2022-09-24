@@ -11,8 +11,8 @@ pub const Tile = struct {
         wall: Wall,
         surface: Surface,
 
-        pub fn init(wall: Wall, surface: Surface) InterTileWall {
-            return InterTileWall{ .wall = wall, .surface = surface };
+        pub fn init(wll: Wall, surface: Surface) InterTileWall {
+            return InterTileWall{ .wall = wll, .surface = surface };
         }
     };
 
@@ -172,39 +172,39 @@ pub const Tile = struct {
     }
 
     pub fn chrs(self: Tile) [8]u8 {
-        var chrs: [8]u8;
+        var chars: [8]u8 = undefined;
         var index = 0;
         if (self.block_move) {
-            chrs[index] = '1';
+            chars[index] = '1';
         } else {
-            chrs[index] = '0';
+            chars[index] = '0';
         }
         index += 1;
 
         if (self.block_sight) {
-            chrs[index] = '1';
+            chars[index] = '1';
         } else {
-            chrs[index] = '0';
+            chars[index] = '0';
         }
         index += 1;
 
-        chrs[index] = self.tile_type.chr();
+        chars[index] = self.tile_type.chr();
         index += 1;
 
-        chrs[index] = self.down.wall.chr();
+        chars[index] = self.down.wall.chr();
         index += 1;
 
-        chrs[index] = self.down.surface.chr();
+        chars[index] = self.down.surface.chr();
         index += 1;
 
-        chrs[index] = self.left.wall.chr();
+        chars[index] = self.left.wall.chr();
         index += 1;
 
-        chrs[index] = self.left.surface.chr();
+        chars[index] = self.left.surface.chr();
         index += 1;
 
-        chrs[index] = self.surface.chr();
+        chars[index] = self.surface.chr();
 
-        return chrs;
+        return chars;
     }
 };

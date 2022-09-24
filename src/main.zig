@@ -32,4 +32,7 @@ test "full test set" {
     _ = @import("utils/pos.zig");
     _ = @import("utils/direction.zig");
     _ = @import("utils.zig");
+    _ = @import("map/blocking.zig");
+    _ = @import("map/tile.zig");
+    _ = @import("map.zig");
 }

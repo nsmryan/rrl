@@ -75,6 +75,6 @@ pub fn randomOffset(rng: std.rand.Random, radius: i32) pos.Pos {
 }
 
 pub fn randPosInRadius(position: pos.Pos, radius: i32, rng: std.rand.Random) pos.Pos {
-    const offset = Pos.init(rng.intRangeAtMost(i32, -radius, radius), rng.intRangeAtMost(i32, -radius, radius));
-    return pos.add(offset);
+    const offset = pos.Pos.init(rng.intRangeAtMost(i32, -radius, radius), rng.intRangeAtMost(i32, -radius, radius));
+    return position.add(offset);
 }

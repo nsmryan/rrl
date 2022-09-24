@@ -79,7 +79,7 @@ const Direction = enum {
     }
 
     pub fn directions() [8]Direction {
-        return .{ .left, .right, .up, .down, .downLeft, .downRight, .upLeft, .upRight };
+        return .{ .downLeft, .left, .upLeft, .up, .upRight, .right, .downRight, .down };
     }
 
     pub fn fromF32(flt: f32) Direction {
@@ -139,7 +139,7 @@ const Direction = enum {
     }
 };
 
-test "test_direction_turn_amount" {
+test "test direction turn amount" {
     try std.testing.expectEqual(@intCast(i32, -1), Direction.up.turnAmount(Direction.upLeft));
     try std.testing.expectEqual(@intCast(i32, 1), Direction.up.turnAmount(Direction.upRight));
 
@@ -154,7 +154,7 @@ test "test_direction_turn_amount" {
     try std.testing.expectEqual(@intCast(i32, -1), Direction.left.turnAmount(Direction.downLeft));
 }
 
-test "test_direction_clockwise" {
+test "test direction clockwise" {
     const dir = Direction.right;
 
     var index: usize = 0;
@@ -165,7 +165,7 @@ test "test_direction_clockwise" {
     try std.testing.expectEqual(Direction.right, dir);
 }
 
-test "test_direction_counterclockwise" {
+test "test direction counterclockwise" {
     const dir = Direction.right;
 
     var index: usize = 0;

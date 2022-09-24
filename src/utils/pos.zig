@@ -96,6 +96,10 @@ pub const Pos = struct {
         const diff = end.sub(self);
         return self.onePassedDelta(diff);
     }
+
+    pub fn dot(self: Pos, other: Pos) i32 {
+        return self.x * other.x + self.y * other.y;
+    }
 };
 
 test "test in direction of" {

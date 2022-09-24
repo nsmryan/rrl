@@ -2,7 +2,7 @@ const std = @import("std");
 
 const Pos = @import("pos.zig").Pos;
 
-const Direction = enum {
+pub const Direction = enum {
     left,
     right,
     up,
@@ -66,7 +66,7 @@ const Direction = enum {
     }
 
     pub fn intoMove(self: Direction) Pos {
-        switch (self) {
+        return switch (self) {
             .left => Pos.init(-1, 0),
             .right => Pos.init(1, 0),
             .up => Pos.init(0, -1),
@@ -75,7 +75,7 @@ const Direction = enum {
             .downRight => Pos.init(1, 1),
             .upLeft => Pos.init(-1, -1),
             .upRight => Pos.init(1, -1),
-        }
+        };
     }
 
     pub fn directions() [8]Direction {

@@ -1,10 +1,9 @@
 const std = @import("std");
 
-const direction = @import("direction.zig");
-const Direction = direction.Direction;
-
-const pos = @import("pos.zig");
+const utils = @import("utils");
+const pos = utils.pos;
 const Pos = pos.Pos;
+const Direction = utils.direction.Direction;
 
 const tile = @import("tile.zig");
 const Tile = tile.Tile;
@@ -52,24 +51,24 @@ pub fn blocking(blocked_type: BlockedType, wall: Wall, material: Surface) bool {
 }
 
 test "test blocked type" {
-    try std.testing.expect(!BlockedType.fov.blocking(Wall.shortWall, Surface.floor));
-    try std.testing.expect(!BlockedType.fov.blocking(Wall.shortWall, Surface.grass));
-    try std.testing.expect(BlockedType.fov.blocking(Wall.tallWall, Surface.floor));
-    try std.testing.expect(!BlockedType.fov.blocking(Wall.empty, Surface.floor));
-    try std.testing.expect(!BlockedType.fov.blocking(Wall.empty, Surface.grass));
+    try std.testing.expect(!blocking(BlockedType.fov, Wall.shortWall, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.fov, Wall.shortWall, Surface.grass));
+    try std.testing.expect(blocking(BlockedType.fov, Wall.tallWall, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.fov, Wall.empty, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.fov, Wall.empty, Surface.grass));
 
-    try std.testing.expect(BlockedType.fovLow.blocking(Wall.shortWall, Surface.floor));
-    try std.testing.expect(BlockedType.fovLow.blocking(Wall.tallWall, Surface.floor));
-    try std.testing.expect(BlockedType.fovLow.blocking(Wall.shortWall, Surface.grass));
-    try std.testing.expect(BlockedType.fovLow.blocking(Wall.tallWall, Surface.grass));
-    try std.testing.expect(!BlockedType.fovLow.blocking(Wall.empty, Surface.floor));
-    try std.testing.expect(!BlockedType.fovLow.blocking(Wall.empty, Surface.grass));
+    try std.testing.expect(blocking(BlockedType.fovLow, Wall.shortWall, Surface.floor));
+    try std.testing.expect(blocking(BlockedType.fovLow, Wall.tallWall, Surface.floor));
+    try std.testing.expect(blocking(BlockedType.fovLow, Wall.shortWall, Surface.grass));
+    try std.testing.expect(blocking(BlockedType.fovLow, Wall.tallWall, Surface.grass));
+    try std.testing.expect(!blocking(BlockedType.fovLow, Wall.empty, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.fovLow, Wall.empty, Surface.grass));
 
-    try std.testing.expect(!BlockedType.move.blocking(Wall.empty, Surface.floor));
-    try std.testing.expect(BlockedType.move.blocking(Wall.shortWall, Surface.floor));
-    try std.testing.expect(!BlockedType.move.blocking(Wall.tallWall, Surface.grass));
-    try std.testing.expect(!BlockedType.move.blocking(Wall.shortWall, Surface.grass));
-    try std.testing.expect(BlockedType.move.blocking(Wall.tallWall, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.move, Wall.empty, Surface.floor));
+    try std.testing.expect(blocking(BlockedType.move, Wall.shortWall, Surface.floor));
+    try std.testing.expect(!blocking(BlockedType.move, Wall.tallWall, Surface.grass));
+    try std.testing.expect(!blocking(BlockedType.move, Wall.shortWall, Surface.grass));
+    try std.testing.expect(blocking(BlockedType.move, Wall.tallWall, Surface.floor));
 }
 //
 //    pub fn blocked_left(&self, pos: Pos, blocked_type: BlockedType) -> bool {

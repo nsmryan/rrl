@@ -17,3 +17,9 @@
 //
 //    return near_given_tile;
 //}
+//
+test "map test set" {
+    _ = @import("map/blocking.zig");
+    _ = @import("map/pathing.zig");
+    _ = @import("map/tile.zig");
+}

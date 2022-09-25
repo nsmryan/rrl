@@ -78,3 +78,12 @@ pub fn randPosInRadius(position: pos.Pos, radius: i32, rng: std.rand.Random) pos
     const offset = pos.Pos.init(rng.intRangeAtMost(i32, -radius, radius), rng.intRangeAtMost(i32, -radius, radius));
     return position.add(offset);
 }
+
+test "utils test set" {
+    _ = @import("utils/comp.zig");
+    _ = @import("utils/line.zig");
+    _ = @import("utils/math.zig");
+    _ = @import("utils/rand.zig");
+    _ = @import("utils/pos.zig");
+    _ = @import("utils/direction.zig");
+}

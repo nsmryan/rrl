@@ -8,15 +8,15 @@ pub const Pos = struct {
         return .{ .x = x, .y = y };
     }
 
-    pub fn move_by(self: Pos, other: Pos) Pos {
+    pub fn moveBy(self: Pos, other: Pos) Pos {
         return Pos.init(self.x + other.x, self.y + other.y);
     }
 
-    pub fn move_x(self: Pos, offset: i32) Pos {
+    pub fn moveX(self: Pos, offset: i32) Pos {
         return Pos.init(self.x + offset, self.y);
     }
 
-    pub fn move_y(self: Pos, offset: i32) Pos {
+    pub fn moveY(self: Pos, offset: i32) Pos {
         return Pos.init(self.x, self.y + offset);
     }
 

@@ -26,5 +26,5 @@ pub fn main() anyerror!void {
 
 test "full test set" {
     _ = @import("utils.zig");
-    _ = @import("map.zig");
+    _ = @import("board.zig");
 }

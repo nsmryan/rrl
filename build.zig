@@ -23,7 +23,7 @@ pub fn build(b: *std.build.Builder) void {
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
     exe_tests.addPackagePath("utils", "src/utils.zig");
-    exe_tests.addPackagePath("map", "src/map.zig");
+    exe_tests.addPackagePath("board", "src/board.zig");
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);

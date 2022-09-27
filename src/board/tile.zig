@@ -18,7 +18,7 @@ pub const Tile = struct {
         }
     };
 
-    pub const Material = enum {
+    pub const Material = enum(u2) {
         stone,
         rubble,
         grass,
@@ -32,7 +32,7 @@ pub const Tile = struct {
         }
     };
 
-    pub const Height = enum {
+    pub const Height = enum(u2) {
         empty,
         short,
         tall,

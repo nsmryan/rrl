@@ -45,6 +45,16 @@ pub const Tile = struct {
             };
         }
 
+        pub fn combine(self: Height, other: Height) Height {
+            if (self == .tall or other == .tall) {
+                return .tall;
+            } else if (self == .short or other == .short) {
+                return .short;
+            } else {
+                return .empty;
+            }
+        }
+
         pub fn chr(self: Height) u8 {
             return switch (self) {
                 .empty => 'e',

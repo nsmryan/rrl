@@ -1,4 +1,6 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
 const pos = utils.pos;
@@ -352,159 +354,10 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 //    }
 //
 //    pub fn does_left_block(&self) -> bool {
-//        return self.left_wall != Wall::Empty && self.left_material != Material::Grass;
+//        return self.left.wall != Wall::Empty && self.left_material != Material::Grass;
 //    }
 //
 //    pub fn does_down_block(&self) -> bool {
-//        return self.bottom_wall != Wall::Empty && self.bottom_material != Material::Grass;
+//        return self.down_wall != Wall::Empty && self.bottom_material != Material::Grass;
 //    }
 //
-pub const Rotation = enum {
-    degrees0,
-    degrees90,
-    degrees180,
-    degrees270,
-
-    pub fn rotate(self: Rotation, position: Pos, width: i32, height: i32) Pos {
-        var result = position;
-        switch (self) {
-            .degrees0 => {},
-
-            .degrees90 => {
-                // 90 degrees: swap x and y, mirror in x
-                result = Pos.init(result.y, result.x);
-                result = result.mirrorInX(width);
-            },
-
-            .degrees180 => {
-                // 180 degrees: mirror in x, mirror in y
-                result = result.mirrorInX(width);
-                result = result.mirrorInY(height);
-            },
-
-            .degrees270 => {
-                // 270: swap x and y, mirror in y
-                result = Pos.init(result.y, result.x);
-                result = result.mirrorInY(height);
-            },
-        }
-
-        return result;
-    }
-};
-
-test "test rotation" {
-    const position = Pos.init(0, 0);
-    const width: i32 = 10;
-    const height: i32 = 20;
-
-    try std.testing.expectEqual(position, Rotation.degrees0.rotate(position, width, height));
-    try std.testing.expectEqual(Pos.init(width - 1, 0), Rotation.degrees90.rotate(position, width, height));
-    try std.testing.expectEqual(Pos.init(width - 1, height - 1), Rotation.degrees180.rotate(position, width, height));
-    try std.testing.expectEqual(Pos.init(0, height - 1), Rotation.degrees270.rotate(position, width, height));
-}
-//
-//pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
-//    let (width, height) = map.size();
-//
-//    let (mut new_width, mut new_height) = (width, height);
-//    if rotation == Rotation::Degrees90 or rotation == Rotation::Degrees270 {
-//        new_width = height;
-//        new_height = width;
-//    }
-//    let mut new_map = Map::from_dims(new_width as u32, new_height as u32);
-//
-//    let mut left_walls = Vec::new();
-//    let mut bottom_walls = Vec::new();
-//    for x in 0..width {
-//        for y in 0..height {
-//            let orig_pos = Pos::new(x, y);
-//
-//            let mut pos = Pos::new(x, y);
-//            if mirror {
-//                pos = pos.mirrorInX(width);
-//            }
-//            pos = rotation.rotate(pos, new_width, new_height);
-//            new_map[pos] = map[orig_pos];
-//
-//            if map[orig_pos].left_wall != Wall::Empty {
-//                left_walls.push((pos, map[orig_pos].left_wall, map[orig_pos].left_material));
-//            }
-//
-//            if map[orig_pos].bottom_wall != Wall::Empty {
-//                bottom_walls.push((pos, map[orig_pos].bottom_wall, map[orig_pos].bottom_material));
-//            }
-//        }
-//    }
-//
-//    for x in 0..new_width {
-//        for y in 0..new_height {
-//            let pos = Pos::new(x, y);
-//            new_map[pos].left_wall = Wall::Empty;
-//            new_map[pos].bottom_wall = Wall::Empty;
-//        }
-//    }
-//
-//    for (wall_pos, wall_type, material) in left_walls {
-//        match rotation {
-//            Rotation::Degrees0 => {
-//                new_map[wall_pos].left_wall = wall_type;
-//                new_map[wall_pos].left_material = material;
-//            }
-//
-//            Rotation::Degrees90 => {
-//                let new_wall_pos = move_y(wall_pos, -1);
-//                if new_map.is_within_bounds(new_wall_pos) {
-//                    new_map[new_wall_pos].bottom_wall = wall_type;
-//                    new_map[wall_pos].bottom_material = material;
-//                }
-//            }
-//
-//            Rotation::Degrees180 => {
-//                let new_wall_pos = moveX(wall_pos, 1);
-//                if new_map.is_within_bounds(new_wall_pos) {
-//                    new_map[new_wall_pos].left_wall = wall_type;
-//                    new_map[wall_pos].left_material = material;
-//                }
-//            }
-//
-//            Rotation::Degrees270 => {
-//                new_map[wall_pos].bottom_wall = wall_type;
-//                new_map[wall_pos].bottom_material = material;
-//            }
-//        }
-//    }
-//
-//    for (wall_pos, wall_type, material) in bottom_walls {
-//        match rotation {
-//            Rotation::Degrees0 => {
-//                new_map[wall_pos].bottom_wall = wall_type;
-//                new_map[wall_pos].bottom_material = material;
-//            }
-//
-//            Rotation::Degrees90 => {
-//                new_map[wall_pos].left_wall = wall_type;
-//                new_map[wall_pos].left_material = material;
-//            }
-//
-//            Rotation::Degrees180 => {
-//                let new_wall_pos = move_y(wall_pos, -1);
-//                if new_map.is_within_bounds(new_wall_pos) {
-//                    new_map[new_wall_pos].bottom_wall = wall_type;
-//                    new_map[wall_pos].bottom_material = material;
-//                }
-//            }
-//
-//            Rotation::Degrees270 => {
-//                let new_wall_pos = moveX(wall_pos, 1);
-//                if new_map.is_within_bounds(new_wall_pos) {
-//                    new_map[new_wall_pos].left_wall = wall_type;
-//                    new_map[wall_pos].left_material = material;
-//                }
-//            }
-//        }
-//    }
-//
-//    return new_map;
-//}
-

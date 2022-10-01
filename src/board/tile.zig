@@ -18,7 +18,7 @@ pub const Tile = struct {
         }
     };
 
-    pub const Material = enum(u2) {
+    pub const Material = enum {
         stone,
         rubble,
         grass,
@@ -32,7 +32,7 @@ pub const Tile = struct {
         }
     };
 
-    pub const Height = enum(u2) {
+    pub const Height = enum {
         empty,
         short,
         tall,
@@ -54,8 +54,8 @@ pub const Tile = struct {
         }
     };
 
-    pub fn init(wall: Wall, down: Wall, left: Wall) Tile {
-        return Tile{ .explored = false, .impassable = false, .wall = wall, .down = down, .left = left };
+    pub fn init(center: Wall, down: Wall, left: Wall) Tile {
+        return Tile{ .explored = false, .impassable = false, .center = center, .down = down, .left = left };
     }
 
     pub fn impassable() Tile {
@@ -68,20 +68,20 @@ pub const Tile = struct {
 
     pub fn shortDownWall() Tile {
         var tile = Tile.empty();
-        tile.down.wall = Wall.short;
+        tile.down.height = Height.short;
         return tile;
     }
 
     pub fn shortLeftWall() Tile {
         var tile = Tile.empty();
-        tile.left.wall = Wall.short;
+        tile.left.height = Height.short;
         return tile;
     }
 
     pub fn shortLeftAndDownWall() Tile {
         var tile = Tile.empty();
-        tile.down.wall = Wall.short;
-        tile.left.wall = Wall.short;
+        tile.down.height = Height.short;
+        tile.left.height = Height.short;
         return tile;
     }
 
@@ -125,7 +125,7 @@ pub const Tile = struct {
 
     pub fn chrs(self: Tile) [8]u8 {
         var chars: [8]u8 = undefined;
-        var index = 0;
+        var index: usize = 0;
 
         if (self.explored) {
             chars[index] = '1';
@@ -141,16 +141,17 @@ pub const Tile = struct {
         }
         index += 1;
 
-        chars[index] = self.wall.height.chr();
+        chars[index] = self.center.height.chr();
         index += 1;
 
-        chars[index] = self.wall.material.chr();
+        chars[index] = self.center.material.chr();
         index += 1;
 
         chars[index] = self.left.height.chr();
         index += 1;
 
         chars[index] = self.left.material.chr();
+        index += 1;
 
         chars[index] = self.down.height.chr();
         index += 1;
@@ -160,3 +161,12 @@ pub const Tile = struct {
         return chars;
     }
 };
+
+// Tiles are currently a two byte type. This may change in the future, but this
+// test makes sure that the size is known.
+// NOTE packing Tile, with bit sized enums for height and material, seems to cause some crashes.
+// Maybe try this again later
+//test "tile type bit size" {
+//    const std = @import("std");
+//    try std.testing.expectEqual(2, @sizeOf(Tile));
+//}

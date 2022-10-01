@@ -176,6 +176,25 @@ pub fn reorientMap(map: Map, rotation: Rotation, mirror: bool, allocator: Alloca
     return new_map;
 }
 
+test "reorient map 0" {
+    var allocator = std.testing.allocator;
+
+    var map = try Map.fromDims(5, 5, allocator);
+    defer map.deinit(allocator);
+
+    const short_wall = Wall.init(Tile.Height.short, Tile.Material.stone);
+    map.getPtr(Pos.init(1, 0)).* = Tile.shortLeftWall();
+    map.getPtr(Pos.init(1, 1)).* = Tile.shortLeftWall();
+    map.getPtr(Pos.init(1, 2)).* = Tile.init(Wall.empty(), short_wall, short_wall);
+
+    var new_map = try reorientMap(map, Rotation.degrees0, false, allocator);
+    defer new_map.deinit(allocator);
+
+    try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(1, 0)));
+    try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(1, 1)));
+    try std.testing.expectEqual(Tile.shortLeftAndDownWall(), new_map.get(Pos.init(1, 2)));
+}
+
 test "reorient map 90" {
     var allocator = std.testing.allocator;
 
@@ -185,7 +204,6 @@ test "reorient map 90" {
     const short_wall = Wall.init(Tile.Height.short, Tile.Material.stone);
     map.getPtr(Pos.init(1, 0)).* = Tile.shortLeftWall();
     map.getPtr(Pos.init(1, 1)).* = Tile.shortLeftWall();
-    map.getPtr(Pos.init(1, 2)).* = Tile.shortLeftWall();
     map.getPtr(Pos.init(1, 2)).* = Tile.init(Wall.empty(), short_wall, short_wall);
 
     var new_map = try reorientMap(map, Rotation.degrees90, false, allocator);
@@ -206,7 +224,6 @@ test "reorient map 180" {
     const short_wall = Wall.init(Tile.Height.short, Tile.Material.stone);
     map.getPtr(Pos.init(1, 0)).* = Tile.shortLeftWall();
     map.getPtr(Pos.init(1, 1)).* = Tile.shortLeftWall();
-    map.getPtr(Pos.init(1, 2)).* = Tile.shortLeftWall();
     map.getPtr(Pos.init(1, 2)).* = Tile.init(Wall.empty(), short_wall, short_wall);
 
     var new_map = try reorientMap(map, Rotation.degrees180, false, allocator);
@@ -216,4 +233,24 @@ test "reorient map 180" {
     try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(4, 2)));
     try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(4, 3)));
     try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(4, 4)));
+}
+
+test "reorient map 270" {
+    var allocator = std.testing.allocator;
+
+    var map = try Map.fromDims(5, 5, allocator);
+    defer map.deinit(allocator);
+
+    const short_wall = Wall.init(Tile.Height.short, Tile.Material.stone);
+    map.getPtr(Pos.init(1, 0)).* = Tile.shortLeftWall();
+    map.getPtr(Pos.init(1, 1)).* = Tile.shortLeftWall();
+    map.getPtr(Pos.init(1, 2)).* = Tile.init(Wall.empty(), short_wall, short_wall);
+
+    var new_map = try reorientMap(map, Rotation.degrees270, false, allocator);
+    defer new_map.deinit(allocator);
+
+    try std.testing.expectEqual(Tile.shortDownWall(), new_map.get(Pos.init(0, 3)));
+    try std.testing.expectEqual(Tile.shortDownWall(), new_map.get(Pos.init(1, 3)));
+    try std.testing.expectEqual(Tile.shortDownWall(), new_map.get(Pos.init(2, 3)));
+    try std.testing.expectEqual(Tile.shortLeftWall(), new_map.get(Pos.init(3, 3)));
 }

@@ -51,6 +51,38 @@ pub const Map = struct {
         allocator.free(self.tiles);
     }
 
+    pub fn printLayers(self: *Map) void {
+        std.debug.print("center\n", .{});
+        var y: i32 = 0;
+        while (y < self.height) : (y += 1) {
+            var x: i32 = 0;
+            while (x < self.width) : (x += 1) {
+                std.debug.print("{c}", .{self.get(Pos.init(x, y)).center.height.chr()});
+            }
+            std.debug.print("\n", .{});
+        }
+
+        std.debug.print("left\n", .{});
+        y = 0;
+        while (y < self.height) : (y += 1) {
+            var x: i32 = 0;
+            while (x < self.width) : (x += 1) {
+                std.debug.print("{c}", .{self.get(Pos.init(x, y)).left.height.chr()});
+            }
+            std.debug.print("\n", .{});
+        }
+
+        std.debug.print("down\n", .{});
+        y = 0;
+        while (y < self.height) : (y += 1) {
+            var x: i32 = 0;
+            while (x < self.width) : (x += 1) {
+                std.debug.print("{c}", .{self.get(Pos.init(x, y)).down.height.chr()});
+            }
+            std.debug.print("\n", .{});
+        }
+    }
+
     // TODO add back in when Dims type is available
     //pub fn dims(self: *const Map) Dims
 

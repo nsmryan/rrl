@@ -164,34 +164,27 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
         return blocked;
     }
 
-    var found_blocker = false;
-
     // If moving into a blocked tile, we are blocked.
     blocked.height = blocked_type.tileBlocks(map.get(end_pos));
     if (blocked.height != .empty) {
         blocked.blocked_tile = true;
-        found_blocker = true;
     }
 
     switch (dir) {
         Direction.left => {
             blocked.height = blockedLeft(map, start_pos, blocked_type);
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.right => {
             blocked.height = blockedRight(map, start_pos, blocked_type);
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.down => {
             blocked.height = blockedDown(map, start_pos, blocked_type);
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.up => {
             blocked.height = blockedUp(map, start_pos, blocked_type);
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.downRight => {
@@ -208,8 +201,6 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 
             // Check __
             blocked.height = blockedDown(map, start_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.upRight => {
@@ -226,8 +217,6 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 
             // Check for __
             blocked.height = blockedUp(map, start_pos, blocked_type).meet(blockedDown(map, end_pos, blocked_type));
-
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.downLeft => {
@@ -244,8 +233,6 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 
             // Check for __
             blocked.height = blockedDown(map, start_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-
-            found_blocker = blocked.height != .empty;
         },
 
         Direction.upLeft => {
@@ -263,15 +250,13 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 
             // Check for __
             blocked.height = blocked.height.join(blockedUp(map, start_pos, blocked_type).meet(blockedDown(map, end_pos, blocked_type)));
-
-            found_blocker = blocked.height != .empty;
         },
     }
 
-    if (found_blocker) {
-        return blocked;
-    } else {
+    if (blocked.height == .empty) {
         return null;
+    } else {
+        return blocked;
     }
 }
 

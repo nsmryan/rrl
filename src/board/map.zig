@@ -83,6 +83,12 @@ pub const Map = struct {
         }
     }
 
+    pub fn clear(self: *Map) void {
+        for (self.tiles) |*tile| {
+            tile.* = Tile.empty();
+        }
+    }
+
     // TODO add back in when Dims type is available
     //pub fn dims(self: *const Map) Dims
 

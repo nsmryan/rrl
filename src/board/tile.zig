@@ -45,13 +45,23 @@ pub const Tile = struct {
             };
         }
 
-        pub fn combine(self: Height, other: Height) Height {
+        pub fn join(self: Height, other: Height) Height {
             if (self == .tall or other == .tall) {
                 return .tall;
             } else if (self == .short or other == .short) {
                 return .short;
             } else {
                 return .empty;
+            }
+        }
+
+        pub fn meet(self: Height, other: Height) Height {
+            if (self == .empty or other == .empty) {
+                return .empty;
+            } else if (self == .short or other == .short) {
+                return .short;
+            } else {
+                return self.join(other);
             }
         }
 

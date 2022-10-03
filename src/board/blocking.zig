@@ -158,7 +158,7 @@ pub fn blockedDir(map: *const Map, position: Pos, dir: Direction, blocked_type: 
         .left => blockedLeft(map, position, blocked_type),
         .right => blockedRight(map, position, blocked_type),
         .up => blockedUp(map, position, blocked_type),
-        .down => blockedLeft(map, position, blocked_type),
+        .down => blockedDown(map, position, blocked_type),
         .upLeft => blockedLeft(map, position, blocked_type).meet(blockedUp(map, position, blocked_type)),
         .upRight => blockedRight(map, position, blocked_type).meet(blockedUp(map, position, blocked_type)),
         .downLeft => blockedDown(map, position, blocked_type).meet(blockedLeft(map, position, blocked_type)),
@@ -221,52 +221,60 @@ test "move blocked" {
     var map = try Map.fromDims(3, 3, allocator);
     defer map.deinit(allocator);
 
-    const dir = Direction.left;
-    const diag_dir = dir.clockwise();
-    const perp_dir = diag_dir.clockwise();
+    const directions: [4]Direction = .{ .left, .right, .up, .down };
+    for (directions) |dir| {
+        const diag_dir = dir.clockwise();
+        const perp_dir = diag_dir.clockwise();
 
-    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
+        try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
 
-    map.getPtr(dir.offsetPos(start, 1)).center.height = .short;
-    var blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, true, .short);
-    try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
+        // A tile with a wall is blocked.
+        map.getPtr(dir.offsetPos(start, 1)).center.height = .short;
+        var blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, true, .short);
+        try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
-    map.clear();
-    map.getPtr(start).left.height = .short;
-    blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, false, .short);
-    try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
+        // A tile with an intertile wall is blocked to direct movement.
+        map.clear();
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, false, .short);
+        try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
-    map.clear();
-    map.getPtr(start).left.height = .short;
-    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.fov));
+        // A tile with a short wall does not block FoV.
+        map.clear();
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.fov));
 
-    map.clear();
-    map.getPtr(start).left.height = .short;
-    map.getPtr(start).left.material = .grass;
-    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
+        // A tile with a short grass wall does not block movement.
+        map.clear();
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.grass));
+        try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
 
-    map.clear();
-    map.getPtr(start).left.height = .short;
-    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
+        // A tile with a short stone wall does not block diagonal movement.
+        map.clear();
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-    map.getPtr(perp_dir.offsetPos(start, 1)).down.height = .short;
-    map.getPtr(start).left.height = .empty;
-    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
+        // A tile with a short stone wall in the other direction also does not block diagonal movement.
+        map.placeIntertileDir(start, diag_dir, Wall.init(Height.short, Material.stone));
+        map.placeIntertileDir(start, dir, Wall.empty());
+        try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-    map.getPtr(start).left.height = .short;
-    blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
-    try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
+        // Short walls in both corners do block diagonal movement.
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+        try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
 
-    map.clear();
-    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .short;
-    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
+        map.clear();
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-    map.getPtr(diag_dir.offsetPos(start, 1)).down.height = .short;
-    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .empty;
-    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
+        map.placeIntertileDir(diag_dir.offsetPos(start, 1), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
+        map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
+        try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .short;
-    map.getPtr(diag_dir.offsetPos(start, 1)).down.height = .short;
-    blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
-    try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
+        map.placeIntertileDir(perp_dir.offsetPos(start, 1), dir, Wall.init(Height.short, Material.stone));
+        map.placeIntertileDir(diag_dir.offsetPos(start, 1), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
+        blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+        try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
+    }
 }

@@ -1,8 +1,9 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const pos = @import("utils");
-const Pos = pos.Pos;
+const utils = @import("utils");
+const Pos = utils.pos.Pos;
+const Direction = utils.Direction;
 
 const Tile = @import("tile.zig").Tile;
 
@@ -86,6 +87,77 @@ pub const Map = struct {
     pub fn clear(self: *Map) void {
         for (self.tiles) |*tile| {
             tile.* = Tile.empty();
+        }
+    }
+
+    pub fn placeIntertileDir(self: *Map, position: Pos, dir: Direction, wall: Tile.Wall) void {
+        if (!self.isWithinBounds(position)) {
+            @panic("Position not in bounds!");
+        }
+
+        switch (dir) {
+            .left => {
+                self.getPtr(position).left = wall;
+            },
+
+            .down => {
+                self.getPtr(position).down = wall;
+            },
+
+            .right => {
+                const new_pos = dir.offsetPos(position, 1);
+                if (!self.isWithinBounds(new_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(new_pos).left = wall;
+            },
+
+            .up => {
+                const new_pos = dir.offsetPos(position, 1);
+                if (!self.isWithinBounds(new_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(new_pos).down = wall;
+            },
+
+            .upLeft => {
+                self.getPtr(position).left = wall;
+
+                const new_pos = Direction.up.offsetPos(position, 1);
+                if (!self.isWithinBounds(new_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(new_pos).down = wall;
+            },
+
+            .upRight => {
+                const right_pos = Direction.right.offsetPos(position, 1);
+                if (!self.isWithinBounds(right_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(right_pos).left = wall;
+
+                const up_pos = Direction.up.offsetPos(position, 1);
+                if (!self.isWithinBounds(up_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(up_pos).down = wall;
+            },
+
+            .downLeft => {
+                self.getPtr(position).left = wall;
+                self.getPtr(position).down = wall;
+            },
+
+            .downRight => {
+                self.getPtr(position).down = wall;
+
+                const right_pos = Direction.up.offsetPos(position, 1);
+                if (!self.isWithinBounds(right_pos)) {
+                    @panic("Position not in bounds!");
+                }
+                self.getPtr(right_pos).left = wall;
+            },
         }
     }
 

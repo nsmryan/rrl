@@ -278,3 +278,13 @@ test "move blocked" {
         try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
     }
 }
+
+pub fn reachableNeighbors(map: *const Map, start: Pos, blocked_type: BlockedType, neighbors: *ArrayList(Pos)) !void {
+    neighbors.clearRetainingCapacity();
+
+    for (Direction.directions()) |dir| {
+        if (moveBlocked(map, start, dir, blocked_type) == null) {
+            try neighbors.append(dir.offsetPos(start, 1));
+        }
+    }
+}

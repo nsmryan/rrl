@@ -7,14 +7,25 @@ const testing = std.testing;
 
 const Pos = @import("pos.zig").Pos;
 
+pub const WeighedPos = struct {
+    position: Pos,
+    weigh: i32,
+
+    pub fn init(position: Pos, weigh: i32) WeighedPos {
+        return WeighedPos{ .position = position, .weigh = weigh };
+    }
+};
+
 pub const Path = struct {
     path: ArrayList(Pos),
     current: Pos,
+    cost: i32,
 
     pub fn init(current: Pos, allocator: Allocator) Path {
         return Path{
             .path = ArrayList(Pos).init(allocator),
             .current = current,
+            .cost = 0,
         };
     }
 
@@ -23,7 +34,7 @@ pub const Path = struct {
     }
 
     pub fn dup(self: *Path) !Path {
-        return Path{ .path = try self.path.clone(), .current = self.current };
+        return Path{ .path = try self.path.clone(), .current = self.current, .cost = self.cost };
     }
 };
 
@@ -69,23 +80,24 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
             return Result{ .neighbors = start };
         }
 
-        pub fn step(self: *Self, neighbors: []Pos) !Result {
+        pub fn step(self: *Self, neighbors: []WeighedPos) !Result {
             if (self.next_q.len == 0) {
                 return Result.no_path;
             }
 
             var best = self.next_q.remove();
             for (neighbors) |neighbor| {
-                if (std.meta.eql(neighbor, self.end)) {
+                if (std.meta.eql(neighbor.position, self.end)) {
                     try best.path.append(self.end);
                     best.current = self.end;
+                    best.cost += 1 + neighbor.weigh;
                     return Result{ .done = best };
                 }
 
                 var found: bool = false;
                 var i: usize = 0;
                 while (i < self.seen.items.len) : (i += 1) {
-                    if (std.meta.eql(neighbor, self.seen.items[i])) {
+                    if (std.meta.eql(neighbor.position, self.seen.items[i])) {
                         found = true;
                         break;
                     }
@@ -93,12 +105,14 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
                 if (found) {
                     continue;
                 }
-                try self.seen.append(neighbor);
+                try self.seen.append(neighbor.position);
 
                 var new_path = try best.dup();
                 try new_path.path.append(best.current);
 
-                new_path.current = neighbor;
+                new_path.current = neighbor.position;
+                new_path.cost += 1 + neighbor.weigh;
+
                 try self.next_q.add(new_path);
             }
 
@@ -153,7 +167,7 @@ test "pathfinding" {
     var map = Map.init(blocked[0..]);
 
     var result = try finder.pathFind(start, end);
-    var neighbors = ArrayList(Pos).init(allocator);
+    var neighbors = ArrayList(WeighedPos).init(allocator);
     defer neighbors.deinit();
 
     while (result == .neighbors) {
@@ -173,7 +187,7 @@ test "pathfinding" {
                     continue;
                 }
                 const next_pos = Pos.init(new_x, new_y);
-                try neighbors.append(next_pos);
+                try neighbors.append(WeighedPos.init(next_pos, 1));
             }
         }
 

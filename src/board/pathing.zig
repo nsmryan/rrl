@@ -88,27 +88,23 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (P
         result = try finder.step(neighbors.items);
     }
 
-    //          |&pos| {
-    //              if const Some(fun) = &cost_fn {
-    //                  fun(start, pos, map) * ASTAR_COST_MULTIPLIER
-    //              } else {
-    //                  path_find_distance(start, pos, end) as i32
-    //              }
-    //          },
-
     return result.done.path;
 }
 
-pub fn astarNextPos(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32) ?Pos {
-    const next_positions = astarPath(map, start, end, max_dist, cost_fn);
+// Perform an AStar search from 'start' to 'end' and return the first move to take along this path,
+// if a path exists.
+pub fn astarNextPos(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32) !?Pos {
+    const next_positions = try astarPath(map, start, end, max_dist, cost_fn);
 
-    if (next_positions.get(1)) |next_pos| {
-        return next_pos;
+    if (next_positions.items.len > 0) {
+        return next_positions.items[0];
     } else {
         return null;
     }
 }
 
+// Fill the given array list with the positions of tiles that can be reached with a single move
+// from the given tile. The provided positions do not block when moving from 'start' to their location.
 pub fn astarNeighbors(map: Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors: *ArrayList(Pos)) !void {
     neighbors.clearRetainingCapacity();
 

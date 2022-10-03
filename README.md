@@ -48,6 +48,8 @@ due to orphan rule serde support.
 The roguelike_utils crate seems like it is basically ported to Zig. Perlin noise is no longer
 used, and random numbers might just come from the std library.
 
-Could do SDL2 next, maybe draw command executable. 
-Might also try roguelike_map to build upwards.
+The roguelike_map crate is mostly ported. The AStar algorithm code has been moved, but not tested.
+It should be at least lightly tested before moving on.
 
+The next step is likely roguelike_core, starting with entities.
+Possibly also consider integrating zigtcl at this point to visualize and test the map.

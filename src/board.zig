@@ -23,4 +23,5 @@ test "board test set" {
     _ = @import("board/pathing.zig");
     _ = @import("board/tile.zig");
     _ = @import("board/rotate.zig");
+    _ = @import("board/shadowcasting.zig");
 }

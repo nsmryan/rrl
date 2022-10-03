@@ -1,5 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ArrayList = std.mem.ArrayList;
 
 const utils = @import("utils");
 const Pos = utils.pos.Pos;
@@ -159,6 +160,17 @@ pub const Map = struct {
                 self.getPtr(right_pos).left = wall;
             },
         }
+    }
+
+    // compact_chrs is not implemented yet- it won't be needed until communicating maps frequently.
+    pub fn chrs(map: Map, allocator: Allocator) ArrayList(u8) {
+        var chars = ArrayList(u8).init(allocator);
+        for (map.tiles) |tile| {
+            for (tile.chrs()) |chr| {
+                chars.append(chr);
+            }
+        }
+        return chars;
     }
 
     // TODO add back in when Dims type is available

@@ -56,7 +56,7 @@ pub const Direction = enum {
 
     pub fn horiz(self: Direction) bool {
         switch (self) {
-            .left | .right | .up | .down => return true,
+            .left, .right, .up, .down => return true,
             else => return false,
         }
     }

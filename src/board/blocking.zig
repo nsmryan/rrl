@@ -153,6 +153,19 @@ pub fn blockedUp(map: *const Map, position: Pos, blocked_type: BlockedType) Heig
     return blocking_wall.join(blocking_tile);
 }
 
+pub fn blockedDir(map: *const Map, position: Pos, dir: Direction, blocked_type: BlockedType) Height {
+    return switch (dir) {
+        .left => blockedLeft(map, position, blocked_type),
+        .right => blockedRight(map, position, blocked_type),
+        .up => blockedUp(map, position, blocked_type),
+        .down => blockedLeft(map, position, blocked_type),
+        .upLeft => blockedLeft(map, position, blocked_type).meet(blockedUp(map, position, blocked_type)),
+        .upRight => blockedRight(map, position, blocked_type).meet(blockedUp(map, position, blocked_type)),
+        .downLeft => blockedDown(map, position, blocked_type).meet(blockedLeft(map, position, blocked_type)),
+        .downRight => blockedDown(map, position, blocked_type).meet(blockedRight(map, position, blocked_type)),
+    };
+}
+
 pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type: BlockedType) ?Blocked {
     const end_pos = dir.offsetPos(start_pos, 1);
     var blocked = Blocked.init(start_pos, end_pos, dir, false, .empty);
@@ -170,87 +183,27 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
         blocked.blocked_tile = true;
     }
 
-    switch (dir) {
-        Direction.left => {
-            blocked.height = blockedLeft(map, start_pos, blocked_type);
-        },
+    if (dir.horiz()) {
+        blocked.height = blockedDir(map, start_pos, dir, blocked_type);
+    } else {
+        // Forward
+        blocked.height = blockedDir(map, start_pos, dir, blocked_type);
 
-        Direction.right => {
-            blocked.height = blockedRight(map, start_pos, blocked_type);
-        },
+        // Back
+        blocked.height = blocked.height.join(blockedDir(map, end_pos, dir.reverse(), blocked_type));
 
-        Direction.down => {
-            blocked.height = blockedDown(map, start_pos, blocked_type);
-        },
+        // One Side
+        const clockwise_dir = dir.clockwise();
+        const counterclockwise_dir = dir.counterclockwise();
 
-        Direction.up => {
-            blocked.height = blockedUp(map, start_pos, blocked_type);
-        },
+        const height0 = blockedDir(map, start_pos, clockwise_dir, blocked_type);
+        const height1 = blockedDir(map, counterclockwise_dir.offsetPos(start_pos, 1), clockwise_dir, blocked_type);
+        blocked.height = blocked.height.join(height0.meet(height1));
 
-        Direction.downRight => {
-            // Check _|
-            blocked.height = blockedRight(map, start_pos, blocked_type).meet(blockedDown(map, start_pos, blocked_type));
-
-            // Check   _
-            //        |
-            blocked.height = blockedLeft(map, end_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-
-            // Check |
-            //       |
-            blocked.height = blockedRight(map, start_pos, blocked_type).meet(blockedLeft(map, end_pos, blocked_type));
-
-            // Check __
-            blocked.height = blockedDown(map, start_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-        },
-
-        Direction.upRight => {
-            // Check for |_
-            blocked.height = blockedDown(map, end_pos, blocked_type).meet(blockedLeft(map, end_pos, blocked_type));
-
-            // Check for _
-            //            |
-            blocked.height = blockedRight(map, start_pos, blocked_type).meet(blockedUp(map, start_pos, blocked_type));
-
-            // Check for |
-            //           |
-            blocked.height = blockedRight(map, start_pos, blocked_type).meet(blockedLeft(map, end_pos, blocked_type));
-
-            // Check for __
-            blocked.height = blockedUp(map, start_pos, blocked_type).meet(blockedDown(map, end_pos, blocked_type));
-        },
-
-        Direction.downLeft => {
-            // Check for |_
-            blocked.height = blockedLeft(map, start_pos, blocked_type).meet(blockedDown(map, start_pos, blocked_type));
-
-            // Check for _
-            //            |
-            blocked.height = blockedRight(map, end_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-
-            // Check for |
-            //           |
-            blocked.height = blockedLeft(map, start_pos, blocked_type).meet(blockedRight(map, end_pos, blocked_type));
-
-            // Check for __
-            blocked.height = blockedDown(map, start_pos, blocked_type).meet(blockedUp(map, end_pos, blocked_type));
-        },
-
-        Direction.upLeft => {
-            // Check for |
-            //          _
-            blocked.height = blockedRight(map, end_pos, blocked_type).meet(blockedDown(map, end_pos, blocked_type));
-
-            // Check for _
-            //          |
-            blocked.height = blocked.height.join(blockedLeft(map, start_pos, blocked_type).meet(blockedUp(map, start_pos, blocked_type)));
-
-            // Check for |
-            //           |
-            blocked.height = blocked.height.join(blockedLeft(map, start_pos, blocked_type).meet(blockedRight(map, end_pos, blocked_type)));
-
-            // Check for __
-            blocked.height = blocked.height.join(blockedUp(map, start_pos, blocked_type).meet(blockedDown(map, end_pos, blocked_type)));
-        },
+        // Other Size
+        const height2 = blockedDir(map, start_pos, counterclockwise_dir, blocked_type);
+        const height3 = blockedDir(map, clockwise_dir.offsetPos(start_pos, 1), counterclockwise_dir, blocked_type);
+        blocked.height = blocked.height.join(height2.meet(height3));
     }
 
     if (blocked.height == .empty) {
@@ -263,79 +216,57 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
 test "move blocked" {
     var allocator = std.testing.allocator;
 
-    const start = Pos.init(2, 2);
+    const start = Pos.init(1, 1);
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.left, BlockedType.move));
-    }
+    var map = try Map.fromDims(3, 3, allocator);
+    defer map.deinit(allocator);
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
+    const dir = Direction.left;
+    const diag_dir = dir.clockwise();
+    const perp_dir = diag_dir.clockwise();
 
-        map.getPtr(start.moveX(-1)).center.height = .short;
-        const blocked = Blocked.init(start, start.moveX(-1), .left, true, .short);
-        try std.testing.expectEqual(blocked, moveBlocked(&map, start, Direction.left, BlockedType.move).?);
-    }
+    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
+    map.getPtr(dir.offsetPos(start, 1)).center.height = .short;
+    var blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, true, .short);
+    try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
-        map.getPtr(start).left.height = .short;
-        const blocked = Blocked.init(start, start.moveX(-1), .left, false, .short);
-        try std.testing.expectEqual(blocked, moveBlocked(&map, start, Direction.left, BlockedType.move).?);
-    }
+    map.clear();
+    map.getPtr(start).left.height = .short;
+    blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, false, .short);
+    try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
+    map.clear();
+    map.getPtr(start).left.height = .short;
+    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.fov));
 
-        map.getPtr(start).left.height = .short;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.left, BlockedType.fov));
-    }
+    map.clear();
+    map.getPtr(start).left.height = .short;
+    map.getPtr(start).left.material = .grass;
+    try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
+    map.clear();
+    map.getPtr(start).left.height = .short;
+    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-        map.getPtr(start).left.height = .short;
-        map.getPtr(start).left.material = .grass;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.left, BlockedType.move));
-    }
+    map.getPtr(perp_dir.offsetPos(start, 1)).down.height = .short;
+    map.getPtr(start).left.height = .empty;
+    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
+    map.getPtr(start).left.height = .short;
+    blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+    try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
 
-        map.getPtr(start).left.height = .short;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.upLeft, BlockedType.move));
+    map.clear();
+    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .short;
+    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-        map.getPtr(start.moveY(-1)).down.height = .short;
-        map.getPtr(start).left.height = .empty;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.upLeft, BlockedType.move));
+    map.getPtr(diag_dir.offsetPos(start, 1)).down.height = .short;
+    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .empty;
+    try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-        map.getPtr(start).left.height = .short;
-        const blocked = Blocked.init(start, start.moveX(-1).moveY(-1), .upLeft, false, .short);
-        try std.testing.expectEqual(blocked, moveBlocked(&map, start, Direction.upLeft, BlockedType.move).?);
-    }
-
-    {
-        var map = try Map.fromDims(5, 5, allocator);
-        defer map.deinit(allocator);
-
-        map.getPtr(start.moveY(-1)).left.height = .short;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.upLeft, BlockedType.move));
-
-        map.getPtr(start.moveY(-1).moveX(-1)).down.height = .short;
-        map.getPtr(start.moveY(-1)).left.height = .empty;
-        try std.testing.expect(null == moveBlocked(&map, start, Direction.upLeft, BlockedType.move));
-
-        map.getPtr(start.moveY(-1)).left.height = .short;
-        map.getPtr(start.moveY(-1).moveX(-1)).down.height = .short;
-        const blocked = Blocked.init(start, start.moveX(-1).moveY(-1), .upLeft, false, .short);
-        try std.testing.expectEqual(blocked, moveBlocked(&map, start, Direction.upLeft, BlockedType.move).?);
-    }
+    map.getPtr(perp_dir.offsetPos(start, 1)).left.height = .short;
+    map.getPtr(diag_dir.offsetPos(start, 1)).down.height = .short;
+    blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+    try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
 }

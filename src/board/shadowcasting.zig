@@ -18,7 +18,7 @@ const Error = error{Overflow} || Allocator.Error;
 /// This type cannot be used in some cases, such as a slice constructed from an array, so it is an anytype
 /// instead.
 ///
-pub fn compute_fov(origin: Pos, map: anytype, visible: *ArrayList(Pos), is_blocking: anytype) Error!void {
+pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), is_blocking: anytype) Error!void {
     // Mark the origin as visible.
     try mark_visible(origin, map, visible);
 
@@ -280,7 +280,7 @@ fn inside_map(pos: Pos, map: []const []const i32) bool {
     return is_inside;
 }
 
-fn matching_visible(expected: []const []const i32, visible: *ArrayList(Pos)) !void {
+fn matchingVisible(expected: []const []const i32, visible: *ArrayList(Pos)) !void {
     var y: usize = 0;
     while (y < expected.len) : (y += 1) {
         var x: usize = 0;
@@ -318,10 +318,10 @@ test "expansive walls" {
     var visible = ArrayList(Pos).init(allocator.allocator());
     defer visible.deinit();
 
-    try compute_fov(origin, tiles[0..], &visible, is_blocking_fn);
+    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
-    try matching_visible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &visible);
 }
 
 test "test_expanding_shadows" {
@@ -333,10 +333,10 @@ test "test_expanding_shadows" {
     var visible = ArrayList(Pos).init(allocator.allocator());
     defer visible.deinit();
 
-    try compute_fov(origin, tiles[0..], &visible, is_blocking_fn);
+    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 0, 0, 1, 1, 1 }, &.{ 1, 1, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 0, 0, 0, 0 } };
-    try matching_visible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &visible);
 }
 
 test "test_no_blind_corners" {
@@ -348,9 +348,9 @@ test "test_no_blind_corners" {
     var visible = ArrayList(Pos).init(allocator.allocator());
     defer visible.deinit();
 
-    try compute_fov(origin, tiles[0..], &visible, is_blocking_fn);
+    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 0, 0, 0, 0, 1, 1, 1 }, &.{ 0, 0, 0, 0, 0, 1, 1 } };
 
-    try matching_visible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &visible);
 }

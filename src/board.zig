@@ -20,6 +20,8 @@
 //
 test "board test set" {
     _ = @import("board/blocking.zig");
+    _ = @import("board/fov.zig");
+    _ = @import("board/map.zig");
     _ = @import("board/pathing.zig");
     _ = @import("board/tile.zig");
     _ = @import("board/rotate.zig");

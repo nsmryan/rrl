@@ -13,7 +13,7 @@ pub const Map = struct {
     height: i32,
     tiles: []Tile,
 
-    // TODO this likely does need to be added back in for performance.
+    // NOTE(perf) this likely does need to be added back in for performance.
     //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
 
     pub fn fromSlice(tiles: []Tile, width: i32, height: i32) Map {
@@ -175,6 +175,106 @@ pub const Map = struct {
 
     // TODO add back in when Dims type is available
     //pub fn dims(self: *const Map) Dims
-
-    // TODO continue with map functions are is_in_fov_edge
 };
+
+// NOTE add these back in if needed
+//
+//    pub fn pos_in_radius(&self, start: Pos, radius: i32) -> Vec<Pos> {
+//        let mut circle_positions = HashSet::new();
+//
+//        // for each position on the edges of a square around the point, with the
+//        // radius as the distance in x/y, add to a set.
+//        // duplicates will be removed, leaving only points within the radius.
+//        for x in (start.x - radius)..(start.x + radius) {
+//            for y in (start.y - radius)..(start.y + radius) {
+//                let line = line(start, Pos::new(x, y));
+//
+//                // get points to the edge of square, filtering for points within the given radius
+//                for point in line.into_iter() {
+//                    if distance(start, point) < radius {
+//                        circle_positions.insert(point);
+//                    }
+//                }
+//            }
+//        }
+//
+//        return circle_positions.iter().map(|pos| *pos).collect();
+//    }
+//
+//    pub fn neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
+//        let neighbors = [(1, 0),  (1, 1),  (0, 1),
+//                         (-1, 1), (-1, 0), (-1, -1),
+//                         (0, -1), (1, -1)];
+//
+//        let mut result = SmallVec::new();
+//        for delta in neighbors.iter() {
+//            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
+//            if self.is_within_bounds(new_pos) {
+//                result.push(new_pos);
+//            }
+//        }
+//
+//        return result;
+//    }
+//
+//    pub fn cardinal_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 4]> {
+//        let neighbors = [(1, 0), (0, 1), (-1, 0), (0, -1),];
+//
+//        let mut result = SmallVec::new();
+//        for delta in neighbors.iter() {
+//            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
+//            if self.is_within_bounds(new_pos) {
+//                result.push(new_pos);
+//            }
+//        }
+//
+//        return result;
+//    }
+//
+//    pub fn reachable_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
+//        let neighbors = [(1, 0),  (1, 1),  (0, 1),
+//                         (-1, 1), (-1, 0), (-1, -1),
+//                         (0, -1), (1, -1)];
+//
+//        let mut result = SmallVec::new();
+//
+//        for delta in neighbors.iter() {
+//            let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
+//            if self.path_blocked_move(pos, end_pos).is_none() {
+//                result.push(add_pos(pos, Pos::new(delta.0, delta.1)));
+//            }
+//        }
+//
+//        return result;
+//    }
+//
+//    pub fn get_all_pos(&self) -> Vec<Pos> {
+//        let (width, height) = self.size();
+//        return (0..width).cartesian_product(0..height)
+//                         .map(|pair| Pos::from(pair))
+//                         .collect::<Vec<Pos>>();
+//    }
+//
+//    pub fn get_empty_pos(&self) -> Vec<Pos> {
+//        let (width, height) = self.size();
+//        return (0..width).cartesian_product(0..height)
+//                         .map(|pair| Pos::from(pair))
+//                         .filter(|pos| self[*pos].tile_type != TileType::Wall)
+//                         .filter(|pos| self[*pos].tile_type != TileType::Water)
+//                         .collect::<Vec<Pos>>();
+//    }
+//
+//    pub fn get_wall_pos(&self) -> Vec<Pos> {
+//        let (width, height) = self.size();
+//        return (0..width).cartesian_product(0..height)
+//                         .map(|pair| Pos::from(pair))
+//                         .filter(|pos| self[*pos].tile_type == TileType::Wall)
+//                         .collect::<Vec<Pos>>();
+//    }
+//
+//    pub fn clamp(&self, pos: Pos) -> Pos {
+//        let (width, height) = self.size();
+//        let new_x = std::cmp::min(width - 1, std::cmp::max(0, pos.x));
+//        let new_y = std::cmp::min(height - 1, std::cmp::max(0, pos.y));
+//        return Pos::new(new_x, new_y);
+//    }

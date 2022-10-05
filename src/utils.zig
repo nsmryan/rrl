@@ -18,6 +18,9 @@ pub usingnamespace pos;
 pub const direction = @import("utils/direction.zig");
 pub usingnamespace direction;
 
+pub const astar = @import("utils/astar.zig");
+pub usingnamespace astar;
+
 fn lessDistance(start: pos.Pos, first: pos.Pos, second: pos.Pos) bool {
     return line.Line.distance(start, first, true) < line.Line.distance(start, second, true);
 }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const Allocator = std.Allocator;
+const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const utils = @import("utils");
@@ -12,6 +12,7 @@ const Blocked = blocking.Blocked;
 const BlockedType = blocking.BlockedType;
 
 const Map = @import("map.zig").Map;
+const tile = @import("tile.zig");
 
 // multiplier used to scale costs up in astar, allowing small
 // adjustments of costs even though they are integers.
@@ -44,20 +45,12 @@ pub fn pathBlocked(map: Map, start_pos: Pos, end_pos: Pos, blocked_type: Blocked
     return null;
 }
 
-pub fn pathFindDistance(start: Pos, next_pos: Pos, end: Pos) i32 {
-    var dist = Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER;
-    const diff = next_pos.sub(start);
-
-    // Penalize diagonal movement just a little bit to avoid zigzagging.
-    if (diff.x != 0 and diff.y != 0) {
-        dist += 1;
-    }
-
-    return dist;
+pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
+    return @intCast(usize, Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER);
 }
 
 pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32, allocator: Allocator) !ArrayList(Pos) {
-    var PathFinder = astar.Astar(pathFindDistance);
+    const PathFinder = astar.Astar(pathFindDistance);
 
     var finder = PathFinder.init(start, allocator);
     defer finder.deinit();
@@ -77,15 +70,16 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (P
         const position = result.neighbors;
 
         try astarNeighbors(map, start, position, max_dist, &neighbors);
+        std.debug.print("pos {}, {any}\n", .{ position, neighbors.items });
         for (neighbors.items) |near_pos| {
             if (cost_fn) |cost| {
                 try pairs.append(astar.WeighedPos.init(near_pos, cost(near_pos, start, map) * ASTAR_COST_MULTIPLIER));
             } else {
-                try pairs.append(astar.WeighedPos.init(near_pos, pathFindDistance(start, near_pos, end)));
+                try pairs.append(astar.WeighedPos.init(near_pos, @intCast(i32, pathFindDistance(near_pos, end))));
             }
         }
 
-        result = try finder.step(neighbors.items);
+        result = try finder.step(pairs.items);
     }
 
     return result.done.path;
@@ -112,5 +106,21 @@ pub fn astarNeighbors(map: Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors:
         return;
     }
 
-    blocking.reachableNeighbors(&map, start, BlockedType.move, neighbors);
+    try blocking.reachableNeighbors(&map, start, BlockedType.move, neighbors);
 }
+
+//test "path finding" {
+//    var allocator = std.testing.allocator;
+//    var map = try Map.fromDims(3, 3, allocator);
+//    defer map.deinit(allocator);
+//
+//    const start = Pos.init(0, 0);
+//    const end = Pos.init(2, 2);
+//    map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
+//    map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
+//
+//    const path = try astarPath(map, start, end, null, null, allocator);
+//    defer path.deinit();
+//
+//    try std.testing.expectEqual(Pos.init(0, 0), path.items[0]);
+//}

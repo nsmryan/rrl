@@ -124,8 +124,8 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
         }
 
         pub fn compare(end: Pos, first: Path, second: Path) Order {
-            const firstWeight = first.path.items.len + distance(first.current, end);
-            const secondWeight = second.path.items.len + distance(second.current, end);
+            const firstWeight = first.cost + @intCast(i32, distance(first.current, end));
+            const secondWeight = second.cost + @intCast(i32, distance(second.current, end));
             return std.math.order(firstWeight, secondWeight);
         }
     };

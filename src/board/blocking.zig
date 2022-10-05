@@ -288,3 +288,30 @@ pub fn reachableNeighbors(map: *const Map, start: Pos, blocked_type: BlockedType
         }
     }
 }
+
+test "reachable neighbors" {
+    var allocator = std.testing.allocator;
+    var map = try Map.fromDims(3, 3, allocator);
+    defer map.deinit(allocator);
+
+    const start = Pos.init(0, 0);
+    map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
+    map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
+
+    var neighbors = ArrayList(Pos).init(allocator);
+    defer neighbors.deinit();
+
+    std.debug.print("\n", .{});
+    try reachableNeighbors(&map, start, BlockedType.move, &neighbors);
+
+    try std.testing.expectEqual(@as(usize, 1), neighbors.items.len);
+    try std.testing.expectEqual(Pos.init(0, 1), neighbors.items[0]);
+
+    // NOTE Using 'neighbors.items[0]' directly causes this test to fail. This seems like a bug in zig.
+    const new_pos = neighbors.items[0];
+    try reachableNeighbors(&map, new_pos, BlockedType.move, &neighbors);
+    try std.testing.expectEqual(@as(usize, 3), neighbors.items.len);
+    try std.testing.expectEqual(Pos.init(0, 0), neighbors.items[0]);
+    try std.testing.expectEqual(Pos.init(1, 2), neighbors.items[1]);
+    try std.testing.expectEqual(Pos.init(0, 2), neighbors.items[2]);
+}

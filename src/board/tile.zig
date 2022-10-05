@@ -16,6 +16,14 @@ pub const Tile = struct {
         pub fn empty() Wall {
             return Wall{ .height = .empty, .material = .stone };
         }
+
+        pub fn short() Wall {
+            return Wall{ .height = .short, .material = .stone };
+        }
+
+        pub fn tall() Wall {
+            return Wall{ .height = .tall, .material = .stone };
+        }
     };
 
     pub const Material = enum {

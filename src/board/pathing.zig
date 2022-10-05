@@ -70,7 +70,6 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (P
         const position = result.neighbors;
 
         try astarNeighbors(map, start, position, max_dist, &neighbors);
-        std.debug.print("pos {}, {any}\n", .{ position, neighbors.items });
         for (neighbors.items) |near_pos| {
             if (cost_fn) |cost| {
                 try pairs.append(astar.WeighedPos.init(near_pos, cost(near_pos, start, map) * ASTAR_COST_MULTIPLIER));
@@ -106,21 +105,25 @@ pub fn astarNeighbors(map: Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors:
         return;
     }
 
-    try blocking.reachableNeighbors(&map, start, BlockedType.move, neighbors);
+    try blocking.reachableNeighbors(&map, pos, BlockedType.move, neighbors);
 }
 
-//test "path finding" {
-//    var allocator = std.testing.allocator;
-//    var map = try Map.fromDims(3, 3, allocator);
-//    defer map.deinit(allocator);
-//
-//    const start = Pos.init(0, 0);
-//    const end = Pos.init(2, 2);
-//    map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
-//    map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
-//
-//    const path = try astarPath(map, start, end, null, null, allocator);
-//    defer path.deinit();
-//
-//    try std.testing.expectEqual(Pos.init(0, 0), path.items[0]);
-//}
+test "path finding" {
+    var allocator = std.testing.allocator;
+
+    var map = try Map.fromDims(3, 3, allocator);
+    defer map.deinit(allocator);
+
+    const start = Pos.init(0, 0);
+    const end = Pos.init(2, 2);
+    map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
+    map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
+
+    const path = try astarPath(map, start, end, null, null, allocator);
+    defer path.deinit();
+
+    try std.testing.expectEqual(Pos.init(0, 0), path.items[0]);
+    try std.testing.expectEqual(Pos.init(0, 1), path.items[1]);
+    try std.testing.expectEqual(Pos.init(1, 2), path.items[2]);
+    try std.testing.expectEqual(Pos.init(2, 2), path.items[3]);
+}

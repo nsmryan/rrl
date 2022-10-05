@@ -66,6 +66,9 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
         }
 
         pub fn deinit(self: *Self) void {
+            while (self.next_q.removeOrNull()) |*path| {
+                path.deinit();
+            }
             self.next_q.deinit();
             self.seen.deinit();
         }
@@ -88,6 +91,7 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
             var best = self.next_q.remove();
             for (neighbors) |neighbor| {
                 if (std.meta.eql(neighbor.position, self.end)) {
+                    try best.path.append(best.current);
                     try best.path.append(self.end);
                     best.current = self.end;
                     best.cost += 1 + neighbor.weigh;
@@ -209,6 +213,8 @@ test "pathfinding" {
 
     try testing.expectEqual(@as(usize, 0), simple_distance(end, result.done.path.items[4]));
     try testing.expectEqual(Pos.init(2, 3), result.done.path.items[5]);
+
+    try testing.expectEqual(Pos.init(3, 3), result.done.path.items[6]);
 
     try testing.expectEqual(Pos.init(4, 4), result.done.current);
 }

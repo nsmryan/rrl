@@ -301,7 +301,6 @@ test "reachable neighbors" {
     var neighbors = ArrayList(Pos).init(allocator);
     defer neighbors.deinit();
 
-    std.debug.print("\n", .{});
     try reachableNeighbors(&map, start, BlockedType.move, &neighbors);
 
     try std.testing.expectEqual(@as(usize, 1), neighbors.items.len);

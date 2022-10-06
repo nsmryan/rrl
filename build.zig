@@ -24,6 +24,7 @@ pub fn build(b: *std.build.Builder) void {
     exe_tests.setBuildMode(mode);
     exe_tests.addPackagePath("utils", "src/utils.zig");
     exe_tests.addPackagePath("board", "src/board.zig");
+    exe_tests.addPackagePath("core", "src/core.zig");
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);

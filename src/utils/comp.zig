@@ -19,6 +19,11 @@ pub fn Comp(comptime T: type) type {
             return Self{ .ids = ids, .store = store };
         }
 
+        pub fn deinit(self: *Self) void {
+            self.ids.deinit();
+            self.store.deinit();
+        }
+
         pub fn clear(self: *Self) void {
             self.ids.clear();
             self.store.clear();

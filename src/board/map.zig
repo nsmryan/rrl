@@ -16,6 +16,10 @@ pub const Map = struct {
     // NOTE(perf) this likely does need to be added back in for performance.
     //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
 
+    pub fn empty() Map {
+        return Map {.width = 0, .height = 0, .tiles = .{}};
+    }
+
     pub fn fromSlice(tiles: []Tile, width: i32, height: i32) Map {
         return Map{ .tiles = tiles, .width = width, .height = height };
     }

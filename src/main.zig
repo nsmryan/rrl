@@ -19,13 +19,11 @@ pub fn main() anyerror!void {
     var iter = c.iter();
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
-
-    var l = line.Line.init(Pos.init(0, 0), Pos.init(10, 10), true);
-    std.log.info("rustrl line {}", .{l.step()});
 }
 
 test "full test set" {
     _ = @import("utils.zig");
     _ = @import("board.zig");
     _ = @import("core.zig");
+    _ = @import("game.zig");
 }

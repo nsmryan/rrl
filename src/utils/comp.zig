@@ -25,8 +25,8 @@ pub fn Comp(comptime T: type) type {
         }
 
         pub fn clear(self: *Self) void {
-            self.ids.clear();
-            self.store.clear();
+            self.ids.clearRetainingCapacity();
+            self.store.clearRetainingCapacity();
         }
 
         pub fn insert(self: *Self, id: Id, data: T) !void {

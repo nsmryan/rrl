@@ -19,39 +19,55 @@ const Entities = struct {
         var entities: Entities = undefined;
         entities.next_id = 0;
 
-        inline for (std.meta.fields(Entities)) |field| {
-            if (@typeInfo(field.field_type) != .Struct) {
-                continue;
-            }
-            if (!std.mem.eql(u8, field.name, "next_id")) {
-                @field(entities, field.name) = field.field_type.init(allocator);
-            }
+        comptime var names = compNames();
+        inline for (names) |field_name| {
+            @field(entities, field_name) = @TypeOf(@field(entities, field_name)).init(allocator);
         }
+        entities.ids = ArrayList(Id).init(allocator);
         return entities;
     }
 
     pub fn deinit(self: *Entities) void {
-        inline for (std.meta.fields(Entities)) |field| {
-            if (@typeInfo(field.field_type) != .Struct) {
-                continue;
-            }
-            if (!std.mem.eql(u8, field.name, "next_id")) {
-                @field(self, field.name).deinit();
-            }
+        comptime var names = compNames();
+        inline for (names) |field_name| {
+            @field(self, field_name).deinit();
         }
+        self.ids.deinit();
         self.next_id = 0;
     }
 
     pub fn clear(self: *Entities) void {
-        inline for (std.meta.fields(Entities)) |field| {
-            if (@typeInfo(field.field_type) != .Struct) {
-                continue;
-            }
-            if (@hasField(field.field_type, "clear")) {
-                @field(self, field.name).clear();
+        comptime var names = compNames();
+        inline for (names) |field_name| {
+            @field(self, field_name).clear();
+        }
+        self.ids.clearRetainingCapacity();
+        self.next_id = 0;
+    }
+
+    fn compNames() [][]const u8 {
+        const fieldInfos = std.meta.fields(Entities);
+        comptime var names: [fieldInfos.len][]const u8 = undefined;
+
+        comptime var index: usize = 0;
+        inline for (fieldInfos) |field| {
+            if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
+                names[index] = field.name;
+                index += 1;
             }
         }
-        self.next_id = 0;
+
+        return names[0..index];
+    }
+
+    pub fn remove(self: *Entities, id: Id) void {
+        comptime var names = compNames();
+        inline for (names) |field_name| {
+            @field(self, field_name).remove(id);
+        }
+        const id_index = std.mem.indexOfScalar(Id, self.ids.items, id).?;
+        // NOTE(perf) could this be swapRemove?
+        _ = self.ids.orderedRemove(id_index);
     }
 
     pub fn createEntity(self: *Entities, position: Pos, name: Name, typ: Type) !Id {
@@ -80,7 +96,18 @@ test "basic entities" {
 
     entities.clear();
     try std.testing.expectEqual(@as(Id, 0), entities.next_id);
-    //try std.testing.expectEqual(@as(usize, 0), entities.pos.store.items.len);
+    try std.testing.expectEqual(@as(usize, 0), entities.pos.store.items.len);
+}
+
+test "remove entity" {
+    var allocator = std.testing.allocator;
+    var entities = Entities.init(allocator);
+    defer entities.deinit();
+
+    const id = try entities.createEntity(Pos.init(0, 0), Name.Player, Type.Player);
+    entities.remove(id);
+    try std.testing.expectEqual(@as(Id, 1), entities.next_id);
+    try std.testing.expectEqual(@as(usize, 0), entities.pos.store.items.len);
 }
 
 pub const Type = enum {

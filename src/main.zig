@@ -27,4 +27,5 @@ test "full test set" {
     _ = @import("board.zig");
     _ = @import("core.zig");
     _ = @import("game.zig");
+    _ = @import("drawcmd.zig");
 }

@@ -6,7 +6,9 @@ const utils = @import("utils");
 const comp = utils.comp;
 const Id = comp.Id;
 const Comp = comp.Comp;
-const Pos = utils.pos.Pos;
+
+const math = @import("math");
+const Pos = math.pos.Pos;
 
 const Entities = struct {
     next_id: Id = 0,

@@ -3,8 +3,10 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.mem.ArrayList;
 
 const utils = @import("utils");
-const Pos = utils.pos.Pos;
-const Direction = utils.Direction;
+
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Direction = math.Direction;
 
 const Tile = @import("tile.zig").Tile;
 
@@ -17,7 +19,7 @@ pub const Map = struct {
     //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
 
     pub fn empty() Map {
-        return Map {.width = 0, .height = 0, .tiles = .{}};
+        return Map{ .width = 0, .height = 0, .tiles = .{} };
     }
 
     pub fn fromSlice(tiles: []Tile, width: i32, height: i32) Map {

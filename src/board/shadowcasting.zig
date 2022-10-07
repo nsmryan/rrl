@@ -4,8 +4,8 @@ const debug = std.debug;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-const utils = @import("utils");
-const Pos = utils.pos.Pos;
+const math = @import("math");
+const Pos = math.pos.Pos;
 
 const Error = error{Overflow} || Allocator.Error;
 

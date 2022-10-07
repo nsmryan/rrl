@@ -3,9 +3,11 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const utils = @import("utils");
-const Pos = utils.pos.Pos;
-const Line = utils.line.Line;
 const astar = utils.astar;
+
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Line = math.line.Line;
 
 const blocking = @import("blocking.zig");
 const Blocked = blocking.Blocked;

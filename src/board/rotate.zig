@@ -2,9 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
-const utils = @import("utils");
-const pos = utils.pos;
-const Pos = pos.Pos;
+const math = @import("math");
+const Pos = math.pos.Pos;
 
 const tile = @import("tile.zig");
 const Tile = tile.Tile;

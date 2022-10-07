@@ -3,15 +3,16 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
-const pos = utils.pos;
-const Pos = pos.Pos;
-const Direction = utils.direction.Direction;
 
 const tile = @import("tile.zig");
 const Tile = tile.Tile;
 const Material = Tile.Material;
 const Height = Tile.Height;
 const Wall = Tile.Wall;
+
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Direction = math.direction.Direction;
 
 const Map = @import("map.zig").Map;
 

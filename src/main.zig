@@ -22,6 +22,7 @@ pub fn main() anyerror!void {
 }
 
 test "full test set" {
+    _ = @import("math.zig");
     _ = @import("utils.zig");
     _ = @import("board.zig");
     _ = @import("core.zig");

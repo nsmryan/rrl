@@ -22,10 +22,10 @@ pub fn main() anyerror!void {
 }
 
 test "full test set" {
-    _ = @import("math.zig");
-    _ = @import("utils.zig");
-    _ = @import("board.zig");
-    _ = @import("core.zig");
+    _ = @import("math");
+    _ = @import("utils");
+    _ = @import("board");
+    _ = @import("core");
+    _ = @import("drawcmd");
     _ = @import("game.zig");
-    _ = @import("drawcmd.zig");
 }

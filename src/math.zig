@@ -1,16 +1,9 @@
 const std = @import("std");
 
 pub const pos = @import("math/pos.zig");
-pub usingnamespace pos;
-
 pub const line = @import("math/line.zig");
-pub usingnamespace line;
-
 pub const direction = @import("math/direction.zig");
-pub usingnamespace direction;
-
 pub const rand = @import("math/rand.zig");
-pub usingnamespace rand;
 
 fn lessDistance(start: pos.Pos, first: pos.Pos, second: pos.Pos) bool {
     return line.Line.distance(start, first, true) < line.Line.distance(start, second, true);

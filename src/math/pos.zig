@@ -38,18 +38,30 @@ pub const Pos = struct {
 
     pub fn randFromPos(self: Pos) f32 {
         var hasher = std.hash.Wyhash.init(1);
-        std.hash.auto_hash(&hasher, self.x);
-        std.hash.auto_hash(&hasher, self.y);
+        std.hash.autoHash(&hasher, self.x);
+        std.hash.autoHash(&hasher, self.y);
         const result = hasher.final();
         return @intToFloat(f32, result & 0xFFFFFFFF) / 4294967295.0;
     }
 
     pub fn distanceTiles(self: Pos, other: Pos) i32 {
-        return std.math.intAbs(self.x - other.x) + std.math.intAbs(self.y - other.y);
+        const dist_x = std.math.absInt(self.x - other.x) catch {
+            @panic("Overflow in abs!");
+        };
+        const dist_y = std.math.absInt(self.y - other.y) catch {
+            @panic("Overflow in abs!");
+        };
+        return dist_x + dist_y;
     }
 
     pub fn distanceMaximum(self: Pos, other: Pos) i32 {
-        return std.math.max(std.math.intAbs(self.x - other.x), std.math.intAbs(self.y - other.y));
+        const dist_x = std.math.absInt(self.x - other.x) catch {
+            @panic("Overflow in abs!");
+        };
+        const dist_y = std.math.absInt(self.y - other.y) catch {
+            @panic("Overflow in abs!");
+        };
+        return std.math.max(dist_x, dist_y);
     }
 
     pub fn mirrorInX(self: Pos, width: i32) Pos {

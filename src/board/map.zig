@@ -6,7 +6,7 @@ const utils = @import("utils");
 
 const math = @import("math");
 const Pos = math.pos.Pos;
-const Direction = math.Direction;
+const Direction = math.direction.Direction;
 
 const Tile = @import("tile.zig").Tile;
 
@@ -19,7 +19,7 @@ pub const Map = struct {
     //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
 
     pub fn empty() Map {
-        return Map{ .width = 0, .height = 0, .tiles = .{} };
+        return Map{ .width = 0, .height = 0, .tiles = &.{} };
     }
 
     pub fn fromSlice(tiles: []Tile, width: i32, height: i32) Map {

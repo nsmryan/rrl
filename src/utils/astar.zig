@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 const Order = std.math.Order;
 const testing = std.testing;
 
-const Pos = @import("math").Pos;
+const Pos = @import("math").pos.Pos;
 
 pub const WeighedPos = struct {
     position: Pos,

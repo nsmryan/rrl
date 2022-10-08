@@ -53,10 +53,42 @@ pub fn build(b: *std.build.Builder) void {
     lib_step.dependOn(&lib.step);
 }
 
+const pkgs = struct {
+    const utils = std.build.Pkg{
+        .name = "utils",
+        .source = .{ .path = "src/utils.zig" },
+        .dependencies = &[_]std.build.Pkg{},
+    };
+
+    const math = std.build.Pkg{
+        .name = "math",
+        .source = .{ .path = "src/math.zig" },
+        .dependencies = &[_]std.build.Pkg{},
+    };
+
+    const core = std.build.Pkg{
+        .name = "core",
+        .source = .{ .path = "src/core.zig" },
+        .dependencies = &[_]std.build.Pkg{},
+    };
+
+    const drawcmd = std.build.Pkg{
+        .name = "drawcmd",
+        .source = .{ .path = "src/drawcmd.zig" },
+        .dependencies = &[_]std.build.Pkg{},
+    };
+
+    const board = std.build.Pkg{
+        .name = "board",
+        .source = .{ .path = "src/board.zig" },
+        .dependencies = &[_]std.build.Pkg{math},
+    };
+};
+
 fn addPackages(step: *std.build.LibExeObjStep) void {
-    step.addPackagePath("math", "src/math.zig");
-    step.addPackagePath("utils", "src/utils.zig");
-    step.addPackagePath("board", "src/board.zig");
-    step.addPackagePath("core", "src/core.zig");
-    step.addPackagePath("drawcmd", "src/drawcmd.zig");
+    step.addPackage(pkgs.board);
+    step.addPackage(pkgs.utils);
+    step.addPackage(pkgs.core);
+    step.addPackage(pkgs.drawcmd);
+    step.addPackage(pkgs.math);
 }

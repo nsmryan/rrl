@@ -10,3 +10,9 @@ p set y 2
 
 puts "x = [p get x]"
 puts "y = [p get y]"
+
+rrl::Map create m
+# This call needs an allocator!
+#m fromBytes [rrl::Map call fromDims 3 3 [allocator]]
+
+puts "map created"

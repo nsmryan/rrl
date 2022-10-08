@@ -1,8 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayList = std.mem.ArrayList;
-
-const utils = @import("utils");
+const ArrayList = std.ArrayList;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -43,10 +41,6 @@ pub const Map = struct {
     pub fn getPtr(self: *Map, position: Pos) *Tile {
         const index = position.x + position.y * self.width;
         return &self.tiles[@intCast(usize, index)];
-    }
-
-    pub fn isEmpty(self: *const Map, position: Pos) bool {
-        return self.get(position).tile_type == .empty;
     }
 
     pub fn isWithinBounds(self: *const Map, position: Pos) bool {
@@ -169,11 +163,12 @@ pub const Map = struct {
     }
 
     // compact_chrs is not implemented yet- it won't be needed until communicating maps frequently.
-    pub fn chrs(map: Map, allocator: Allocator) ArrayList(u8) {
+    pub fn chrs(map: Map, allocator: Allocator) !ArrayList(u8) {
         var chars = ArrayList(u8).init(allocator);
+        errdefer chars.deinit();
         for (map.tiles) |tile| {
             for (tile.chrs()) |chr| {
-                chars.append(chr);
+                try chars.append(chr);
             }
         }
         return chars;

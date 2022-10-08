@@ -25,7 +25,7 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     //zt.WrapFunction(test_function, "zigtcl::zig_function", interp) catch return zt.tcl.TCL_ERROR;
 
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
-    //_ = zt.RegisterStruct(Map, "Map", namespace, interp);
+    _ = zt.RegisterStruct(Map, "Map", namespace, interp);
 
     //const Inner = Struct.Inner;
     //_ = zt.RegisterStruct(Inner, "Inner", "zigtcl", interp);

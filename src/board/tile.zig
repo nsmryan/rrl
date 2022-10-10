@@ -87,7 +87,7 @@ pub const Tile = struct {
     }
 
     pub fn impassable() Tile {
-        return Tile{ .explored = false, .impassable = false, .wall = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
+        return Tile{ .explored = false, .impassable = false, .center = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
     }
 
     pub fn empty() Tile {
@@ -115,7 +115,7 @@ pub const Tile = struct {
 
     pub fn grass() Tile {
         var tile = Tile.empty();
-        tile.material = Material.grass;
+        tile.center.material = Material.grass;
         return tile;
     }
 
@@ -128,23 +128,25 @@ pub const Tile = struct {
 
     pub fn rubble() Tile {
         var tile = Tile.empty();
-        tile.material = Material.rubbble;
+        tile.center.material = Material.rubble;
         return tile;
     }
 
     pub fn tallWall() Tile {
         var tile = Tile.empty();
-        tile.wall.height = .tall;
+        tile.center.height = .tall;
+        return tile;
     }
 
     pub fn shortWall() Tile {
         var tile = Tile.empty();
-        tile.wall.height = .short;
+        tile.center.height = .short;
+        return tile;
     }
 
     pub fn clearWalls(self: *Tile) void {
-        self.wall.height = .empty;
-        self.wall.material = Material.stone;
+        self.center.height = .empty;
+        self.center.material = Material.stone;
         self.down.height = .empty;
         self.down.material = Material.stone;
         self.left.height = .empty;

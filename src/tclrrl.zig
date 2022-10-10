@@ -9,7 +9,6 @@ const utils = @import("utils");
 const Pos = utils.pos.Pos;
 
 const board = @import("board");
-const Map = board.map.Map;
 const math = @import("math");
 
 export fn Rrl_Init(interp: zt.Interp) c_int {
@@ -25,7 +24,14 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     //zt.WrapFunction(test_function, "zigtcl::zig_function", interp) catch return zt.tcl.TCL_ERROR;
 
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
-    _ = zt.RegisterStruct(Map, "Map", namespace, interp);
+    _ = zt.RegisterStruct(board.map.Map, "Map", namespace, interp);
+    _ = zt.RegisterStruct(board.tile.Tile, "Tile", namespace, interp);
+    _ = zt.RegisterStruct(board.tile.Tile.Wall, "Wall", namespace, interp);
+    _ = zt.RegisterEnum(board.tile.Tile.Height, "Height", namespace, interp);
+    _ = zt.RegisterEnum(board.tile.Tile.Material, "Material", namespace, interp);
+
+    _ = zt.RegisterStruct(std.mem.Allocator, "Allocator", "zigtcl", interp);
+    _ = zt.tcl.Tcl_CreateObjCommand(interp, "zigtcl::tcl_allocator", zt.StructCommand(std.mem.Allocator).StructInstanceCommand, @ptrCast(zt.tcl.ClientData, &zt.alloc.tcl_allocator), null);
 
     //const Inner = Struct.Inner;
     //_ = zt.RegisterStruct(Inner, "Inner", "zigtcl", interp);

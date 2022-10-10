@@ -64,10 +64,11 @@ fn NullTerminatedNames(comptime enm: type) []const [*c]const u8 {
     comptime {
         const commandNames = std.meta.fieldNames(enm);
 
-        var names: [commandNames.len][*c]const u8 = undefined;
+        var names: [commandNames.len + 1][*c]const u8 = undefined;
         inline for (commandNames) |commandName, index| {
             names[index] = @ptrCast([*c]const u8, std.fmt.comptimePrint("{s}", .{commandName}));
         }
+        names[commandNames.len] = null;
         return names[0..];
     }
 }
@@ -368,6 +369,16 @@ pub fn ToObj(value: anytype) err.TclError!Obj {
 
         .Fn => {
             return NewIntObj(@ptrToInt(value));
+        },
+
+        .Optional => {
+            if (value) |result| {
+                return ToObj(result);
+            } else {
+                // Just return an empty object for now. This is potentially ambiguous, but a more complete design,
+                // such as using a unique object with a unique TCL type, is more complex.
+                return NewObj();
+            }
         },
 
         // NOTE for complex types, maybe allocate and return pointer obj.

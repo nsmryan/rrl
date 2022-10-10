@@ -32,8 +32,6 @@ pub fn RegisterStruct(comptime strt: type, comptime name: []const u8, comptime p
     var cmdName = pkg ++ "::" ++ name ++ terminator;
     _ = obj.CreateObjCommand(interp, cmdName, StructCommand(strt).command) catch |errResult| return err.ErrorToInt(errResult);
 
-    std.debug.print("struct {s}\n", .{cmdName});
-
     return tcl.TCL_OK;
 }
 
@@ -74,13 +72,13 @@ pub fn StructCommand(comptime strt: type) type {
                     // Search for a decl of the given name.
                     comptime var decls = std.meta.declarations(strt);
                     inline for (decls) |decl| {
-                        // Ignore privatve decls
+                        // Ignore private decls
                         if (!decl.is_pub) {
                             continue;
                         }
 
                         const field = @field(strt, decl.name);
-                        const field_info = call.FuncInfo(@typeInfo(@TypeOf(field)));
+                        const field_info = call.FuncInfo(@typeInfo(@TypeOf(field))) orelse continue;
 
                         comptime {
                             if (!utils.CallableFunction(field_info)) {
@@ -146,7 +144,7 @@ pub fn StructCommand(comptime strt: type) type {
             return err.TclError.TCL_ERROR;
         }
 
-        fn StructInstanceCommand(cdata: tcl.ClientData, interp: [*c]tcl.Tcl_Interp, objc: c_int, objv: [*c]const [*c]tcl.Tcl_Obj) callconv(.C) c_int {
+        pub fn StructInstanceCommand(cdata: tcl.ClientData, interp: [*c]tcl.Tcl_Interp, objc: c_int, objv: [*c]const [*c]tcl.Tcl_Obj) callconv(.C) c_int {
             _ = cdata;
             // TODO support the cget, configure interface in syntax.tcl
             var strt_ptr = @ptrCast(*strt, @alignCast(@alignOf(strt), cdata));
@@ -255,13 +253,13 @@ pub fn StructCommand(comptime strt: type) type {
             // Search for a decl of the given name.
             comptime var decls = std.meta.declarations(strt);
             inline for (decls) |decl| {
-                // Ignore privatve decls
+                // Ignore private decls
                 if (!decl.is_pub) {
                     continue;
                 }
 
                 const field = @field(strt, decl.name);
-                const field_info = call.FuncInfo(@typeInfo(@TypeOf(field)));
+                const field_info = call.FuncInfo(@typeInfo(@TypeOf(field))) orelse continue;
 
                 comptime {
                     if (!utils.CallableDecl(strt, field_info)) {

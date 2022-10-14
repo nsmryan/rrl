@@ -37,11 +37,23 @@ due to orphan rule serde support.
 
 === Progress ===
 
-The roguelike_utils crate seems like it is basically ported to Zig. Perlin noise is no longer
-used, and random numbers might just come from the std library.
+roguelike_utils and roguelike_map are ported.
 
-The roguelike_map crate is mostly ported. The AStar algorithm code has been moved, but not tested.
-It should be at least lightly tested before moving on.
+Some very basic entity concepts are ported.
 
-The next step is likely roguelike_core, starting with entities.
-Possibly also consider integrating zigtcl at this point to visualize and test the map.
+Zig and TCL can draw using draw commands.
+
+Next steps:
+
+  * TCL draw map based on tile contents.
+  * Add enough to entities to create the player and some golems.
+  * TCL draw these entities.
+  * Start to build up basics of each game architecture concept
+    * Game structure
+    * Messaging
+    * Configuration
+    * Input processing
+    * Actions for state transitions
+    * Game step
+    * Message resolution
+  * Once the vertical structure is in place, build outwards by adding features.

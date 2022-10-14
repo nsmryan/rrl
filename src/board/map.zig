@@ -32,7 +32,6 @@ pub const Map = struct {
         std.mem.set(Tile, tiles, Tile.empty());
         return Map.fromSlice(tiles, width, height);
     }
-
     pub fn get(self: *const Map, position: Pos) Tile {
         const index = position.x + position.y * self.width;
         return self.tiles[@intCast(usize, index)];

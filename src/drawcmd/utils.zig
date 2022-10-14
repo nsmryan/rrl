@@ -22,24 +22,3 @@ pub const Color = struct {
         return Color{ .r = r, .g = g, .b = b, .a = a };
     }
 };
-
-pub const Pos = struct {
-    x: i32,
-    y: i32,
-
-    pub fn init(x: i32, y: i32) Pos {
-        return Pos{ .x = x, .y = y };
-    }
-};
-
-pub const Direction = enum {
-    right,
-    downRight,
-    down,
-    downLeft,
-    left,
-    upLeft,
-    up,
-    upRight,
-    center,
-};

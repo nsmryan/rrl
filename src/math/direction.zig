@@ -214,3 +214,15 @@ pub const Offset = enum {
         };
     }
 };
+
+pub const MoveDirection = enum {
+    center,
+    left,
+    right,
+    up,
+    down,
+    downLeft,
+    downRight,
+    upLeft,
+    upRight,
+};

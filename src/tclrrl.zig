@@ -33,6 +33,8 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     _ = zt.RegisterStruct(std.mem.Allocator, "Allocator", "zigtcl", interp);
     _ = zt.tcl.Tcl_CreateObjCommand(interp, "zigtcl::tcl_allocator", zt.StructCommand(std.mem.Allocator).StructInstanceCommand, @ptrCast(zt.tcl.ClientData, &zt.alloc.tcl_allocator), null);
 
+    var allocatorObj = zt.tcl.Tcl_NewByteArrayObj(@ptrCast([*]const u8, &zt.alloc.tcl_allocator), @sizeOf(@TypeOf(zt.alloc.tcl_allocator)));
+    _ = zt.tcl.Tcl_SetVar2Ex(interp, "zigtcl::tclAllocator", null, allocatorObj, 0);
     //const Inner = Struct.Inner;
     //_ = zt.RegisterStruct(Inner, "Inner", "zigtcl", interp);
 

@@ -9,6 +9,9 @@ const math = utils.math;
 const rand = utils.rand;
 const Pos = utils.pos.Pos;
 
+const display = @import("display.zig");
+const Display = display.Display;
+
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
     var c = comp.Comp(u64).init(allocator);
@@ -19,6 +22,12 @@ pub fn main() anyerror!void {
     var iter = c.iter();
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
+
+    std.debug.print("init display\n", .{});
+    var disp = try Display.init(800, 600);
+    std.debug.print("display started\n", .{});
+    disp.present();
+    std.debug.print("display presented\n", .{});
 }
 
 test "full test set" {
@@ -28,4 +37,6 @@ test "full test set" {
     _ = @import("core");
     _ = @import("drawcmd");
     _ = @import("game.zig");
+    _ = @import("drawing.zig");
+    _ = @import("display.zig");
 }

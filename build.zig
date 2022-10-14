@@ -10,6 +10,8 @@ pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("rustrl", "src/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
+    addPackages(exe);
+    exe.linkLibC();
     exe.install();
 
     const run_cmd = exe.run();
@@ -44,6 +46,8 @@ pub fn build(b: *std.build.Builder) void {
         lib.addIncludeDir("deps/tcl/include");
         lib.addObjectFile("deps/tcl/lib/libtclstub8.6.a");
     }
+
+    // Add packages
     lib.addPackagePath("zigtcl", "deps/zig_tcl/zigtcl.zig");
     addPackages(lib);
 
@@ -75,7 +79,7 @@ const pkgs = struct {
     const drawcmd = std.build.Pkg{
         .name = "drawcmd",
         .source = .{ .path = "src/drawcmd.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+        .dependencies = &[_]std.build.Pkg{math},
     };
 
     const board = std.build.Pkg{
@@ -91,4 +95,10 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.core);
     step.addPackage(pkgs.drawcmd);
     step.addPackage(pkgs.math);
+
+    // Add SDL2 dependency
+    step.addIncludeDir("deps/SDL2/include");
+    step.linkSystemLibrary("SDL2");
+    step.linkSystemLibrary("SDL2_ttf");
+    step.linkSystemLibrary("SDL2_image");
 }

@@ -3,8 +3,10 @@ const std = @import("std");
 const Sprite = @import("sprite.zig").Sprite;
 const utils = @import("utils.zig");
 const Color = utils.Color;
-const Pos = utils.Pos;
-const Direction = utils.Direction;
+
+const math = @import("math");
+const MoveDirection = math.direction.MoveDirection;
+const Pos = math.pos.Pos;
 
 pub const Justify = enum {
     right,
@@ -13,7 +15,7 @@ pub const Justify = enum {
 };
 
 pub const DrawSprite = struct { sprite: Sprite, color: Color, pos: Pos };
-pub const DrawSpriteScaled = struct { sprite: Sprite, scale: f32, dir: Direction, color: Color, pos: Pos };
+pub const DrawSpriteScaled = struct { sprite: Sprite, scale: f32, dir: MoveDirection, color: Color, pos: Pos };
 pub const DrawSpriteFloat = struct { sprite: Sprite, color: Color, x: f32, y: f32, x_scale: f32, y_scale: f32 };
 pub const DrawHighlightTile = struct { color: Color, pos: Pos };
 pub const DrawOutlineTile = struct { color: Color, pos: Pos };
@@ -62,7 +64,7 @@ pub const DrawCmd = union(enum) {
         return DrawCmd{ .sprite = DrawSprite{ .sprite = spr, .color = color, .pos = position } };
     }
 
-    pub fn spriteScaled(spr: Sprite, scale: f32, dir: Direction, color: Color, position: Pos) DrawCmd {
+    pub fn spriteScaled(spr: Sprite, scale: f32, dir: MoveDirection, color: Color, position: Pos) DrawCmd {
         return DrawCmd{ .spriteScaled = DrawSpriteScaled{ .sprite = spr, .scale = scale, .dir = dir, .color = color, .pos = position } };
     }
 

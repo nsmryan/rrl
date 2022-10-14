@@ -30,3 +30,11 @@ puts "pos info [rrl::Height name [w get height]] [rrl::Material name [w get mate
 
 puts "map created"
 
+rrl::Display create disp
+disp setBytes [rrl::Display call init 800 600]
+
+disp call push [rrl::DrawCmd call text "hello, tcl drawing!" [rrl::Pos call init 10 10] [rrl::Color call white] 1.0]
+disp call present
+after 1000
+
+

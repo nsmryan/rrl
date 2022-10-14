@@ -10,6 +10,8 @@ const Pos = utils.pos.Pos;
 
 const board = @import("board");
 const math = @import("math");
+const drawcmd = @import("drawcmd");
+const display = @import("display.zig");
 
 export fn Rrl_Init(interp: zt.Interp) c_int {
     if (builtin.os.tag != .windows) {
@@ -23,12 +25,17 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     //zt.WrapFunction(test_function, "zigtcl::zig_function", interp) catch return zt.tcl.TCL_ERROR;
 
+    // Map
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
     _ = zt.RegisterStruct(board.map.Map, "Map", namespace, interp);
     _ = zt.RegisterStruct(board.tile.Tile, "Tile", namespace, interp);
     _ = zt.RegisterStruct(board.tile.Tile.Wall, "Wall", namespace, interp);
     _ = zt.RegisterEnum(board.tile.Tile.Height, "Height", namespace, interp);
     _ = zt.RegisterEnum(board.tile.Tile.Material, "Material", namespace, interp);
+
+    // Display
+    _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);
+    _ = zt.RegisterUnion(drawcmd.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
 
     _ = zt.RegisterStruct(std.mem.Allocator, "Allocator", "zigtcl", interp);
     _ = zt.tcl.Tcl_CreateObjCommand(interp, "zigtcl::tcl_allocator", zt.StructCommand(std.mem.Allocator).StructInstanceCommand, @ptrCast(zt.tcl.ClientData, &zt.alloc.tcl_allocator), null);

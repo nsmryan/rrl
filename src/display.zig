@@ -14,19 +14,22 @@ const Window = sdl2.SDL_Window;
 const drawcmd = @import("drawcmd");
 const panel = drawcmd.panel;
 const area = drawcmd.area;
+const Color = drawcmd.utils.Color;
+const Justify = drawcmd.drawcmd.Justify;
 
 const utils = @import("utils");
-const Pos = utils.Pos;
-const Color = utils.Color;
 const sprite = drawcmd.sprite;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
 const Dims = area.Dims;
-const Direction = utils.Direction;
 const SpriteSheet = sprite.SpriteSheet;
 
 const drawing = @import("drawing.zig");
 const Sprites = drawing.Sprites;
+
+const math = @import("math");
+const Pos = math.pos.Pos;
+const MoveDirection = math.direction.MoveDirection;
 
 pub const Display = struct {
     window: *Window,
@@ -121,29 +124,20 @@ pub const Display = struct {
     }
 
     pub fn push(self: *Display, cmd: DrawCmd) !void {
-        std.debug.print("state {}\n", .{self});
-        std.debug.print("push {}\n", .{cmd});
         try self.drawcmds.append(cmd);
-        std.debug.print("pushed\n", .{});
     }
 
     pub fn present(self: *Display) void {
-        std.debug.print("clear\n", .{});
         _ = sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
         _ = sdl2.SDL_RenderClear(self.renderer);
 
-        std.debug.print("cmds\n", .{});
         for (self.drawcmds.items) |cmd| {
             drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &cmd);
         }
 
-        std.debug.print("present\n", .{});
         sdl2.SDL_RenderPresent(self.renderer);
 
-        std.debug.print("remove\n", .{});
         self.drawcmds.clearRetainingCapacity();
-
-        std.debug.print("done\n", .{});
     }
 
     //fn renderText(self: *Display, text: []const u8, color: sdl2.SDL_Color) !*Texture {
@@ -198,7 +192,7 @@ pub const Display = struct {
         const sprite_cmd = DrawCmd.sprite(spr, Color.init(255, 255, 255, 255), Pos.init(20, 20));
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &sprite_cmd);
 
-        const sprite_scaled_cmd = DrawCmd.spriteScaled(spr, 0.7, Direction.downRight, Color.init(255, 255, 255, 255), Pos.init(10, 10));
+        const sprite_scaled_cmd = DrawCmd.spriteScaled(spr, 0.7, MoveDirection.downRight, Color.init(255, 255, 255, 255), Pos.init(10, 10));
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &sprite_scaled_cmd);
 
         const sprite_float_cmd = DrawCmd.spriteFloat(spr, Color.init(255, 255, 255, 255), 15.0, 15.0, 2.0, 2.0);
@@ -210,13 +204,13 @@ pub const Display = struct {
         const text_float_cmd = DrawCmd.textFloat("hello"[0..], 9.5, 9.5, Color.init(0, 255, 0, 128), 1.0);
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_float_cmd);
 
-        const text_justify_center_cmd = DrawCmd.textJustify("center"[0..], drawcmd.Justify.center, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
+        const text_justify_center_cmd = DrawCmd.textJustify("center"[0..], Justify.center, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_center_cmd);
 
-        const text_justify_left_cmd = DrawCmd.textJustify("left"[0..], drawcmd.Justify.left, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
+        const text_justify_left_cmd = DrawCmd.textJustify("left"[0..], Justify.left, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_left_cmd);
 
-        const text_justify_right_cmd = DrawCmd.textJustify("right"[0..], drawcmd.Justify.right, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
+        const text_justify_right_cmd = DrawCmd.textJustify("right"[0..], Justify.right, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
         drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_right_cmd);
 
         sdl2.SDL_RenderPresent(self.renderer);

@@ -21,4 +21,12 @@ pub const Color = struct {
     pub fn init(r: u8, g: u8, b: u8, a: u8) Color {
         return Color{ .r = r, .g = g, .b = b, .a = a };
     }
+
+    pub fn white() Color {
+        return Color.init(0, 0, 0, 255);
+    }
+
+    pub fn black() Color {
+        return Color.init(255, 255, 255, 255);
+    }
 };

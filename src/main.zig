@@ -2,15 +2,17 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-const utils = @import("utils.zig");
+const utils = @import("utils");
 const comp = utils.comp;
-const line = utils.line;
-const math = utils.math;
-const rand = utils.rand;
-const Pos = utils.pos.Pos;
+const math = @import("math");
+const Pos = math.pos.Pos;
 
 const display = @import("display.zig");
 const Display = display.Display;
+
+const drawcmd = @import("drawcmd.zig");
+const DrawCmd = drawcmd.drawcmd.DrawCmd;
+const Color = drawcmd.utils.Color;
 
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
@@ -23,11 +25,10 @@ pub fn main() anyerror!void {
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
 
-    std.debug.print("init display\n", .{});
     var disp = try Display.init(800, 600);
-    std.debug.print("display started\n", .{});
+    try disp.push(DrawCmd.text("Hello, drawcmd!", Pos.init(10, 10), Color.white(), 1.0));
     disp.present();
-    std.debug.print("display presented\n", .{});
+    std.time.sleep(1000000000);
 }
 
 test "full test set" {

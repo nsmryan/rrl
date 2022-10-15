@@ -35,6 +35,7 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     // Display
     _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);
+    _ = zt.RegisterStruct(drawcmd.sprite.Sprite, "Sprite", namespace, interp);
     _ = zt.RegisterStruct(drawcmd.utils.Color, "Color", namespace, interp);
     _ = zt.RegisterUnion(drawcmd.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
 

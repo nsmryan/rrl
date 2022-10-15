@@ -42,6 +42,11 @@ pub const Map = struct {
         return &self.tiles[@intCast(usize, index)];
     }
 
+    pub fn set(self: *Map, position: Pos, tile: Tile) void {
+        const index = position.x + position.y * self.width;
+        self.tiles[@intCast(usize, index)] = tile;
+    }
+
     pub fn isWithinBounds(self: *const Map, position: Pos) bool {
         const x_bounds = position.x >= 0 and position.x < self.width;
         const y_bounds = position.y >= 0 and position.y < self.height;

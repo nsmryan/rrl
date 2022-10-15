@@ -1,40 +1,79 @@
 load zig-out/lib/librrl.so
-
 package require rrl
+namespace import rrl::*
 
-puts "Starting RRL"
 
-rrl::Pos create p
-p set x 1
-p set y 2
+set locFile [open data/tile_locations.txt r]
+set indexToName [read $locFile]
+close $locFile
 
-puts "x = [p get x]"
-puts "y = [p get y]"
+set tileLocations [list]
+foreach { num name } $indexToName {
+    dict set tileLocations $name [expr $num - 1]
+}
 
-rrl::Map create m
-m setBytes [rrl::Map call fromDims 3 3 $zigtcl::tclAllocator]
-#rrl::Pos create p
-#p = [rrl::Pos call init 0 1]
-
-puts "m width [m get width]"
-puts "m height [m get height]"
-
-rrl::Tile create t
-t setBytes [rrl::Tile call shortDownWall]
-rrl::Wall create w
-
-#t setBytes [m call get [p bytes]]
-w setBytes [t get down]
-
-puts "pos info [rrl::Height name [w get height]] [rrl::Material name [w get material]]"
-
-puts "map created"
+rrl::Map create map
+map setBytes [rrl::Map call fromDims 3 3 $zigtcl::tclAllocator]
+map call set [rrl::Pos call init 1 1] [rrl::Tile call shortLeftAndDownWall]
 
 rrl::Display create disp
 disp setBytes [rrl::Display call init 800 600]
 
 disp call push [rrl::DrawCmd call text "hello, tcl drawing!" [rrl::Pos call init 10 10] [rrl::Color call white] 1.0]
 disp call present
-after 1000
+
+proc makeTileSprite { name } {
+    global tileLocations 
+    set tiles [disp call lookupSpritekey rustrogueliketiles]
+    set key [dict get $tileLocations $name]
+    set tileSprite [rrl::Sprite call init $key $tiles]
+    return $tileSprite
+}
+set floorSprite [makeTileSprite open_tile]
+set downWall [makeTileSprite down_intertile_wall]
+set leftWall [makeTileSprite left_intertile_wall]
 
 
+rrl::Tile create t
+rrl::Wall create w
+
+#t setBytes [map call get [p bytes]]
+
+proc renderMap { } {
+    global disp m floorSprite downWall leftWall
+
+    set black [rrl::Color call black]
+    for { set y 0 } { $y < [map get height] } { incr y } {
+        for { set x 0 } { $x < [map get width] } { incr x } {
+            set pos [rrl::Pos call init $x $y]
+            set tileCmd [rrl::DrawCmd call sprite $floorSprite $black $pos]
+            disp call push $tileCmd
+
+            t setBytes [map call get $pos]
+
+            w setBytes [t get down]
+            set downName [rrl::Height name [w get height]]
+            if { $downName == "short" } {
+                set tileCmd [rrl::DrawCmd call sprite $downWall $black $pos]
+                disp call push $tileCmd
+            }
+
+            w setBytes [t get left]
+            set leftName [rrl::Height name [w get height]]
+            if { $leftName == "short" } {
+                set tileCmd [rrl::DrawCmd call sprite $leftWall $black $pos]
+                disp call push $tileCmd
+            }
+        }
+    }
+
+    disp call present
+}
+
+
+proc renderMapPeriodically { } {
+    renderMap
+    after 100 renderMapPeriodically
+}
+
+renderMapPeriodically

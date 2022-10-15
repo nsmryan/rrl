@@ -43,7 +43,6 @@ pub const DrawCmd = union(enum) {
         return self.* != .spriteFloat and self.* != .textFloat;
     }
 
-    // NOTE(zig) I would be surprised if this worked. Instead, maybe dispatch on type and use "@field"?
     pub fn pos(self: *DrawCmd) Pos {
         switch (self.*) {
             .sprite => |draw_cmd| return draw_cmd.pos,

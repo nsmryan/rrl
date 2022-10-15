@@ -106,7 +106,7 @@ pub const Display = struct {
         const ascii_texture = try drawing.AsciiTexture.renderAsciiCharacters(renderer, font);
 
         const num_pixels = Dims.init(@intCast(usize, window_width), @intCast(usize, window_height));
-        const cell_dims = Dims.init(40, 30);
+        const cell_dims = Dims.init(3, 3);
         const screen_panel = Panel.init(num_pixels, cell_dims);
 
         var game: Display = Display{

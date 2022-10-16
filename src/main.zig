@@ -4,8 +4,11 @@ const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
 const comp = utils.comp;
+const Comp = comp.Comp;
 const math = @import("math");
 const Pos = math.pos.Pos;
+
+const core = @import("core");
 
 const display = @import("display.zig");
 const Display = display.Display;
@@ -24,6 +27,7 @@ pub fn main() anyerror!void {
     var iter = c.iter();
     std.log.info("rustrl comp {}", .{iter.next()});
     std.log.info("rustrl comp {}", .{iter.next()});
+    std.debug.print("{s}", .{@typeName(Comp(Pos))});
 
     var disp = try Display.init(800, 600);
     try disp.push(DrawCmd.text("Hello, drawcmd!", Pos.init(10, 10), Color.white(), 1.0));

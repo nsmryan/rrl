@@ -73,7 +73,7 @@ const pkgs = struct {
     const core = std.build.Pkg{
         .name = "core",
         .source = .{ .path = "src/core.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+        .dependencies = &[_]std.build.Pkg{ utils, math },
     };
 
     const drawcmd = std.build.Pkg{

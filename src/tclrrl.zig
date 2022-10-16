@@ -8,6 +8,8 @@ const zt = @import("zigtcl");
 const utils = @import("utils");
 const Pos = utils.pos.Pos;
 
+const core = @import("core");
+
 const board = @import("board");
 const math = @import("math");
 const drawcmd = @import("drawcmd");
@@ -25,6 +27,8 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     //zt.WrapFunction(test_function, "zigtcl::zig_function", interp) catch return zt.tcl.TCL_ERROR;
 
+    var ns = zt.tcl.Tcl_CreateNamespace(interp, "rrl", null, null);
+
     // Map
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
     _ = zt.RegisterStruct(board.map.Map, "Map", namespace, interp);
@@ -32,6 +36,11 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     _ = zt.RegisterStruct(board.tile.Tile.Wall, "Wall", namespace, interp);
     _ = zt.RegisterEnum(board.tile.Tile.Height, "Height", namespace, interp);
     _ = zt.RegisterEnum(board.tile.Tile.Material, "Material", namespace, interp);
+
+    // Entities
+    _ = zt.RegisterStruct(core.entities.Entities, "Entities", namespace, interp);
+    _ = zt.RegisterStruct(core.spawn, "spawn", namespace, interp);
+    _ = zt.RegisterStruct(utils.comp.Comp(math.pos.Pos), "Comp(Pos)", namespace, interp);
 
     // Display
     _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);
@@ -46,6 +55,8 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     _ = zt.tcl.Tcl_SetVar2Ex(interp, "zigtcl::tclAllocator", null, allocatorObj, 0);
     //const Inner = Struct.Inner;
     //_ = zt.RegisterStruct(Inner, "Inner", "zigtcl", interp);
+
+    _ = zt.tcl.Tcl_Export(interp, ns, "*", 0);
 
     return zt.tcl.Tcl_PkgProvide(interp, "rrl", "0.1.0");
 }

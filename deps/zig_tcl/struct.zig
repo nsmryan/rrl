@@ -21,6 +21,7 @@ pub const StructInstanceCmds = enum {
     call,
     bytes,
     setBytes,
+    ptr,
 };
 
 pub fn RegisterStruct(comptime strt: type, comptime name: []const u8, comptime pkg: []const u8, interp: obj.Interp) c_int {
@@ -147,6 +148,11 @@ pub fn StructCommand(comptime strt: type) type {
         pub fn StructInstanceCommand(cdata: tcl.ClientData, interp: [*c]tcl.Tcl_Interp, objc: c_int, objv: [*c]const [*c]tcl.Tcl_Obj) callconv(.C) c_int {
             _ = cdata;
             // TODO support the cget, configure interface in syntax.tcl
+            if (@alignOf(strt) == 0) {
+                obj.SetStrResult(interp, "Cannot instantiate struct!");
+                return tcl.TCL_ERROR;
+            }
+
             var strt_ptr = @ptrCast(*strt, @alignCast(@alignOf(strt), cdata));
             const cmd = obj.GetIndexFromObj(StructInstanceCmds, interp, objv[1], "commands") catch |errResult| return err.TclResult(errResult);
             switch (cmd) {
@@ -168,6 +174,10 @@ pub fn StructCommand(comptime strt: type) type {
 
                 .setBytes => {
                     return err.TclResult(StructSetBytesCmd(strt_ptr, interp, obj.ObjSlice(objc, objv)));
+                },
+
+                .ptr => {
+                    return err.TclResult(StructPtrCmd(strt_ptr, interp, obj.ObjSlice(objc, objv)));
                 },
             }
             obj.SetStrResult(interp, "Unexpected subcommand!");
@@ -307,6 +317,12 @@ pub fn StructCommand(comptime strt: type) type {
                 obj.SetStrResult(interp, "Byte array size does not match struct!");
                 return err.TclError.TCL_ERROR;
             }
+        }
+
+        pub fn StructPtrCmd(ptr: *strt, interp: obj.Interp, objv: []const obj.Obj) err.TclError!void {
+            _ = interp;
+            _ = objv;
+            obj.SetObjResult(interp, try obj.ToObj(ptr));
         }
     };
 }

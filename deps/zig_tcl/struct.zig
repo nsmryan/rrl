@@ -13,6 +13,8 @@ pub const StructCmds = enum {
     call,
     fields,
     fromBytes,
+    size,
+    with,
 };
 
 pub const StructInstanceCmds = enum {
@@ -139,14 +141,36 @@ pub fn StructCommand(comptime strt: type) type {
                         return;
                     }
                 },
+
+                .size => {
+                    obj.SetObjResult(interp, try obj.ToObj(@intCast(c_int, @sizeOf(strt))));
+                    return;
+                },
+
+                .with => {
+                    if (@sizeOf(strt) > 0) {
+                        if (objv.len < 4) {
+                            tcl.Tcl_WrongNumArgs(interp, @intCast(c_int, objv.len), objv.ptr, "with pointer decl args...");
+                            return err.TclError.TCL_ERROR;
+                        }
+                        const ptr = try obj.GetFromObj(*strt, interp, objv[2]);
+                        const objc = @intCast(c_int, objv.len - 2);
+                        var objv_subset = objv[2..].ptr;
+                        var clientData = @ptrCast(tcl.ClientData, ptr);
+                        try err.HandleReturn(StructInstanceCommand(clientData, interp, objc, objv_subset));
+                        return;
+                    } else {
+                        obj.SetStrResult(interp, "Could not use 'with' on a zero sized struct!");
+                        return err.TclError.TCL_ERROR;
+                    }
+                },
             }
 
-            obj.SetStrResult(interp, "Unexpected subcommand name when creating struct!");
+            obj.SetStrResult(interp, "Unexpected subcommand name on struct type!");
             return err.TclError.TCL_ERROR;
         }
 
         pub fn StructInstanceCommand(cdata: tcl.ClientData, interp: [*c]tcl.Tcl_Interp, objc: c_int, objv: [*c]const [*c]tcl.Tcl_Obj) callconv(.C) c_int {
-            _ = cdata;
             // TODO support the cget, configure interface in syntax.tcl
             if (@alignOf(strt) == 0) {
                 obj.SetStrResult(interp, "Cannot instantiate struct!");
@@ -320,9 +344,33 @@ pub fn StructCommand(comptime strt: type) type {
         }
 
         pub fn StructPtrCmd(ptr: *strt, interp: obj.Interp, objv: []const obj.Obj) err.TclError!void {
-            _ = interp;
-            _ = objv;
-            obj.SetObjResult(interp, try obj.ToObj(ptr));
+            if (objv.len < 3) {
+                obj.SetObjResult(interp, try obj.ToObj(ptr));
+            } else if (objv.len == 3) {
+                var length: c_int = undefined;
+                const name = tcl.Tcl_GetStringFromObj(objv[2], &length);
+                if (length == 0) {
+                    obj.SetStrResult(interp, "An empty field name is not valid!");
+                    return err.TclError.TCL_ERROR;
+                }
+
+                var found: bool = false;
+                comptime var fields = std.meta.fields(strt);
+                inline for (fields) |field| {
+                    if (std.mem.eql(u8, name[0..@intCast(usize, length)], field.name)) {
+                        found = true;
+                        obj.SetObjResult(interp, try obj.ToObj(&@field(ptr.*, field.name)));
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    obj.SetStrResult(interp, "One or more field names not found in struct field call!");
+                    return err.TclError.TCL_ERROR;
+                }
+            } else {
+                tcl.Tcl_WrongNumArgs(interp, @intCast(c_int, objv.len), objv.ptr, "ptr [field]");
+            }
         }
     };
 }
@@ -551,4 +599,85 @@ test "struct bytes" {
     try std.testing.expectEqual(tcl.TCL_OK, result);
     const resultObj = tcl.Tcl_GetObjResult(interp);
     try std.testing.expectEqual(@as(u32, 123), try obj.GetFromObj(u32, interp, resultObj));
+}
+
+test "struct ptr" {
+    const s = struct {
+        field0: u64,
+        field1: u64,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterStruct(s, "s", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::s create instance");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance set field0 101");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance set field1 202");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance ptr");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    var s_ptr = try obj.GetFromObj(*s, interp, tcl.Tcl_GetObjResult(interp));
+
+    try std.testing.expectEqual(@as(u64, 101), s_ptr.field0);
+    try std.testing.expectEqual(@as(u64, 202), s_ptr.field1);
+
+    result = tcl.Tcl_Eval(interp, "instance ptr field0");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    var field0_ptr = try obj.GetFromObj(*u64, interp, tcl.Tcl_GetObjResult(interp));
+    try std.testing.expectEqual(@as(u64, 101), field0_ptr.*);
+
+    result = tcl.Tcl_Eval(interp, "instance ptr field1");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    var field1_ptr = try obj.GetFromObj(*u64, interp, tcl.Tcl_GetObjResult(interp));
+    try std.testing.expectEqual(@as(u64, 202), field1_ptr.*);
+}
+
+test "struct size" {
+    const s = struct {
+        field0: f64,
+        field1: f64,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterStruct(s, "s", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::s size");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    const resultObj = tcl.Tcl_GetObjResult(interp);
+    try std.testing.expectEqual(@as(u32, @sizeOf(s)), try obj.GetFromObj(u32, interp, resultObj));
+}
+
+test "struct with" {
+    const s = struct {
+        field0: f64,
+        field1: u32,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterStruct(s, "s", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::s create instance");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::s with [instance ptr] set field1 101");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance get field1");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    const resultObj = tcl.Tcl_GetObjResult(interp);
+    try std.testing.expectEqual(@as(u32, 101), try obj.GetFromObj(u32, interp, resultObj));
 }

@@ -13,7 +13,8 @@ const core = @import("core");
 const board = @import("board");
 const math = @import("math");
 const drawcmd = @import("drawcmd");
-const display = @import("display.zig");
+const gui = @import("gui.zig");
+const display = gui.display;
 
 export fn Rrl_Init(interp: zt.Interp) c_int {
     if (builtin.os.tag != .windows) {

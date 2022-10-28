@@ -73,7 +73,7 @@ const pkgs = struct {
     const core = std.build.Pkg{
         .name = "core",
         .source = .{ .path = "src/core.zig" },
-        .dependencies = &[_]std.build.Pkg{ utils, math },
+        .dependencies = &[_]std.build.Pkg{ utils, math, board },
     };
 
     const drawcmd = std.build.Pkg{
@@ -87,6 +87,24 @@ const pkgs = struct {
         .source = .{ .path = "src/board.zig" },
         .dependencies = &[_]std.build.Pkg{math},
     };
+
+    const events = std.build.Pkg{
+        .name = "events",
+        .source = .{ .path = "src/events.zig" },
+        .dependencies = &[_]std.build.Pkg{ math, core },
+    };
+
+    const gui = std.build.Pkg{
+        .name = "gui",
+        .source = .{ .path = "src/gui.zig" },
+        .dependencies = &[_]std.build.Pkg{ math, drawcmd, utils, events, core, board },
+    };
+
+    const gen = std.build.Pkg{
+        .name = "gen",
+        .source = .{ .path = "src/gen.zig" },
+        .dependencies = &[_]std.build.Pkg{ math, utils },
+    };
 };
 
 fn addPackages(step: *std.build.LibExeObjStep) void {
@@ -95,6 +113,8 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.core);
     step.addPackage(pkgs.drawcmd);
     step.addPackage(pkgs.math);
+    step.addPackage(pkgs.events);
+    step.addPackage(pkgs.gui);
 
     // Add SDL2 dependency
     step.addIncludeDir("deps/SDL2/include");

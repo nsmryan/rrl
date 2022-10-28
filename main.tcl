@@ -3,6 +3,10 @@ package require rrl
 namespace import rrl::*
 
 
+proc pos { x y } {
+    return [Pos call init $x $y]
+}
+
 set locFile [open data/tile_locations.txt r]
 set indexToName [read $locFile]
 close $locFile
@@ -14,17 +18,14 @@ foreach { num name } $indexToName {
 
 Map create map
 map setBytes [Map call fromDims 3 3 $zigtcl::tclAllocator]
-map call set [Pos call init 1 1] [Tile call shortLeftAndDownWall]
+map call set [pos 1 1] [Tile call shortLeftAndDownWall]
 
 Entities create entities
 entities setBytes [Entities call init $zigtcl::tclAllocator]
-set playerId [spawn call spawnPlayer [entities ptr] [Pos call init 2 2]]
+set playerId [spawn call spawnPlayer [entities ptr] [pos 1 2]]
 
 Display create disp
 disp setBytes [Display call init 800 600]
-
-disp call push [DrawCmd call text "hello, tcl drawing!" [Pos call init 10 10] [Color call white] 1.0]
-disp call present
 
 proc makeTileSprite { name } {
     global tileLocations 
@@ -41,7 +42,10 @@ set leftWall [makeTileSprite left_intertile_wall]
 Tile create t
 Wall create w
 
-#t setBytes [map call get [p bytes]]
+proc setPlayerPos { pos } {
+    global playerId
+    Comp(Pos) with [entities ptr pos] call set $playerId $pos]
+}
 
 proc renderMap { } {
     global floorSprite downWall leftWall
@@ -49,7 +53,7 @@ proc renderMap { } {
     set black [Color call black]
     for { set y 0 } { $y < [map get height] } { incr y } {
         for { set x 0 } { $x < [map get width] } { incr x } {
-            set pos [Pos call init $x $y]
+            set pos [pos $x $y]
             set tileCmd [DrawCmd call sprite $floorSprite $black $pos]
             disp call push $tileCmd
 
@@ -70,23 +74,32 @@ proc renderMap { } {
             }
         }
     }
-
-    disp call present
 }
 
 proc renderEntities { } {
-    global black
-    set playerSprite [makeTileSprite player_standing_down]
-    disp call push [DrawCmd call sprite $playerSprite $block $pos]
+    global playerId
+
+    set black [Color call black]
+    set sheet [disp call lookupSpritekey player_standing_down]
+    set playerSprite [Sprite call init 0 $sheet]
+
+    set playerPos [Comp(Pos) with [entities ptr pos] call get $playerId]
+    Pos create p
+    p setBytes $playerPos
+
+    set playerCmd [DrawCmd call sprite $playerSprite $black $playerPos]
+    disp call push $playerCmd
 }
 
 
-proc renderMapPeriodically { } {
+proc renderPeriodically { } {
     renderMap
-    after 100 renderMapPeriodically
+    renderEntities
+    disp call present
+    after 100 renderPeriodically
 }
 
 Comp(Pos) create compPos
 compPos setBytes [rrl::Comp(Pos) call init $zigtcl::tclAllocator]
 
-renderMapPeriodically
+renderPeriodically

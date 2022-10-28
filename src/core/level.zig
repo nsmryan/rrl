@@ -9,7 +9,7 @@ const utils = @import("utils");
 const Id = utils.comp.Id;
 const Pos = utils.pos.Pos;
 
-const Entities = @import("entities.zig");
+const Entities = @import("entities.zig").Entities;
 
 pub const Level = struct {
     map: Map,

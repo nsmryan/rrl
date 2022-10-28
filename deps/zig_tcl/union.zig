@@ -13,6 +13,8 @@ pub const UnionCmds = enum {
     call,
     variants,
     fromBytes,
+    size,
+    with,
 };
 
 pub const UnionInstanceCmds = enum {
@@ -21,6 +23,7 @@ pub const UnionInstanceCmds = enum {
     call,
     bytes,
     setBytes,
+    ptr,
 };
 
 pub fn RegisterUnion(comptime unn: type, comptime name: []const u8, comptime pkg: []const u8, interp: obj.Interp) c_int {
@@ -138,9 +141,27 @@ pub fn UnionCommand(comptime unn: type) type {
                         return;
                     }
                 },
+
+                .size => {
+                    obj.SetObjResult(interp, try obj.ToObj(@intCast(c_int, @sizeOf(unn))));
+                    return;
+                },
+
+                .with => {
+                    if (objv.len < 4) {
+                        tcl.Tcl_WrongNumArgs(interp, @intCast(c_int, objv.len), objv.ptr, "with pointer decl args...");
+                        return err.TclError.TCL_ERROR;
+                    }
+                    const ptr = try obj.GetFromObj(*unn, interp, objv[2]);
+                    const objc = @intCast(c_int, objv.len - 2);
+                    var objv_subset = objv[2..].ptr;
+                    var clientData = @ptrCast(tcl.ClientData, ptr);
+                    try err.HandleReturn(UnionInstanceCommand(clientData, interp, objc, objv_subset));
+                    return;
+                },
             }
 
-            obj.SetStrResult(interp, "Unexpected subcommand name when creating unn!");
+            obj.SetStrResult(interp, "Unexpected subcommand name on union type!");
             return err.TclError.TCL_ERROR;
         }
 
@@ -173,6 +194,10 @@ pub fn UnionCommand(comptime unn: type) type {
 
                 .setBytes => {
                     return err.TclResult(UnionSetBytesCmd(ptr, interp, obj.ObjSlice(objc, objv)));
+                },
+
+                .ptr => {
+                    return err.TclResult(UnionPtrCmd(ptr, interp, obj.ObjSlice(objc, objv)));
                 },
             }
             obj.SetStrResult(interp, "Unexpected subcommand!");
@@ -210,7 +235,23 @@ pub fn UnionCommand(comptime unn: type) type {
             comptime var fields = std.meta.fields(unn);
             inline for (fields) |field| {
                 if (std.mem.eql(u8, name, field.name)) {
-                    ptr.* = @unionInit(unn, field.name, try obj.GetFromObj(field.field_type, interp, objv[3]));
+                    if (objv.len > 4) {
+                        if (@typeInfo(field.field_type) != .Struct) {
+                            obj.SetStrResult(interp, "Multiple argument variants only work on anonomous structs!");
+                            return err.TclError.TCL_ERROR;
+                        }
+                        var args: field.field_type = undefined;
+
+                        var obj_index: usize = 3;
+                        comptime var chosen_fields = std.meta.fields(field.field_type);
+                        inline for (chosen_fields) |chosen_field| {
+                            @field(args, chosen_field.name) = try obj.GetFromObj(chosen_field.field_type, interp, objv[obj_index]);
+                            obj_index += 1;
+                        }
+                        ptr.* = @unionInit(unn, field.name, args);
+                    } else {
+                        ptr.* = @unionInit(unn, field.name, try obj.GetFromObj(field.field_type, interp, objv[3]));
+                    }
                     return;
                 }
             }
@@ -277,6 +318,14 @@ pub fn UnionCommand(comptime unn: type) type {
                 return err.TclError.TCL_ERROR;
             }
         }
+
+        pub fn UnionPtrCmd(ptr: *unn, interp: obj.Interp, objv: []const obj.Obj) err.TclError!void {
+            if (objv.len == 2) {
+                obj.SetObjResult(interp, try obj.ToObj(ptr));
+            } else {
+                tcl.Tcl_WrongNumArgs(interp, @intCast(c_int, objv.len), objv.ptr, "ptr");
+            }
+        }
     };
 }
 
@@ -326,6 +375,34 @@ test "unn create/variant/value" {
         const resultObj = tcl.Tcl_GetObjResult(interp);
         try std.testing.expectEqual(@as(f64, 1.4), try obj.GetFromObj(f64, interp, resultObj));
     }
+}
+
+test "unn anonomous struct variant" {
+    const u = union(enum) {
+        v0: struct { field0: u32, field1: u8 },
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var unn: u = .{ .v0 = .{ .field0 = 101, .field1 = 202 } };
+
+    var result: c_int = undefined;
+    result = RegisterUnion(u, "u", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::u create instance");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance variant v0 101 202");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance ptr");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    const resultObj = tcl.Tcl_GetObjResult(interp);
+
+    var unn_ptr = try obj.GetFromObj(*u, interp, resultObj);
+    try std.testing.expectEqual(unn.v0.field0, unn_ptr.v0.field0);
+    try std.testing.expectEqual(unn.v0.field1, unn_ptr.v0.field1);
 }
 
 test "unn create/call" {
@@ -440,4 +517,71 @@ test "unn bytes" {
     try std.testing.expectEqual(tcl.TCL_OK, result);
     const resultObj = tcl.Tcl_GetObjResult(interp);
     try std.testing.expectEqual(@as(f64, 10.0), try obj.GetFromObj(f64, interp, resultObj));
+}
+
+test "union ptr" {
+    const u = union(enum) {
+        field0: u64,
+        field1: u64,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterUnion(u, "u", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::u create instance");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance variant field0 101");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance ptr");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    var u_ptr = try obj.GetFromObj(*u, interp, tcl.Tcl_GetObjResult(interp));
+
+    try std.testing.expectEqual(@as(u64, 101), u_ptr.field0);
+}
+
+test "union size" {
+    const u = union(enum) {
+        field0: u8,
+        field1: f64,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterUnion(u, "u", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::u size");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    const resultObj = tcl.Tcl_GetObjResult(interp);
+    try std.testing.expectEqual(@as(u32, @sizeOf(u)), try obj.GetFromObj(u32, interp, resultObj));
+}
+
+test "union with" {
+    const u = union(enum) {
+        field0: f64,
+        field1: u32,
+    };
+    var interp = tcl.Tcl_CreateInterp();
+    defer tcl.Tcl_DeleteInterp(interp);
+
+    var result: c_int = undefined;
+    result = RegisterUnion(u, "u", "test", interp);
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::u create instance");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "test::u with [instance ptr] variant field1 101");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+
+    result = tcl.Tcl_Eval(interp, "instance value field1");
+    try std.testing.expectEqual(tcl.TCL_OK, result);
+    const resultObj = tcl.Tcl_GetObjResult(interp);
+    try std.testing.expectEqual(@as(u32, 101), try obj.GetFromObj(u32, interp, resultObj));
 }

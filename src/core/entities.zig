@@ -10,6 +10,13 @@ const Comp = comp.Comp;
 const math = @import("math");
 const Pos = math.pos.Pos;
 
+pub const EntityClass = enum {
+    body,
+    grass,
+    monolith,
+    wind,
+};
+
 pub const Entities = struct {
     next_id: Id = 0,
     ids: ArrayList(Id),

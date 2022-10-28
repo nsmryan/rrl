@@ -78,6 +78,13 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
+        pub fn set(self: *Self, id: Id, t: T) void {
+            switch (binarySearchKeys(id, self.ids.items)) {
+                .found => |loc| self.store.items[loc] = t,
+                .not_found => return,
+            }
+        }
+
         pub fn contains_key(self: *Self, id: Id) bool {
             return self.lookup(id) != null;
         }

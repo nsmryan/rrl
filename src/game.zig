@@ -17,6 +17,7 @@ const MapLoadConfig = gen.make_map.MapLoadConfig;
 
 const events = @import("events");
 const UseAction = events.input.UseAction;
+const InputAction = events.actions.InputAction;
 
 pub const Game = struct {
     level: Level,

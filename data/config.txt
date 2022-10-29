@@ -1,0 +1,221 @@
+# reload map file 
+load_map_file_every_frame: false
+
+tile_noise_scaler: 4.0
+# alpha for player move highlight
+highlight_player_move: 226
+# alpha for player attack highlight
+highlight_alpha_attack: 45
+# alpha for sound highlight
+sound_alpha: 86
+# alpha for tile grid lines
+grid_alpha: 8
+# alpha for tiles that are visible
+grid_alpha_visible: 80
+# alpha for several overlays 
+grid_alpha_overlay: 150
+# cursor sprite alpha
+cursor_alpha: 230
+
+## Valid values for map_load
+# FromFile(filename): load from map.xp file
+# FromVaultFile(filename): load a given vault as the level
+# TestWall: test map for checking wall interactions
+# TestRandom: test random generation
+# TestMap: test map for unit tests
+# Random: generated map, not currently working
+# Empty: empty map, used in unit tests 
+# TestCorner: test map with corners of different types
+# TestPlayer: test map for player interactions
+# ProcGen: procedurally generated map, given a filename in resources/procgen
+map_load: #TestVaults
+    ProcGen: "map1.yaml"
+#VaultFile: "vaults/Vaults - Vault25.csv"
+#FromFile: "maps.txt"
+
+map_file: map.xp
+
+# throttle to frame rate
+frame_rate: 30
+
+# animation speeds
+player_attack_speed: 2.0
+player_attack_hammer_speed: 1.0
+player_vault_sprite_speed: 2.0
+player_vault_move_speed: 2.0
+idle_speed: 5
+fire_speed: 7
+grass_idle_speed: 0.5
+item_throw_speed: 30.0
+key_speed: 5.0
+
+sound_timeout: 0.5
+# radius of a yell's sound
+yell_radius: 4
+# distance of entities you can swap with
+swap_radius: 4
+# radius of ping skill sound
+ping_sound_radius: 3
+# show fog of war
+fog_of_war: true
+
+# initial player health
+player_health: 3
+# max player health
+player_health_max: 6
+
+# initial player stamina
+player_stamina: 3
+# max player stamina
+player_stamina_max: 3
+
+# initial player energy
+player_energy: 3
+# max player energy
+player_energy_max: 6
+
+# alpha of explored but not visible tiles
+explored_alpha: 160
+# alpha of tiles just beyond field of view
+fov_edge_alpha: 80
+
+# sound radius for different actions
+sound_rubble_radius: 1
+sound_grass_radius: 1
+sound_radius_crushed: 3
+sound_radius_attack: 3
+sound_radius_trap: 3
+sound_radius_monster: 3
+sound_radius_stone: 3
+sound_radius_player: 3
+sound_radius_hammer: 3
+sound_radius_sneak: 1
+sound_radius_walk: 2
+sound_radius_run: 4
+sound_golem_idle_radius: 0
+# sound radius from hits with different weapon types
+sound_radius_blunt: 4
+sound_radius_pierce: 3
+sound_radius_slash: 2
+# The extra tiles of sound for a strong hit
+# like a running spear.
+sound_radius_extra: 1
+
+freeze_trap_radius: 3
+push_stun_turns: 3
+stun_turns_throw_stone: 0
+stun_turns_throw_spear: 3
+stun_turns_throw_default: 1
+
+# draw numeric overlay of diagonal offsets
+overlay_directions: false
+# draw player FOV in green tiles
+overlay_player_fov: false
+overlay_floodfill: false
+
+fov_radius_monster: 4
+fov_radius_player: 4
+
+# sound dampening per full-tile wall
+dampen_blocked_tile: 3
+# sound dampening per short inter-tile wall
+dampen_short_wall: 1
+# sound dampening per tall inter-tile wall
+dampen_tall_wall: 2
+
+# how far to move cursor when shift is held
+cursor_fast_move_dist: 3
+
+# delay before a key is repeated (seconds)
+repeat_delay: 0.35
+
+# whether to write out a map distribution file
+write_map_distribution: false
+
+# print each key that is pressed
+print_key_log: false
+
+# record actions in an action_log.txt file
+recording: true
+
+# golem beam visual duration in frames
+beam_duration: 5
+
+# draw arrows on tiles to indicate entity facing direction
+draw_directional_arrow: false
+
+# Stun durations for weapons
+stun_turns_blunt: 6
+stun_turns_pierce: 4
+stun_turns_slash: 12
+stun_turns_extra: 2
+
+# alpha value used when rendering an entity ghost
+ghost_alpha: 125
+
+# particle effect settings
+particle_duration: 4.0
+particle_speed: 1.0
+max_particles: 40
+
+attack_animation_speed: 40.0
+cursor_fade_seconds: 0.25
+
+# Whether or not to print messages
+minimal_output: false
+
+# Whether or not to save the game between turns and load it on startup.
+# When the player loses, the game is delete.
+save_load: true
+
+# Debug option for drawing a line from the player to the cursor.
+cursor_line: false
+
+# Debug option to display positions that effect FoV blocking between the player
+# and the cursor. These are the positions that where fog or other effects will
+# effect LoS.
+blocking_positions: false
+
+# Number of tiles that a smoke bomb reduces the FoV
+smoke_bomb_fov_block: 2
+
+# Number of turns before smoke dissipates
+smoke_turns: 6
+
+# Magification of a thrown looking glass
+looking_glass_magnify_amount: 2
+
+# number of frames to render hp numbers
+hp_render_duration: 20
+
+x_offset_buttons: 0.07
+y_offset_buttons: 1.6
+x_spacing_buttons: 6.7
+y_spacing_buttons: 2.6
+x_scale_buttons: 6.5
+y_scale_buttons: 2.0
+
+move_tiles_sneak: 1
+move_tiles_walk: 1
+move_tiles_run: 2
+
+ui_inv_name_x_offset: 4.0
+ui_inv_name_y_offset: 0.3
+ui_inv_name_scale: 1.2
+
+ui_inv_name_0_x_offset: 3.2
+ui_inv_name_0_y_offset: 0.0
+ui_inv_name_0_scale: 1.0
+
+ui_inv_name_1_x_offset: 4.5
+ui_inv_name_1_y_offset: 0.8
+ui_inv_name_1_scale: 1.0
+
+ui_long_name_scale: 0.95
+
+# How many lines of message output to display in info panel
+display_console_lines: 8
+
+# If false, display the whole map.
+# If true, center the map around the player.
+display_center_map_on_player: true

@@ -200,7 +200,7 @@ pub const Input = struct {
         return false;
     }
 
-    pub fn handle_event(self: *Input, settings: *Settings, event: InputEvent, ticks: u32, config: *const Config) InputAction {
+    pub fn handleEvent(self: *Input, settings: *Settings, event: InputEvent, ticks: u64, config: *const Config) InputAction {
         var action = InputAction.none;
 
         // Remember characters that are pressed down.

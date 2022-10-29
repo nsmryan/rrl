@@ -1,27 +1,6 @@
-const Config = struct {
-    color_dark_brown: Color,
-    color_medium_brown: Color,
-    color_light_green: Color,
-    color_tile_blue_light: Color,
-    color_tile_blue_dark: Color,
-    color_light_brown: Color,
-    color_ice_blue: Color,
-    color_dark_blue: Color,
-    color_very_dark_blue: Color,
-    color_orange: Color,
-    color_red: Color,
-    color_light_red: Color,
-    color_medium_grey: Color,
-    color_mint_green: Color,
-    color_blueish_grey: Color,
-    color_pink: Color,
-    color_rose_red: Color,
-    color_light_orange: Color,
-    color_bone_white: Color,
-    color_warm_grey: Color,
-    color_soft_green: Color,
-    color_light_grey: Color,
-    color_shadow: Color,
+const std = @import("std");
+
+pub const Config = struct {
     load_map_file_every_frame: bool,
     tile_noise_scaler: f64,
     highlight_player_move: u8,
@@ -136,36 +115,40 @@ const Config = struct {
 
     display_center_map_on_player: bool,
 
-    pub fn fromFile(file_name: []u8) !Config {
+    pub fn fromFile(file_name: []const u8) !Config {
         var file = try std.fs.cwd().openFile(file_name, .{});
         defer file.close();
 
         var buf_reader = std.io.bufferedReader(file.reader());
         var in_stream = buf_reader.reader();
 
+        var config: Config = undefined;
+
         var buf: [1024]u8 = undefined;
         while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+            if (line[0] == '#') {
+                continue;
+            }
+
             var parts = std.mem.split(u8, line, ": ");
 
-            const field_name = parts.next();
-            const field_value = parts.next();
+            const field_name = parts.next() orelse return ParseConfigError.NameFormatError;
+            const field_value = parts.next() orelse return ParseConfigError.ValueFormatError;
 
-            const field_type_info = @typeInfo(field.field_type);
-            if (field.field_type == Color) {} else if (field_type_info == .Int) {
-                var colors = std.mem.split(u8, field_value, " ");
-                @field(config, field.name).r = try std.fmt.parseInt(u8, field_value, 10);
-                @field(config, field.name).g = try std.fmt.parseInt(u8, field_value, 10);
-                @field(config, field.name).b = try std.fmt.parseInt(u8, field_value, 10);
-                @field(config, field.name).a = try std.fmt.parseInt(u8, field_value, 10);
-            } else if (field_type_info == .Float) {
-                @field(config, field.name) = try std.fmt.parseFloat(field.field_type, field_value, 10);
-            } else if (field_type_info == .Bool) {
-                if (std.mem.eql(u8, field_value, "true")) {
-                    @field(config, field.name) = true;
-                } else if (std.mem.eql(u8, field_value, "false")) {
-                    @field(config, field.name) = false;
-                } else {
-                    return ParseConfigError.ParseBoolError;
+            inline for (std.meta.fields(Config)) |field| {
+                if (std.mem.eql(u8, field_name, field.name)) {
+                    const field_type_info = @typeInfo(field.field_type);
+                    if (field_type_info == .Float) {
+                        @field(config, field.name) = try std.fmt.parseFloat(field.field_type, field_value);
+                    } else if (field_type_info == .Bool) {
+                        if (std.mem.eql(u8, field_value, "true")) {
+                            @field(config, field.name) = true;
+                        } else if (std.mem.eql(u8, field_value, "false")) {
+                            @field(config, field.name) = false;
+                        } else {
+                            return ParseConfigError.ParseBoolError;
+                        }
+                    }
                 }
             }
         }
@@ -174,6 +157,8 @@ const Config = struct {
     }
 };
 
-const ParseConfigError = error{
+pub const ParseConfigError = error{
+    NameFormatError,
+    ValueFormatError,
     ParseBoolError,
 };

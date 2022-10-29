@@ -297,3 +297,49 @@ pub const Display = struct {
         return self.sprites.sheets.items[key].num_sprites;
     }
 };
+
+// Color palette structure and load from palette.txt file
+//    pub fn fromFile(file_name: []u8) !Config {
+//        var file = try std.fs.cwd().openFile(file_name, .{});
+//        defer file.close();
+//
+//        var buf_reader = std.io.bufferedReader(file.reader());
+//        var in_stream = buf_reader.reader();
+//
+//        var buf: [1024]u8 = undefined;
+//        while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+//            var parts = std.mem.split(u8, line, ": ");
+//
+//            const field_name = parts.next();
+//            const field_value = parts.next();
+//
+//            const field_type_info = @typeInfo(field.field_type);
+//            if (field.field_type == Color) {} else if (field_type_info == .Int) {
+//                var colors = std.mem.split(u8, field_value, " ");
+//                @field(config, field.name).r = try std.fmt.parseInt(u8, field_value, 10);
+//                @field(config, field.name).g = try std.fmt.parseInt(u8, field_value, 10);
+//                @field(config, field.name).b = try std.fmt.parseInt(u8, field_value, 10);
+//                @field(config, field.name).a = try std.fmt.parseInt(u8, field_value, 10);
+//    color_dark_brown: Color,
+//    color_medium_brown: Color,
+//    color_light_green: Color,
+//    color_tile_blue_light: Color,
+//    color_tile_blue_dark: Color,
+//    color_light_brown: Color,
+//    color_ice_blue: Color,
+//    color_dark_blue: Color,
+//    color_very_dark_blue: Color,
+//    color_orange: Color,
+//    color_red: Color,
+//    color_light_red: Color,
+//    color_medium_grey: Color,
+//    color_mint_green: Color,
+//    color_blueish_grey: Color,
+//    color_pink: Color,
+//    color_rose_red: Color,
+//    color_light_orange: Color,
+//    color_bone_white: Color,
+//    color_warm_grey: Color,
+//    color_soft_green: Color,
+//    color_light_grey: Color,
+//    color_shadow: Color,

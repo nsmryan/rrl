@@ -97,7 +97,7 @@ const pkgs = struct {
     const gui = std.build.Pkg{
         .name = "gui",
         .source = .{ .path = "src/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, drawcmd, utils, events, core, board },
+        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, events, board, gen },
     };
 
     const gen = std.build.Pkg{

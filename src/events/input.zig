@@ -18,66 +18,9 @@ const Settings = game.Settings;
 const gen = @import("gen");
 const MapGenType = gen.MapGenType;
 
-pub const ActionMode = enum {
-    primary,
-    alternate,
-};
-
-pub const UseAction = union(enum) {
-    item: ItemClass,
-    skill: struct { skill: Skill, action_mode: ActionMode },
-    talent: Talent,
-    interact,
-};
-
-pub const InputAction = union(enum) {
-    run,
-    sneak,
-    walk,
-    alt,
-    move: Direction,
-    moveTowardsCursor,
-    skillPos: struct {
-        index: usize,
-        pos: Pos,
-        action: ActionMode,
-    },
-    skillFacing: struct {
-        index: usize,
-        action: ActionMode,
-    },
-    startUseItem: ItemClass,
-    startUseSkill: struct { index: usize, action: ActionMode },
-    startUseTalent: usize,
-    useDir: Direction,
-    finalizeUse,
-    abortUse,
-    pass,
-    throwItem: struct { pos: Pos, item_class: ItemClass },
-    pickup,
-    dropItem,
-    yell,
-    cursorMove: struct { dir: Direction, is_relative: bool, is_long: bool },
-    cursorReturn,
-    cursorToggle,
-    mousePos: Pos,
-    mouseButton: struct { mouse_click: MouseClick, key_dir: KeyDir },
-    inventory,
-    skillMenu,
-    classMenu,
-    helpMenu,
-    exit,
-    esc,
-    forceExit,
-    exploreAll,
-    regenerateMap,
-    testMode,
-    overlayToggle,
-    selectEntry: usize,
-    debugToggle,
-    restart,
-    none,
-};
+const actions = @import("actions.zig");
+const ActionMode = actions.ActionMode;
+const InputAction = actions.InputAction;
 
 pub const KeyDir = enum {
     up,
@@ -200,7 +143,7 @@ pub const Input = struct {
         return false;
     }
 
-    pub fn handleEvent(self: *Input, settings: *Settings, event: InputEvent, ticks: u64, config: *const Config) InputAction {
+    pub fn handleEvent(self: *Input, event: InputEvent, settings: *Settings, ticks: u64, config: *const Config) InputAction {
         var action = InputAction.none;
 
         // Remember characters that are pressed down.

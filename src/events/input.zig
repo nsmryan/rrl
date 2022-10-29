@@ -22,10 +22,10 @@ const actions = @import("actions.zig");
 const ActionMode = actions.ActionMode;
 const InputAction = actions.InputAction;
 
-const TALENT_KEYS: [_]u8 = []u8{ 'q', 'w', 'e', 'r' };
-const SKILL_KEYS: [_]u8 = []u8{ 'a', 's', 'd', 'f' };
-const ITEM_KEYS: [_]u8 = []u8{ 'z', 'x', 'c' };
-const CLASSES: [_]ItemClass = []ItemClass{ ItemClass.primary, ItemClass.consumable, ItemClass.misc };
+const TALENT_KEYS = [_]u8{ 'q', 'w', 'e', 'r' };
+const SKILL_KEYS = [_]u8{ 'a', 's', 'd', 'f' };
+const ITEM_KEYS = [_]u8{ 'z', 'x', 'c' };
+const CLASSES = [_]ItemClass{ ItemClass.primary, ItemClass.consumable, ItemClass.misc };
 const DEBUG_TOGGLE_KEY: u8 = '\\';
 
 pub const KeyDir = enum {

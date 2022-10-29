@@ -22,6 +22,12 @@ const actions = @import("actions.zig");
 const ActionMode = actions.ActionMode;
 const InputAction = actions.InputAction;
 
+const TALENT_KEYS: [_]u8 = []u8{ 'q', 'w', 'e', 'r' };
+const SKILL_KEYS: [_]u8 = []u8{ 'a', 's', 'd', 'f' };
+const ITEM_KEYS: [_]u8 = []u8{ 'z', 'x', 'c' };
+const CLASSES: [_]ItemClass = []ItemClass{ ItemClass.primary, ItemClass.consumable, ItemClass.misc };
+const DEBUG_TOGGLE_KEY: u8 = '\\';
+
 pub const KeyDir = enum {
     up,
     held,
@@ -222,4 +228,314 @@ pub const Input = struct {
 
         return action;
     }
+
+    fn handleChar(self: *Input, chr: u8, dir: KeyDir, ticks: u32, settings: *const Settings, config: *const Config) InputAction {
+        return switch (dir) {
+            KeyDir.up => self.handleCharUp(chr, settings),
+            KeyDir.down => self.handleCharDown(chr, settings),
+            KeyDir.held => self.handleCharHeld(chr, ticks, settings, config),
+        };
+    }
+
+    fn handleCharUp(self: *Input, chr: u8, settings: *const Settings) InputAction {
+        if (std.mem.indexOfScalar(u8, chr, self.char_down_order.items)) |index| {
+            self.char_down_order.remove(index);
+        }
+
+        const is_held = self.isHeld(chr);
+        self.char_held.remove(chr);
+
+        if (settings.state.isMenu()) {
+            if (chr.isAsciiDigit()) {
+                return InputAction.selectEntry(@intCast(usize, chr.toDigit(10)));
+            } else {
+                return menuAlphaUpToAction(chr, self.shift);
+            }
+        } else if (settings.state == GameState.use) {
+            if (InputDirection.fromChr(chr)) |input_dir| {
+                if (input_dir == InputDirection.dir) {
+                    if (self.direction != null) {
+                        return InputAction.finalizeUse;
+                    }
+                } else {
+                    return InputAction.dropItem;
+                }
+            } else if (getTalentIndex(chr) != null) {
+                // Releasing the talent does not take you out of use-mode.
+            } else if (getItemIndex(chr) != null) {
+                // Releasing the item does not take you out of use-mode.
+            } else if (getSkillIndex(chr) != null) {
+                // Releasing a skill key does not take you out of use-mode.
+            } else {
+                return self.apply_char(chr, settings);
+            }
+
+            return InputAction.none;
+        } else {
+            // if key was held, do nothing when it is up to avoid a final press
+            if (is_held) {
+                self.clear_char_state(chr);
+                return InputAction.none;
+            } else {
+                const action: InputAction = self.apply_char(chr, settings);
+
+                self.clear_char_state(chr);
+
+                return action;
+            }
+        }
+    }
+
+    fn handleCharDownUseMode(self: *Input, chr: u8, _settings: *const Settings) InputAction {
+        var action = InputAction.none;
+
+        if (InputDirection.fromChr(chr)) |input_dir| {
+            if (input_dir == InputDirection.dir) {
+                // directions are now applied immediately
+                action = InputAction.useDir(input_dir.useDir.dir);
+                self.direction = input_dir.useDir.dir;
+            }
+        } else if (chr == ' ') {
+            action = InputAction.abortUse;
+        } else if (getItemIndex(key)) |index| {
+            const item_class = CLASSES[index];
+
+            // check if you press down the same item again, aborting use-mode
+            if (self.target == Target.Item) {
+                action = InputAction.abortUse;
+                self.target = none;
+            } else {
+                self.target = Some(Target.item(item_class));
+                action = InputAction.startUseItem(item_class);
+            }
+        } else if (getSkillIndex(chr)) |index| {
+            // check if you press down the same item again, aborting use-mode
+            if (self.target == Target.skill(index)) {
+                action = InputAction.abortUse;
+                self.target = null;
+            } else {
+                self.target = Target.skill(index);
+                action = InputAction.startUseSkill(index, self.actionMode());
+            }
+        }
+
+        return action;
+    }
+
+    fn handleCharDown(self: *Input, chr: u8, settings: *const Settings) InputAction {
+        // intercept debug toggle so it is not part of the regular control flow.
+        if (chr == DEBUG_TOGGLE_KEY) {
+            return InputAction.debugToggle;
+        }
+
+        const action = InputAction.none;
+
+        self.char_down_order.push(chr);
+
+        if (settings.state == GameState.use) {
+            action = self.handle_char_down_use_mode(chr, settings);
+        } else if (!settings.state.isMenu()) {
+            if (chr == 'o') {
+                action = InputAction.overlayToggle;
+            } else if (chr == ' ') {
+                action = InputAction.cursorToggle;
+            } else if (InputDirection.fromChr(chr)) |input_dir| {
+                self.direction = input_dir;
+            } else if (!(settings.isCursorMode() and self.ctrl)) {
+                if (getItemIndex(chr)) |index| {
+                    const item_class = CLASSES[index];
+                    self.target = Some(Target.item(item_class));
+
+                    action = InputAction.startUseItem(item_class);
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                } else if (getSkillIndex(chr)) |index| {
+                    self.target = Target.skill(index);
+
+                    action = InputAction.startUseSkill(index, self.action_mode());
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                } else if (getTalentIndex(chr)) |index| {
+                    self.target = Target.talent(index);
+
+                    action = InputAction.startUseTalent(index);
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                }
+            }
+        }
+
+        return action;
+    }
+
+    fn handleCharHeld(self: *Input, chr: u8, ticks: u32, settings: *const Settings, config: *const Config) InputAction {
+        var action = InputAction.none;
+
+        if (self.char_held.get(chr)) |held_state| {
+            // only process the last character as held
+            if (self.char_down_order.iter().last()) |chr| {
+                const held_state = *held_state;
+                //const time_since = held_state.down_time - ticks;
+                const time_since = ticks - held_state.down_time;
+
+                const new_repeats = @floatToInt(usize, @intToFloat(f32, time_since) / config.repeat_delay);
+                if (new_repeats > held_state.repetitions) {
+                    action = self.apply_char(chr, settings);
+
+                    if (action == InputAction.overlayToggle or
+                        action == InputAction.inventory or
+                        action == InputAction.skillMenu or
+                        action == InputAction.exit or
+                        action == InputAction.cursorToggle or
+                        action == InputAction.classMenu)
+                    {
+                        action = InputAction.none;
+                    } else {
+                        self.char_held.insert(chr, held_state.repeated());
+                    }
+                }
+            }
+        }
+
+        return action;
+    }
+
+    fn handleMouseButton(self: *Input, clicked: MouseClick, _mouse_pos: Pos, dir: KeyDir) InputAction {
+        return InputAction.mouseButton(clicked, dir);
+    }
+
+    /// Clear direction or target state for the given character, if applicable.
+    fn clearCharState(self: *Input, chr: u8) void {
+        if (InputDirection.fromChr(chr) != null) {
+            self.direction = .none;
+        }
+
+        if (getTalentIndex(chr) != null) {
+            self.target = .none;
+        }
+
+        if (getSkillIndex(chr) != null) {
+            self.target = .none;
+        }
+
+        if (getItemIndex(chr) != null) {
+            self.target = .none;
+        }
+    }
+
+    fn applyChar(self: *Input, chr: u8, settings: *const Settings) InputAction {
+        var action: InputAction = InputAction.none;
+
+        // check if the key being released is the one that set the input direction.
+        if (InputDirection.fromChr(chr)) |input_dir| {
+            if (self.direction == input_dir) {
+                switch (input_dir) {
+                    InputDirection.dir(dir) => {
+                        if (settings.isCursorMode()) {
+                            action = InputAction.cursorMove(dir, self.ctrl, self.shift);
+                        } else {
+                            action = InputAction.move(dir);
+                        }
+                    },
+
+                    InputDirection.current => {
+                        if (settings.isCursorMode() and self.ctrl) {
+                            action = InputAction.cursorReturn;
+                        } else {
+                            action = InputAction.pass;
+                        }
+                    },
+                }
+            }
+            // if releasing a key that is directional, but not the last directional key
+            // pressed, then do nothing, waiting for the last key to be released instead.
+        } else {
+            if (settings.isCursorMode()) {
+                if (getItemIndex(chr)) |index| {
+                    const item_class = CLASSES[index];
+                    const cursor_pos = settings.cursor.unwrap();
+                    action = InputAction.throwItem(cursor_pos, item_class);
+                }
+            }
+
+            // If we are not releasing a direction, skill, or item then try other keys.
+            if (action == InputAction.none) {
+                action = alphaUpToAction(chr, self.shift);
+            }
+        }
+
+        return action;
+    }
 };
+
+pub fn menuAlphaUpToAction(chr: u8, shift: bool) InputAction {
+    return switch (chr) {
+        'r' => InputAction.restart,
+        'q' => InputAction.exit,
+        'i' => InputAction.inventory,
+        'l' => InputAction.exploreAll,
+        't' => InputAction.testMode,
+        'p' => InputAction.regenerateMap,
+        'j' => kkillMenu,
+        'h' => classMenu,
+        '/' => {
+            // shift + / = ?
+            if (shift) {
+                InputAction.helpMenu;
+            } else {
+                InputAction.none;
+            }
+        },
+
+        else => InputAction.none,
+    };
+}
+
+pub fn alpha_up_to_action(chr: u8, shift: bool) InputAction {
+    return switch (chr) {
+        'r' => InputAction.restart,
+        'g' => InputAction.pickup,
+        'i' => InputAction.inventory,
+        'y' => InputAction.yell,
+        'l' => InputAction.exploreAll,
+        't' => InputAction.testMode,
+        'p' => InputAction.regenerateMap,
+        'j' => InputAction.skillMenu,
+        'h' => InputAction.classMenu,
+        '/' =>
+        // shift + / = ?
+        if (shift) {
+            return InputAction.helpMenu;
+        } else {
+            return InputAction.none;
+        },
+
+        else => InputAction.none,
+    };
+}
+
+fn directionFromDigit(chr: char) ?Direction {
+    return switch (chr) {
+        '4' => Direction.left,
+        '6' => Direction.right,
+        '8' => Direction.up,
+        '2' => Direction.down,
+        '1' => Direction.downLeft,
+        '3' => Direction.downRight,
+        '7' => Direction.upLeft,
+        '9' => Direction.upRight,
+        _ => null,
+    };
+}
+
+fn getTalentIndex(chr: u8) ?usize {
+    return std.mem.indexOfScalar(u8, TALENT_KEYS, chr);
+}
+
+fn getItemIndex(chr: u8) ?usize {
+    return std.mem.indexOfScalar(u8, ITEM_KEYS, chr);
+}
+
+fn getSkillIndex(chr: u8) ?usize {
+    return std.mem.indexOfScalar(u8, SKILL_KEYS, chr);
+}

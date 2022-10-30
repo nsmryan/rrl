@@ -12,15 +12,14 @@ const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const Config = core.config.Config;
 
-const game = @import("game");
-const Settings = game.Settings;
-
 const gen = @import("gen");
 const MapGenType = gen.MapGenType;
 
 const actions = @import("actions.zig");
 const ActionMode = actions.ActionMode;
 const InputAction = actions.InputAction;
+const GameState = actions.GameState;
+const Settings = actions.Settings;
 
 const TALENT_KEYS = [_]u8{ 'q', 'w', 'e', 'r' };
 const SKILL_KEYS = [_]u8{ 'a', 's', 'd', 'f' };
@@ -48,20 +47,6 @@ pub const InputDirection = union(enum) {
         }
     }
 };
-
-fn directionFromDigit(chr: u8) ?Direction {
-    return switch (chr) {
-        '4' => Direction.left,
-        '6' => Direction.right,
-        '8' => Direction.up,
-        '2' => Direction.down,
-        '1' => Direction.downLeft,
-        '3' => Direction.downRight,
-        '7' => Direction.upLeft,
-        '9' => Direction.upRight,
-        else => null,
-    };
-}
 
 pub const Target = union(enum) {
     item: ItemClass,
@@ -141,7 +126,7 @@ pub const Input = struct {
         }
     }
 
-    pub fn is_held(self: Input, chr: u8) bool {
+    pub fn isHeld(self: Input, chr: u8) bool {
         if (self.char_held.get(chr)) |held_state| {
             return held_state.repetitions > 0;
         }
@@ -286,7 +271,7 @@ pub const Input = struct {
         }
     }
 
-    fn handleCharDownUseMode(self: *Input, chr: u8, _settings: *const Settings) InputAction {
+    fn handleCharDownUseMode(self: *Input, chr: u8) InputAction {
         var action = InputAction.none;
 
         if (InputDirection.fromChr(chr)) |input_dir| {
@@ -297,15 +282,15 @@ pub const Input = struct {
             }
         } else if (chr == ' ') {
             action = InputAction.abortUse;
-        } else if (getItemIndex(key)) |index| {
+        } else if (getItemIndex(chr)) |index| {
             const item_class = CLASSES[index];
 
             // check if you press down the same item again, aborting use-mode
             if (self.target == Target.Item) {
                 action = InputAction.abortUse;
-                self.target = none;
+                self.target = null;
             } else {
-                self.target = Some(Target.item(item_class));
+                self.target = Target.item(item_class);
                 action = InputAction.startUseItem(item_class);
             }
         } else if (getSkillIndex(chr)) |index| {
@@ -344,23 +329,23 @@ pub const Input = struct {
             } else if (!(settings.isCursorMode() and self.ctrl)) {
                 if (getItemIndex(chr)) |index| {
                     const item_class = CLASSES[index];
-                    self.target = Some(Target.item(item_class));
+                    self.target = Target.item(item_class);
 
                     action = InputAction.startUseItem(item_class);
                     // directions are cleared when entering use-mode
-                    self.direction = None;
+                    self.direction = null;
                 } else if (getSkillIndex(chr)) |index| {
                     self.target = Target.skill(index);
 
                     action = InputAction.startUseSkill(index, self.action_mode());
                     // directions are cleared when entering use-mode
-                    self.direction = None;
+                    self.direction = null;
                 } else if (getTalentIndex(chr)) |index| {
                     self.target = Target.talent(index);
 
                     action = InputAction.startUseTalent(index);
                     // directions are cleared when entering use-mode
-                    self.direction = None;
+                    self.direction = null;
                 }
             }
         }
@@ -373,14 +358,12 @@ pub const Input = struct {
 
         if (self.char_held.get(chr)) |held_state| {
             // only process the last character as held
-            if (self.char_down_order.iter().last()) |chr| {
-                const held_state = *held_state;
-                //const time_since = held_state.down_time - ticks;
+            if (self.char_down_order.iter().last()) |key| {
                 const time_since = ticks - held_state.down_time;
 
                 const new_repeats = @floatToInt(usize, @intToFloat(f32, time_since) / config.repeat_delay);
                 if (new_repeats > held_state.repetitions) {
-                    action = self.apply_char(chr, settings);
+                    action = self.applyChar(key, settings);
 
                     if (action == InputAction.overlayToggle or
                         action == InputAction.inventory or
@@ -391,17 +374,13 @@ pub const Input = struct {
                     {
                         action = InputAction.none;
                     } else {
-                        self.char_held.insert(chr, held_state.repeated());
+                        self.char_held.insert(key, held_state.repeated());
                     }
                 }
             }
         }
 
         return action;
-    }
-
-    fn handleMouseButton(self: *Input, clicked: MouseClick, _mouse_pos: Pos, dir: KeyDir) InputAction {
-        return InputAction.mouseButton(clicked, dir);
     }
 
     /// Clear direction or target state for the given character, if applicable.
@@ -430,7 +409,7 @@ pub const Input = struct {
         if (InputDirection.fromChr(chr)) |input_dir| {
             if (self.direction == input_dir) {
                 switch (input_dir) {
-                    InputDirection.dir(dir) => {
+                    InputDirection.dir => |dir| {
                         if (settings.isCursorMode()) {
                             action = InputAction.cursorMove(dir, self.ctrl, self.shift);
                         } else {
@@ -476,8 +455,8 @@ pub fn menuAlphaUpToAction(chr: u8, shift: bool) InputAction {
         'l' => InputAction.exploreAll,
         't' => InputAction.testMode,
         'p' => InputAction.regenerateMap,
-        'j' => kkillMenu,
-        'h' => classMenu,
+        'j' => InputAction.skillMenu,
+        'h' => InputAction.classMenu,
         '/' => {
             // shift + / = ?
             if (shift) {
@@ -491,7 +470,7 @@ pub fn menuAlphaUpToAction(chr: u8, shift: bool) InputAction {
     };
 }
 
-pub fn alpha_up_to_action(chr: u8, shift: bool) InputAction {
+pub fn alphaUpToAction(chr: u8, shift: bool) InputAction {
     return switch (chr) {
         'r' => InputAction.restart,
         'g' => InputAction.pickup,
@@ -514,7 +493,7 @@ pub fn alpha_up_to_action(chr: u8, shift: bool) InputAction {
     };
 }
 
-fn directionFromDigit(chr: char) ?Direction {
+fn directionFromDigit(chr: u8) ?Direction {
     return switch (chr) {
         '4' => Direction.left,
         '6' => Direction.right,

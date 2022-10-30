@@ -59,10 +59,13 @@ pub const Entities = struct {
         comptime var names: [fieldInfos.len][]const u8 = undefined;
 
         comptime var index: usize = 0;
-        inline for (fieldInfos) |field| {
-            if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
-                names[index] = field.name;
-                index += 1;
+
+        comptime {
+            inline for (fieldInfos) |field| {
+                if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
+                    names[index] = field.name;
+                    index += 1;
+                }
             }
         }
 

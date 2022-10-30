@@ -80,8 +80,8 @@ pub const SpriteSheet = struct {
     }
 
     pub fn withOffset(name: [64]u8, x_offset: u32, y_offset: u32, width: usize, height: usize) SpriteSheet {
-        const rows = @intCast(usize, height / FONT_HEIGHT);
-        const cols = @intCast(usize, width / FONT_WIDTH);
+        const rows = height / @intCast(usize, FONT_HEIGHT);
+        const cols = width / @intCast(usize, FONT_WIDTH);
         const num_sprites = cols * rows;
 
         return SpriteSheet{

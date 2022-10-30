@@ -71,8 +71,6 @@ pub fn reorientMap(map: Map, rotation: Rotation, mirror: bool, allocator: Alloca
         new_height = map.width;
     }
     var new_map = try Map.fromDims(@intCast(i32, new_width), @intCast(i32, new_height), allocator);
-    _ = new_map;
-    _ = mirror;
 
     var left_walls = ArrayList(RotatePair).init(allocator);
     defer left_walls.deinit();

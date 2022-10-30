@@ -77,7 +77,6 @@ pub fn ErrorSetCommand(comptime es: type) type {
     return struct {
         pub fn command(cdata: tcl.ClientData, interp: [*c]tcl.Tcl_Interp, objv: []const obj.Obj) TclError!void {
             _ = cdata;
-            _ = es;
 
             switch (try obj.GetIndexFromObj(ErrorSetCmds, interp, objv[1], "commands")) {
                 .variants => {

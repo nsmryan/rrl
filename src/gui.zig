@@ -18,6 +18,8 @@ const gen = @import("gen");
 const events = @import("events");
 const Input = events.input.Input;
 const UseAction = events.actions.UseAction;
+const GameState = events.actions.GameState;
+const Settings = events.actions.Settings;
 
 pub const display = @import("gui/display.zig");
 pub const input = @import("gui/keyboard.zig");
@@ -57,55 +59,6 @@ pub const Gui = struct {
                 _ = input_action;
             }
         }
-    }
-};
-
-pub const LevelExitCondition = enum {
-    rightEdge,
-    keyAndGoal,
-};
-
-pub const Settings = struct {
-    turn_count: usize,
-    test_mode: bool,
-    map_type: gen.make_map.MapGenType,
-    state: g.GameState,
-    overlay: bool,
-    level_num: usize,
-    running: bool,
-    cursor: ?Pos,
-    use_action: UseAction,
-    cursor_action: ?UseAction,
-    use_dir: ?Direction,
-    move_mode: movement.MoveMode,
-    debug_enabled: bool,
-    map_load_config: gen.make_map.MapLoadConfig,
-    map_changed: bool,
-    exit_condition: LevelExitCondition,
-
-    pub fn init() Settings {
-        return Settings{
-            .turn_count = 0,
-            .test_mode = false,
-            .map_type = gen.make_map.MapGenType.island,
-            .state = g.GameState.playing,
-            .overlay = false,
-            .level_num = 0,
-            .running = true,
-            .cursor = null,
-            .use_action = UseAction.interact,
-            .cursor_action = null,
-            .use_dir = null,
-            .move_mode = movement.MoveMode.walk,
-            .debug_enabled = false,
-            .map_load_config = gen.make_map.MapLoadConfig.empty,
-            .map_changed = false,
-            .exit_condition = LevelExitCondition.rightEdge,
-        };
-    }
-
-    pub fn isCursorMode(self: *Settings) bool {
-        return self.cursor != null;
     }
 };
 

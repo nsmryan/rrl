@@ -40,10 +40,10 @@ pub fn build(b: *std.build.Builder) void {
     if (builtin.os.tag == .windows) {
         lib.addLibPath("c:/tcltk/bin");
         lib.addLibPath("c:/tcltk/lib");
-        lib.addIncludeDir("c:/tcltk/include");
+        lib.addIncludePath("c:/tcltk/include");
         lib.linkSystemLibraryName("tcl86");
     } else {
-        lib.addIncludeDir("deps/tcl/include");
+        lib.addIncludePath("deps/tcl/include");
         lib.addObjectFile("deps/tcl/lib/libtclstub8.6.a");
     }
 
@@ -91,7 +91,7 @@ const pkgs = struct {
     const events = std.build.Pkg{
         .name = "events",
         .source = .{ .path = "src/events.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, core },
+        .dependencies = &[_]std.build.Pkg{ math, core, gen },
     };
 
     const gui = std.build.Pkg{
@@ -117,7 +117,7 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.gui);
 
     // Add SDL2 dependency
-    step.addIncludeDir("deps/SDL2/include");
+    step.addIncludePath("deps/SDL2/include");
     step.linkSystemLibrary("SDL2");
     step.linkSystemLibrary("SDL2_ttf");
     step.linkSystemLibrary("SDL2_image");

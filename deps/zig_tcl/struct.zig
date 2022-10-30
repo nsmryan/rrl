@@ -120,6 +120,7 @@ pub fn StructCommand(comptime strt: type) type {
 
                     const name = try obj.GetStringFromObj(objv[2]);
 
+                    //obj.IncrRefCount(@ptrCast([*c]const u8, objv[3]));
                     obj.IncrRefCount(objv[3]);
 
                     var length: c_int = undefined;

@@ -126,7 +126,7 @@ pub const Config = struct {
 
         var buf: [1024]u8 = undefined;
         while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-            if (line[0] == '#') {
+            if (line.len == 0 or line[0] == '#') {
                 continue;
             }
 

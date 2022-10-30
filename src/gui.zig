@@ -39,7 +39,7 @@ pub const Gui = struct {
             .display = try display.Display.init(800, 640),
             .input = Input.init(allocator),
             .game = Game.init(rng.random(), allocator),
-            .config = try Config.fromFile("config.txt"[0..]),
+            .config = try Config.fromFile("data/config.txt"[0..]),
             .settings = Settings.init(),
         };
     }
@@ -56,7 +56,7 @@ pub const Gui = struct {
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (events.input.translateEvent(event)) |input_event| {
                 const input_action = game.input.handleEvent(input_event, &game.settings, ticks, &game.config);
-                _ = input_action;
+                std.debug.print("input {}\n", .{input_action});
             }
         }
     }

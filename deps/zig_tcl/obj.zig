@@ -368,7 +368,7 @@ pub fn ToObj(value: anytype) err.TclError!Obj {
         },
 
         .Fn => {
-            return NewIntObj(@ptrToInt(value));
+            return NewIntObj(@ptrToInt(&value));
         },
 
         .Optional => {
@@ -526,13 +526,13 @@ test "fn obj" {
     var interp = tcl.Tcl_CreateInterp();
     defer tcl.Tcl_DeleteInterp(interp);
 
-    const func = struct {
+    const func = &struct {
         fn test_func(arg: u8) u8 {
             return arg + 1;
         }
     }.test_func;
 
-    try std.testing.expectEqual(func, try GetFromObj(fn (u8) u8, interp, try ToObj(func)));
+    try std.testing.expectEqual(func, try GetFromObj(*const fn (u8) u8, interp, try ToObj(func)));
 }
 
 test "ptr obj" {

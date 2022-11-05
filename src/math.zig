@@ -66,8 +66,13 @@ pub fn randPosInRadius(position: pos.Pos, radius: i32, rng: std.rand.Random) pos
     return position.add(offset);
 }
 
-test "math test set" {
-    _ = @import("math/pos.zig");
-    _ = @import("math/line.zig");
-    _ = @import("math/direction.zig");
+//test "math test set" {
+//    _ = @import("math/pos.zig");
+//    _ = @import("math/line.zig");
+//    _ = @import("math/direction.zig");
+//}
+comptime {
+    if (@import("builtin").is_test) {
+        std.testing.refAllDecls(@This());
+    }
 }

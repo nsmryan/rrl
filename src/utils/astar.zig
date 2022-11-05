@@ -29,12 +29,13 @@ pub const Path = struct {
         };
     }
 
-    pub fn deinit(self: *Path) void {
+    pub fn deinit(self: Path) void {
         self.path.deinit();
     }
 
     pub fn dup(self: *Path) !Path {
-        return Path{ .path = try self.path.clone(), .current = self.current, .cost = self.cost };
+        var cloned = try self.path.clone();
+        return Path{ .path = cloned, .current = self.current, .cost = self.cost };
     }
 };
 
@@ -44,7 +45,7 @@ pub const Result = union(enum) {
     no_path,
 };
 
-pub fn Astar(distance: fn (Pos, Pos) usize) type {
+pub fn Astar(comptime distance: fn (Pos, Pos) usize) type {
     return struct {
         const Self = @This();
         const NextQueue = PriorityQueue(Path, Pos, Self.compare);
@@ -66,7 +67,8 @@ pub fn Astar(distance: fn (Pos, Pos) usize) type {
         }
 
         pub fn deinit(self: *Self) void {
-            while (self.next_q.removeOrNull()) |*path| {
+            while (self.next_q.count() > 0) {
+                var path = self.next_q.remove();
                 path.deinit();
             }
             self.next_q.deinit();
@@ -150,7 +152,10 @@ const Map = struct {
 };
 
 test "pathfinding" {
-    const allocator = std.heap.page_allocator;
+    //const allocator = std.heap.page_allocator;
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
 
     const PathFinder = Astar(simple_distance);
 
@@ -198,6 +203,7 @@ test "pathfinding" {
         result = try finder.step(neighbors.items);
     }
     try testing.expectEqual(Result.done, result);
+    defer result.done.deinit();
 
     try testing.expectEqual(Pos.init(0, 0), result.done.path.items[0]);
     try testing.expectEqual(Pos.init(0, 1), result.done.path.items[1]);

@@ -101,7 +101,7 @@ test "basic entities" {
     var entities = Entities.init(allocator);
     defer entities.deinit();
 
-    const id = try entities.createEntity(Pos.init(0, 0), Name.Player, Type.Player);
+    const id = try entities.createEntity(Pos.init(0, 0), Name.player, Type.player);
     try std.testing.expectEqual(@as(Id, 0), id);
     try std.testing.expectEqual(@as(Id, 1), entities.next_id);
     try std.testing.expectEqual(@as(usize, 1), entities.pos.store.items.len);
@@ -116,7 +116,7 @@ test "remove entity" {
     var entities = Entities.init(allocator);
     defer entities.deinit();
 
-    const id = try entities.createEntity(Pos.init(0, 0), Name.Player, Type.Player);
+    const id = try entities.createEntity(Pos.init(0, 0), Name.player, Type.player);
     entities.remove(id);
     try std.testing.expectEqual(@as(Id, 1), entities.next_id);
     try std.testing.expectEqual(@as(usize, 0), entities.pos.store.items.len);

@@ -31,14 +31,3 @@ pub fn main() anyerror!void {
         index += 1;
     }
 }
-
-test {
-    _ = @import("math");
-    _ = @import("utils");
-    //_ = @import("board.zig");
-    _ = @import("core.zig");
-    _ = @import("drawcmd.zig");
-    _ = @import("game.zig");
-    _ = @import("gui.zig");
-    _ = @import("events.zig");
-}

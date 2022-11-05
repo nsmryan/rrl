@@ -7,7 +7,7 @@ pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
 
     // Main Executable
-    const exe = b.addExecutable("rustrl", "src/main.zig");
+    const exe = b.addExecutable("rustrl", "main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     addPackages(exe);
@@ -25,7 +25,7 @@ pub fn build(b: *std.build.Builder) void {
     run_step.dependOn(&run_cmd.step);
 
     // Unit tests
-    const exe_tests = b.addTest("src/main.zig");
+    const exe_tests = b.addTest("main_test.zig");
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
     addPackages(exe_tests);

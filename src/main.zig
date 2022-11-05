@@ -13,7 +13,7 @@ const core = @import("core");
 const g = @import("gui");
 const Display = g.display.Display;
 
-const drawcmd = @import("drawcmd.zig");
+const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Color = drawcmd.utils.Color;
 
@@ -23,16 +23,22 @@ pub fn main() anyerror!void {
     var gui = try g.Gui.init(0, allocator);
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();
-    std.time.sleep(1000000000);
+
+    var index: usize = 0;
+    while (index < 3) {
+        gui.step();
+        std.time.sleep(1000000000);
+        index += 1;
+    }
 }
 
-test "full test set" {
+test {
     _ = @import("math");
     _ = @import("utils");
-    _ = @import("board");
-    _ = @import("core");
-    _ = @import("drawcmd");
+    //_ = @import("board.zig");
+    _ = @import("core.zig");
+    _ = @import("drawcmd.zig");
     _ = @import("game.zig");
-    _ = @import("gui");
-    _ = @import("events");
+    _ = @import("gui.zig");
+    _ = @import("events.zig");
 }

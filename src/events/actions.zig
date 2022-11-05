@@ -120,7 +120,7 @@ pub const Settings = struct {
         return Settings{};
     }
 
-    pub fn is_cursor_mode(self: *Settings) bool {
+    pub fn isCursorMode(self: *const Settings) bool {
         return self.cursor != null;
     }
 };

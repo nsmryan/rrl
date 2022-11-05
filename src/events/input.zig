@@ -37,7 +37,7 @@ pub const InputDirection = union(enum) {
     dir: Direction,
     current: void,
 
-    pub fn fromChar(chr: u8) ?Offset {
+    pub fn fromChar(chr: u8) ?InputDirection {
         if (directionFromDigit(chr)) |dir| {
             return InputDirection{ .dir = dir };
         } else if (chr == '5') {
@@ -61,10 +61,10 @@ pub const MouseClick = enum {
 };
 
 pub const HeldState = struct {
-    down_time: u32,
+    down_time: u64,
     repetitions: usize,
 
-    pub fn init(down_time: u32, repetitions: usize) HeldState {
+    pub fn init(down_time: u64, repetitions: usize) HeldState {
         return HeldState{ .down_time = down_time, .repetitions = repetitions };
     }
 
@@ -89,7 +89,7 @@ pub const InputEvent = union(enum) {
     alt: KeyDir,
     enter: KeyDir,
     mousePos: struct { x: i32, y: i32 },
-    mouseButton: struct { click: MouseClick, pos: Pos, keyDir: KeyDir },
+    mouseClick: struct { click: MouseClick, pos: Pos, keyDir: KeyDir },
     esc,
     tab,
     quit,
@@ -102,7 +102,7 @@ pub const Input = struct {
     target: ?Target,
     direction: ?InputDirection,
     char_down_order: std.ArrayList(u8),
-    char_held: std.AutoHashMap(u8, HeldState),
+    char_held: std.AutoArrayHashMap(u8, HeldState),
     //mouse: MouseState,
 
     pub fn init(allocator: Allocator) Input {
@@ -113,12 +113,12 @@ pub const Input = struct {
             .target = null,
             .direction = null,
             .char_down_order = std.ArrayList(u8).init(allocator),
-            .char_held = std.AutoHashMap(u8, HeldState).init(allocator),
+            .char_held = std.AutoArrayHashMap(u8, HeldState).init(allocator),
             //.mouse = MouseState.init(),
         };
     }
 
-    pub fn action_mode(self: Input) ActionMode {
+    pub fn actionMode(self: Input) ActionMode {
         if (self.ctrl) {
             return ActionMode.alternate;
         } else {
@@ -134,14 +134,14 @@ pub const Input = struct {
         return false;
     }
 
-    pub fn handleEvent(self: *Input, event: InputEvent, settings: *Settings, ticks: u64, config: *const Config) InputAction {
-        var action = InputAction.none;
+    pub fn handleEvent(self: *Input, event: InputEvent, settings: *Settings, ticks: u64, config: *const Config) !InputAction {
+        var action: InputAction = InputAction.none;
 
         // Remember characters that are pressed down.
         if (event == InputEvent.char) {
-            if (event.char.dir == KeyDir.down) {
+            if (event.char.keyDir == KeyDir.down) {
                 const held_state = HeldState.init(ticks, 0);
-                self.char_held.insert(event.char.chr, held_state);
+                try self.char_held.put(event.char.chr, held_state);
             }
         }
 
@@ -176,7 +176,7 @@ pub const Input = struct {
                 switch (dir) {
                     KeyDir.down => action = InputAction.sneak,
                     KeyDir.up => action = InputAction.walk,
-                    _ => {},
+                    else => {},
                 }
             },
 
@@ -188,7 +188,7 @@ pub const Input = struct {
                 switch (dir) {
                     KeyDir.down => action = InputAction.run,
                     KeyDir.up => action = InputAction.walk,
-                    _ => {},
+                    else => {},
                 }
             },
 
@@ -203,41 +203,41 @@ pub const Input = struct {
             },
 
             InputEvent.char => |chr| {
-                action = self.handle_char(chr.chr, chr.dir, ticks, settings, config);
+                action = try self.handleChar(chr.chr, chr.keyDir, ticks, settings, config);
             },
 
-            InputEvent.mouseButton => |button| {
-                action = self.handle_mouse_button(button.clicked, button.mouse_pos, button.dir);
+            InputEvent.mouseClick => |click| {
+                _ = click;
             },
         }
 
         return action;
     }
 
-    fn handleChar(self: *Input, chr: u8, dir: KeyDir, ticks: u32, settings: *const Settings, config: *const Config) InputAction {
+    fn handleChar(self: *Input, chr: u8, dir: KeyDir, ticks: u64, settings: *const Settings, config: *const Config) !InputAction {
         return switch (dir) {
-            KeyDir.up => self.handleCharUp(chr, settings),
+            KeyDir.up => try self.handleCharUp(chr, settings),
             KeyDir.down => self.handleCharDown(chr, settings),
-            KeyDir.held => self.handleCharHeld(chr, ticks, settings, config),
+            KeyDir.held => try self.handleCharHeld(chr, ticks, settings, config),
         };
     }
 
-    fn handleCharUp(self: *Input, chr: u8, settings: *const Settings) InputAction {
-        if (std.mem.indexOfScalar(u8, chr, self.char_down_order.items)) |index| {
-            self.char_down_order.remove(index);
+    fn handleCharUp(self: *Input, chr: u8, settings: *const Settings) !InputAction {
+        if (std.mem.indexOfScalar(u8, self.char_down_order.items, chr)) |index| {
+            _ = self.char_down_order.orderedRemove(index);
         }
 
         const is_held = self.isHeld(chr);
-        self.char_held.remove(chr);
+        _ = self.char_held.orderedRemove(chr);
 
         if (settings.state.isMenu()) {
-            if (chr.isAsciiDigit()) {
-                return InputAction.selectEntry(@intCast(usize, chr.toDigit(10)));
+            if (std.ascii.isDigit(chr)) {
+                return InputAction{ .selectEntry = @intCast(usize, chr - '0') };
             } else {
                 return menuAlphaUpToAction(chr, self.shift);
             }
         } else if (settings.state == GameState.use) {
-            if (InputDirection.fromChr(chr)) |input_dir| {
+            if (InputDirection.fromChar(chr)) |input_dir| {
                 if (input_dir == InputDirection.dir) {
                     if (self.direction != null) {
                         return InputAction.finalizeUse;
@@ -252,19 +252,19 @@ pub const Input = struct {
             } else if (getSkillIndex(chr) != null) {
                 // Releasing a skill key does not take you out of use-mode.
             } else {
-                return self.apply_char(chr, settings);
+                return self.applyChar(chr, settings);
             }
 
             return InputAction.none;
         } else {
             // if key was held, do nothing when it is up to avoid a final press
             if (is_held) {
-                self.clear_char_state(chr);
+                self.clearCharState(chr);
                 return InputAction.none;
             } else {
-                const action: InputAction = self.apply_char(chr, settings);
+                const action: InputAction = self.applyChar(chr, settings);
 
-                self.clear_char_state(chr);
+                self.clearCharState(chr);
 
                 return action;
             }
@@ -272,13 +272,13 @@ pub const Input = struct {
     }
 
     fn handleCharDownUseMode(self: *Input, chr: u8) InputAction {
-        var action = InputAction.none;
+        var action: InputAction = InputAction.none;
 
-        if (InputDirection.fromChr(chr)) |input_dir| {
+        if (InputDirection.fromChar(chr)) |input_dir| {
             if (input_dir == InputDirection.dir) {
                 // directions are now applied immediately
-                action = InputAction.useDir(input_dir.useDir.dir);
-                self.direction = input_dir.useDir.dir;
+                action = InputAction{ .useDir = input_dir.dir };
+                self.direction = input_dir;
             }
         } else if (chr == ' ') {
             action = InputAction.abortUse;
@@ -286,64 +286,65 @@ pub const Input = struct {
             const item_class = CLASSES[index];
 
             // check if you press down the same item again, aborting use-mode
-            if (self.target == Target.Item) {
+            if (self.target != null and self.target.? == Target.item) {
                 action = InputAction.abortUse;
                 self.target = null;
             } else {
-                self.target = Target.item(item_class);
-                action = InputAction.startUseItem(item_class);
+                self.target = Target{ .item = item_class };
+                action = InputAction{ .startUseItem = item_class };
             }
         } else if (getSkillIndex(chr)) |index| {
             // check if you press down the same item again, aborting use-mode
-            if (self.target == Target.skill(index)) {
+            if (std.meta.eql(self.target, Target{ .skill = index })) {
                 action = InputAction.abortUse;
                 self.target = null;
             } else {
-                self.target = Target.skill(index);
-                action = InputAction.startUseSkill(index, self.actionMode());
+                self.target = Target{ .skill = index };
+                action = InputAction{ .startUseSkill = .{ .index = index, .action = self.actionMode() } };
             }
         }
 
         return action;
     }
 
-    fn handleCharDown(self: *Input, chr: u8, settings: *const Settings) InputAction {
+    fn handleCharDown(self: *Input, chr: u8, settings: *const Settings) !InputAction {
         // intercept debug toggle so it is not part of the regular control flow.
         if (chr == DEBUG_TOGGLE_KEY) {
             return InputAction.debugToggle;
         }
 
-        const action = InputAction.none;
+        var action: InputAction = InputAction.none;
 
-        self.char_down_order.push(chr);
+        try self.char_down_order.append(chr);
 
         if (settings.state == GameState.use) {
-            action = self.handle_char_down_use_mode(chr, settings);
+            action = self.handleCharDownUseMode(chr);
         } else if (!settings.state.isMenu()) {
             if (chr == 'o') {
                 action = InputAction.overlayToggle;
             } else if (chr == ' ') {
                 action = InputAction.cursorToggle;
-            } else if (InputDirection.fromChr(chr)) |input_dir| {
+            } else if (InputDirection.fromChar(chr)) |input_dir| {
                 self.direction = input_dir;
             } else if (!(settings.isCursorMode() and self.ctrl)) {
                 if (getItemIndex(chr)) |index| {
                     const item_class = CLASSES[index];
-                    self.target = Target.item(item_class);
 
-                    action = InputAction.startUseItem(item_class);
+                    self.target = Target{ .item = item_class };
+                    action = InputAction{ .startUseItem = item_class };
+
                     // directions are cleared when entering use-mode
                     self.direction = null;
                 } else if (getSkillIndex(chr)) |index| {
-                    self.target = Target.skill(index);
+                    self.target = Target{ .skill = index };
 
-                    action = InputAction.startUseSkill(index, self.action_mode());
+                    action = InputAction{ .startUseSkill = .{ .index = index, .action = self.actionMode() } };
                     // directions are cleared when entering use-mode
                     self.direction = null;
                 } else if (getTalentIndex(chr)) |index| {
-                    self.target = Target.talent(index);
+                    self.target = Target{ .talent = index };
 
-                    action = InputAction.startUseTalent(index);
+                    action = InputAction{ .startUseTalent = index };
                     // directions are cleared when entering use-mode
                     self.direction = null;
                 }
@@ -353,12 +354,13 @@ pub const Input = struct {
         return action;
     }
 
-    fn handleCharHeld(self: *Input, chr: u8, ticks: u32, settings: *const Settings, config: *const Config) InputAction {
-        var action = InputAction.none;
+    fn handleCharHeld(self: *Input, chr: u8, ticks: u64, settings: *const Settings, config: *const Config) !InputAction {
+        var action: InputAction = InputAction.none;
 
         if (self.char_held.get(chr)) |held_state| {
             // only process the last character as held
-            if (self.char_down_order.iter().last()) |key| {
+            if (self.char_down_order.items.len > 0) {
+                const key = self.char_down_order.items[self.char_down_order.items.len - 1];
                 const time_since = ticks - held_state.down_time;
 
                 const new_repeats = @floatToInt(usize, @intToFloat(f32, time_since) / config.repeat_delay);
@@ -374,7 +376,7 @@ pub const Input = struct {
                     {
                         action = InputAction.none;
                     } else {
-                        self.char_held.insert(key, held_state.repeated());
+                        try self.char_held.put(key, held_state.repeated());
                     }
                 }
             }
@@ -385,20 +387,20 @@ pub const Input = struct {
 
     /// Clear direction or target state for the given character, if applicable.
     fn clearCharState(self: *Input, chr: u8) void {
-        if (InputDirection.fromChr(chr) != null) {
-            self.direction = .none;
+        if (InputDirection.fromChar(chr) != null) {
+            self.direction = null;
         }
 
         if (getTalentIndex(chr) != null) {
-            self.target = .none;
+            self.target = null;
         }
 
         if (getSkillIndex(chr) != null) {
-            self.target = .none;
+            self.target = null;
         }
 
         if (getItemIndex(chr) != null) {
-            self.target = .none;
+            self.target = null;
         }
     }
 
@@ -406,14 +408,14 @@ pub const Input = struct {
         var action: InputAction = InputAction.none;
 
         // check if the key being released is the one that set the input direction.
-        if (InputDirection.fromChr(chr)) |input_dir| {
-            if (self.direction == input_dir) {
+        if (InputDirection.fromChar(chr)) |input_dir| {
+            if (self.direction != null and std.meta.eql(self.direction.?, input_dir)) {
                 switch (input_dir) {
                     InputDirection.dir => |dir| {
                         if (settings.isCursorMode()) {
-                            action = InputAction.cursorMove(dir, self.ctrl, self.shift);
+                            action = InputAction{ .cursorMove = .{ .dir = dir, .is_relative = self.ctrl, .is_long = self.shift } };
                         } else {
-                            action = InputAction.move(dir);
+                            action = InputAction{ .move = dir };
                         }
                     },
 
@@ -432,8 +434,8 @@ pub const Input = struct {
             if (settings.isCursorMode()) {
                 if (getItemIndex(chr)) |index| {
                     const item_class = CLASSES[index];
-                    const cursor_pos = settings.cursor.unwrap();
-                    action = InputAction.throwItem(cursor_pos, item_class);
+                    const cursor_pos = settings.cursor.?;
+                    action = InputAction{ .throwItem = .{ .pos = cursor_pos, .item_class = item_class } };
                 }
             }
 
@@ -460,9 +462,9 @@ pub fn menuAlphaUpToAction(chr: u8, shift: bool) InputAction {
         '/' => {
             // shift + / = ?
             if (shift) {
-                InputAction.helpMenu;
+                return InputAction.helpMenu;
             } else {
-                InputAction.none;
+                return InputAction.none;
             }
         },
 
@@ -503,18 +505,18 @@ fn directionFromDigit(chr: u8) ?Direction {
         '3' => Direction.downRight,
         '7' => Direction.upLeft,
         '9' => Direction.upRight,
-        _ => null,
+        else => null,
     };
 }
 
 fn getTalentIndex(chr: u8) ?usize {
-    return std.mem.indexOfScalar(u8, TALENT_KEYS, chr);
+    return std.mem.indexOfScalar(u8, &TALENT_KEYS, chr);
 }
 
 fn getItemIndex(chr: u8) ?usize {
-    return std.mem.indexOfScalar(u8, ITEM_KEYS, chr);
+    return std.mem.indexOfScalar(u8, &ITEM_KEYS, chr);
 }
 
 fn getSkillIndex(chr: u8) ?usize {
-    return std.mem.indexOfScalar(u8, SKILL_KEYS, chr);
+    return std.mem.indexOfScalar(u8, &SKILL_KEYS, chr);
 }

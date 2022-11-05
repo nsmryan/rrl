@@ -70,5 +70,4 @@ test "math test set" {
     _ = @import("math/pos.zig");
     _ = @import("math/line.zig");
     _ = @import("math/direction.zig");
-    _ = @import("math/rand.zig");
 }

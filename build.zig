@@ -11,6 +11,7 @@ pub fn build(b: *std.build.Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     addPackages(exe);
+    addCDeps(exe);
     exe.linkLibC();
     exe.install();
 
@@ -28,6 +29,7 @@ pub fn build(b: *std.build.Builder) void {
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
     addPackages(exe_tests);
+    addCDeps(exe_tests);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
@@ -50,6 +52,7 @@ pub fn build(b: *std.build.Builder) void {
     // Add packages
     lib.addPackagePath("zigtcl", "deps/zig_tcl/zigtcl.zig");
     addPackages(lib);
+    addCDeps(lib);
 
     lib.install();
 
@@ -115,7 +118,10 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.math);
     step.addPackage(pkgs.events);
     step.addPackage(pkgs.gui);
+    step.addPackage(pkgs.gen);
+}
 
+fn addCDeps(step: *std.build.LibExeObjStep) void {
     // Add SDL2 dependency
     step.addIncludePath("deps/SDL2/include");
     step.linkSystemLibrary("SDL2");

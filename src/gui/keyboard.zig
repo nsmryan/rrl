@@ -4,37 +4,36 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 
 const events = @import("events");
-const InputEvent = events.InputEvent;
-const KeyDir = events.KeyDir;
-const MouseButton = events.MouseButton;
-const MouseClick = events.MouseClick;
+const InputEvent = events.input.InputEvent;
+const KeyDir = events.input.KeyDir;
+const MouseClick = events.input.MouseClick;
 
 pub fn translateEvent(event: sdl2.SDL_Event) ?InputEvent {
     switch (event.@"type") {
         sdl2.SDL_QUIT => {
-            return InputEvent.Quit;
+            return InputEvent.quit;
         },
 
         sdl2.SDL_KEYDOWN => {
             const keycode: i32 = event.key.keysym.sym;
 
-            var dir = KeyDir.Down;
+            var dir = KeyDir.down;
 
-            if (event.key.repeat) {
-                dir = KeyDir.Held;
+            if (event.key.repeat == 1) {
+                dir = KeyDir.held;
             }
 
             if (keycodeToChar(keycode)) |chr| {
-                return InputEvent.Char(chr, dir);
+                return InputEvent{ .char = .{ .chr = chr, .keyDir = dir } };
             } else if (keycode == sdl2.SDLK_LCTRL or keycode == sdl2.SDLK_RCTRL) {
-                return InputEvent.Ctrl(dir);
+                return InputEvent{ .ctrl = dir };
             } else if (keycode == sdl2.SDLK_LALT or keycode == sdl2.SDLK_RALT) {
-                return InputEvent.Alt(dir);
+                return InputEvent{ .alt = dir };
             } else if (keycode == sdl2.SDLK_LSHIFT or keycode == sdl2.SDLK_RSHIFT) {
-                return InputEvent.Shift(dir);
+                return InputEvent{ .shift = dir };
             } else if (keycode == sdl2.SDLK_KP_ENTER or keycode == sdl2.SDLK_RETURN) {
                 // TODO what about RETURN2
-                return InputEvent.Enter(KeyDir.Down);
+                return InputEvent{ .enter = KeyDir.down };
             } else {
                 return null;
             }
@@ -45,24 +44,24 @@ pub fn translateEvent(event: sdl2.SDL_Event) ?InputEvent {
         sdl2.SDL_KEYUP => {
             const keycode: i32 = event.key.keysym.sym;
 
-            if (event.key.repeat) {
+            if (event.key.repeat == 1) {
                 return null;
             }
 
             if (keycodeToChar(keycode)) |chr| {
-                return InputEvent.Char(chr, KeyDir.Up);
+                return InputEvent{ .char = .{ .chr = chr, .keyDir = KeyDir.up } };
             } else if (keycode == sdl2.SDLK_LCTRL or keycode == sdl2.SDLK_RCTRL) {
-                return InputEvent.Ctrl(KeyDir.Up);
+                return InputEvent{ .ctrl = KeyDir.up };
             } else if (keycode == sdl2.SDLK_LALT or keycode == sdl2.SDLK_RALT) {
-                return InputEvent.Alt(KeyDir.Up);
+                return InputEvent{ .alt = KeyDir.up };
             } else if (keycode == sdl2.SDLK_KP_TAB) {
-                return InputEvent.Tab;
+                return InputEvent.tab;
             } else if (keycode == sdl2.SDLK_ESCAPE) {
-                return InputEvent.Esc;
+                return InputEvent.esc;
             } else if (keycode == sdl2.SDLK_LSHIFT or keycode == sdl2.SDLK_RSHIFT) {
-                return InputEvent.Shift(KeyDir.Up);
+                return InputEvent{ .shift = KeyDir.up };
             } else if (keycode == sdl2.SDLK_KP_ENTER or keycode == sdl2.SDLK_RETURN) {
-                return InputEvent.Enter(KeyDir.Up);
+                return InputEvent{ .enter = KeyDir.up };
             } else {
                 // NOTE could check for LShift, RShift
                 return null;
@@ -71,52 +70,48 @@ pub fn translateEvent(event: sdl2.SDL_Event) ?InputEvent {
             return null;
         },
 
-        sdl2.SDL_MOUSEMOTION => {
-            return InputEvent.MousePos(event.motion.x, event.motion.y);
-        },
-
         sdl2.SDL_MOUSEBUTTONDOWN => {
-            var click = undefined;
-            switch (event.button.mouse_btn) {
-                MouseButton.Left => {
-                    click = MouseClick.Left;
+            var click: MouseClick = undefined;
+            switch (event.button.button) {
+                sdl2.SDL_BUTTON_LEFT => {
+                    click = MouseClick.left;
                 },
 
-                MouseButton.Right => {
-                    click = MouseClick.Right;
+                sdl2.SDL_BUTTON_RIGHT => {
+                    click = MouseClick.right;
                 },
 
-                MouseButton.Middle => {
-                    click = MouseClick.Middle;
+                sdl2.SDL_BUTTON_MIDDLE => {
+                    click = MouseClick.middle;
                 },
 
-                _ => return null,
+                else => return null,
             }
 
-            const mouse_pos = Pos.new(event.button.x, event.button.y);
-            return InputEvent.MouseButton(click, mouse_pos, KeyDir.Down);
+            const mouse_pos = Pos.init(event.button.x, event.button.y);
+            return InputEvent{ .mouseClick = .{ .click = click, .pos = mouse_pos, .keyDir = KeyDir.down } };
         },
 
         sdl2.SDL_MOUSEBUTTONUP => {
-            var click = undefined;
-            switch (event.button.mouse_btn) {
-                MouseButton.Left => {
-                    click = MouseClick.Left;
+            var click: MouseClick = undefined;
+            switch (event.button.button) {
+                sdl2.SDL_BUTTON_LEFT => {
+                    click = MouseClick.left;
                 },
 
-                MouseButton.Right => {
-                    click = MouseClick.Right;
+                sdl2.SDL_BUTTON_RIGHT => {
+                    click = MouseClick.right;
                 },
 
-                MouseButton.Middle => {
-                    click = MouseClick.Middle;
+                sdl2.SDL_BUTTON_MIDDLE => {
+                    click = MouseClick.middle;
                 },
 
-                _ => return null,
+                else => return null,
             }
 
-            const mouse_pos = Pos.new(event.button.x, event.button.y);
-            return InputEvent.MouseButton(click, mouse_pos, KeyDir.Up);
+            const mouse_pos = Pos.init(event.button.x, event.button.y);
+            return InputEvent{ .mouseClick = .{ .click = click, .pos = mouse_pos, .keyDir = KeyDir.up } };
         },
 
         else => {
@@ -125,64 +120,64 @@ pub fn translateEvent(event: sdl2.SDL_Event) ?InputEvent {
     }
 }
 
-pub fn keycodeToChar(key: u8) ?u8 {
-    switch (key) {
+pub fn keycodeToChar(key: i32) ?u8 {
+    return switch (key) {
         sdl2.SDLK_SPACE => ' ',
         sdl2.SDLK_COMMA => ',',
         sdl2.SDLK_MINUS => '-',
         sdl2.SDLK_PERIOD => '.',
-        sdl2.SDLK_NUM0 => '0',
-        sdl2.SDLK_NUM1 => '1',
-        sdl2.SDLK_NUM2 => '2',
-        sdl2.SDLK_NUM3 => '3',
-        sdl2.SDLK_NUM4 => '4',
-        sdl2.SDLK_NUM5 => '5',
-        sdl2.SDLK_NUM6 => '6',
-        sdl2.SDLK_NUM7 => '7',
-        sdl2.SDLK_NUM8 => '8',
-        sdl2.SDLK_NUM9 => '9',
-        sdl2.SDLK_A => 'a',
-        sdl2.SDLK_B => 'b',
-        sdl2.SDLK_C => 'c',
-        sdl2.SDLK_D => 'd',
-        sdl2.SDLK_E => 'e',
-        sdl2.SDLK_F => 'f',
-        sdl2.SDLK_G => 'g',
-        sdl2.SDLK_H => 'h',
-        sdl2.SDLK_I => 'i',
-        sdl2.SDLK_J => 'j',
-        sdl2.SDLK_K => 'k',
-        sdl2.SDLK_L => 'l',
-        sdl2.SDLK_M => 'm',
-        sdl2.SDLK_N => 'n',
-        sdl2.SDLK_O => 'o',
-        sdl2.SDLK_P => 'p',
-        sdl2.SDLK_Q => 'q',
-        sdl2.SDLK_R => 'r',
-        sdl2.SDLK_S => 's',
-        sdl2.SDLK_T => 't',
-        sdl2.SDLK_U => 'u',
-        sdl2.SDLK_V => 'v',
-        sdl2.SDLK_W => 'w',
-        sdl2.SDLK_X => 'x',
-        sdl2.SDLK_Y => 'y',
-        sdl2.SDLK_Z => 'z',
+        sdl2.SDLK_0 => '0',
+        sdl2.SDLK_1 => '1',
+        sdl2.SDLK_2 => '2',
+        sdl2.SDLK_3 => '3',
+        sdl2.SDLK_4 => '4',
+        sdl2.SDLK_5 => '5',
+        sdl2.SDLK_6 => '6',
+        sdl2.SDLK_7 => '7',
+        sdl2.SDLK_8 => '8',
+        sdl2.SDLK_9 => '9',
+        sdl2.SDLK_a => 'a',
+        sdl2.SDLK_b => 'b',
+        sdl2.SDLK_c => 'c',
+        sdl2.SDLK_d => 'd',
+        sdl2.SDLK_e => 'e',
+        sdl2.SDLK_f => 'f',
+        sdl2.SDLK_g => 'g',
+        sdl2.SDLK_h => 'h',
+        sdl2.SDLK_i => 'i',
+        sdl2.SDLK_j => 'j',
+        sdl2.SDLK_k => 'k',
+        sdl2.SDLK_l => 'l',
+        sdl2.SDLK_m => 'm',
+        sdl2.SDLK_n => 'n',
+        sdl2.SDLK_o => 'o',
+        sdl2.SDLK_p => 'p',
+        sdl2.SDLK_q => 'q',
+        sdl2.SDLK_r => 'r',
+        sdl2.SDLK_s => 's',
+        sdl2.SDLK_t => 't',
+        sdl2.SDLK_u => 'u',
+        sdl2.SDLK_v => 'v',
+        sdl2.SDLK_w => 'w',
+        sdl2.SDLK_x => 'x',
+        sdl2.SDLK_y => 'y',
+        sdl2.SDLK_z => 'z',
         sdl2.SDLK_RIGHT => '6',
         sdl2.SDLK_LEFT => '4',
         sdl2.SDLK_DOWN => '2',
         sdl2.SDLK_UP => '8',
-        sdl2.SDLK_KP0 => '0',
-        sdl2.SDLK_KP1 => '1',
-        sdl2.SDLK_KP2 => '2',
-        sdl2.SDLK_KP3 => '3',
-        sdl2.SDLK_KP4 => '4',
-        sdl2.SDLK_KP5 => '5',
-        sdl2.SDLK_KP6 => '6',
-        sdl2.SDLK_KP7 => '7',
-        sdl2.SDLK_KP8 => '8',
-        sdl2.SDLK_KP9 => '9',
-        sdl2.SDLK_KPPERIOD => '.',
-        sdl2.SDLK_KPSPACE => ' ',
+        sdl2.SDLK_KP_0 => '0',
+        sdl2.SDLK_KP_1 => '1',
+        sdl2.SDLK_KP_2 => '2',
+        sdl2.SDLK_KP_3 => '3',
+        sdl2.SDLK_KP_4 => '4',
+        sdl2.SDLK_KP_5 => '5',
+        sdl2.SDLK_KP_6 => '6',
+        sdl2.SDLK_KP_7 => '7',
+        sdl2.SDLK_KP_8 => '8',
+        sdl2.SDLK_KP_9 => '9',
+        sdl2.SDLK_KP_PERIOD => '.',
+        sdl2.SDLK_KP_SPACE => ' ',
         sdl2.SDLK_LEFTBRACKET => '[',
         sdl2.SDLK_RIGHTBRACKET => ']',
         sdl2.SDLK_BACKQUOTE => '`',
@@ -190,5 +185,5 @@ pub fn keycodeToChar(key: u8) ?u8 {
         sdl2.SDLK_QUESTION => '?',
         sdl2.SDLK_SLASH => '/',
         else => null,
-    }
+    };
 }

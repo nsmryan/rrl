@@ -51,7 +51,7 @@ pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
     return @intCast(usize, Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER);
 }
 
-pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32, allocator: Allocator) !ArrayList(Pos) {
+pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*const fn (Pos, Pos, Map) i32, allocator: Allocator) !ArrayList(Pos) {
     const PathFinder = astar.Astar(pathFindDistance);
 
     var finder = PathFinder.init(start, allocator);

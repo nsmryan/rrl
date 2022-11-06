@@ -24,10 +24,7 @@ pub fn main() anyerror!void {
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();
 
-    var index: usize = 0;
-    while (index < 3) {
-        gui.step();
-        std.time.sleep(1000000000);
-        index += 1;
+    while (try gui.step()) {
+        std.time.sleep(100000000);
     }
 }

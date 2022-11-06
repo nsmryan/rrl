@@ -10,6 +10,9 @@ const Comp = comp.Comp;
 const math = @import("math");
 const Pos = math.pos.Pos;
 
+const movement = @import("movement.zig");
+const MoveMode = movement.MoveMode;
+
 pub const EntityClass = enum {
     body,
     grass,
@@ -18,15 +21,19 @@ pub const EntityClass = enum {
 };
 
 pub const Entities = struct {
-    next_id: Id = 0,
+    pub const player_id = 0;
+
+    next_id: Id = 1,
     ids: ArrayList(Id),
     pos: Comp(Pos),
     typ: Comp(Type),
     name: Comp(Name),
+    move_mode: Comp(MoveMode),
+    move_left: Comp(usize),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
-        entities.next_id = 0;
+        entities.next_id = 1;
 
         comptime var names = compNames();
         inline for (names) |field_name| {

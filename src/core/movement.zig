@@ -18,4 +18,12 @@ pub const MoveMode = enum {
             MoveMode.walk => MoveMode.sneak,
         }
     }
+
+    pub fn moveAmount(self: MoveMode) usize {
+        return switch (self) {
+            .sneak => 1,
+            .walk => 1,
+            .run => 2,
+        };
+    }
 };

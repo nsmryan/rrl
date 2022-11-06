@@ -24,6 +24,11 @@ const UseAction = actions.UseAction;
 const InputAction = actions.InputAction;
 const InputEvent = input.InputEvent;
 
+pub const resolve = @import("game/resolve.zig");
+
+pub const messaging = @import("game/messaging.zig");
+pub const MsgLog = messaging.MsgLog;
+
 const CONFIG_PATH = "data/config.txt";
 
 pub const Game = struct {
@@ -32,14 +37,19 @@ pub const Game = struct {
     input: Input,
     config: Config,
     settings: Settings,
+    log: MsgLog,
 
     pub fn init(rng: Random, allocator: Allocator) !Game {
+        var level = Level.empty(allocator);
+        // Spawn the player so a game always has a player at index 0.
+        try core.spawn.spawnPlayer(&level.entities);
         return Game{
-            .level = Level.empty(allocator),
+            .level = level,
             .rng = rng,
             .input = Input.init(allocator),
             .config = try Config.fromFile(CONFIG_PATH[0..]),
             .settings = Settings.init(),
+            .log = MsgLog.init(allocator),
         };
     }
 
@@ -49,8 +59,9 @@ pub const Game = struct {
 
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
-        std.log.debug("input {any}\n", .{input_action});
-        actions.resolveAction(game, input_action);
+        std.log.debug("input {any}", .{input_action});
+        try actions.resolveAction(game, input_action);
+        try resolve.resolve(game);
     }
 
     pub fn changeState(game: *Game, new_state: GameState) void {

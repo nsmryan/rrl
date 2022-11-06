@@ -6,6 +6,7 @@ const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
+const Entities = core.entities.Entities;
 
 const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
@@ -80,10 +81,14 @@ pub const InputAction = union(enum) {
     none,
 };
 
-pub fn resolveAction(game: *Game, input_action: InputAction) void {
+pub fn resolveAction(game: *Game, input_action: InputAction) !void {
     switch (game.settings.state) {
         .playing => {
             switch (input_action) {
+                .move => |dir| {
+                    try game.log.log(.tryMove, .{ Entities.player_id, dir, game.settings.move_mode.moveAmount(), game.settings.move_mode });
+                },
+
                 // TODO for now esc exits, but when menus work only exit should exit the game.
                 .esc => game.changeState(.exit),
                 else => {},

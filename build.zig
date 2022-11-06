@@ -91,16 +91,16 @@ const pkgs = struct {
         .dependencies = &[_]std.build.Pkg{math},
     };
 
-    const events = std.build.Pkg{
-        .name = "events",
-        .source = .{ .path = "src/events.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, core, gen },
+    const game = std.build.Pkg{
+        .name = "game",
+        .source = .{ .path = "src/game.zig" },
+        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, gen },
     };
 
     const gui = std.build.Pkg{
         .name = "gui",
         .source = .{ .path = "src/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, events, board, gen },
+        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, board, game, gen },
     };
 
     const gen = std.build.Pkg{
@@ -116,9 +116,9 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.core);
     step.addPackage(pkgs.drawcmd);
     step.addPackage(pkgs.math);
-    step.addPackage(pkgs.events);
     step.addPackage(pkgs.gui);
     step.addPackage(pkgs.gen);
+    step.addPackage(pkgs.game);
 }
 
 fn addCDeps(step: *std.build.LibExeObjStep) void {

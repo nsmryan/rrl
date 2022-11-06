@@ -15,11 +15,11 @@ const Config = core.config.Config;
 
 const gen = @import("gen");
 
-const events = @import("events");
-const Input = events.input.Input;
-const UseAction = events.actions.UseAction;
-const GameState = events.actions.GameState;
-const Settings = events.actions.Settings;
+const game = @import("game");
+const Input = game.input.Input;
+const UseAction = game.actions.UseAction;
+const Settings = game.actions.Settings;
+const GameState = game.GameState;
 
 pub const display = @import("gui/display.zig");
 pub const keyboard = @import("gui/keyboard.zig");

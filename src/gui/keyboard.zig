@@ -3,10 +3,10 @@ const sdl2 = @import("sdl2.zig");
 const math = @import("math");
 const Pos = math.pos.Pos;
 
-const events = @import("events");
-const InputEvent = events.input.InputEvent;
-const KeyDir = events.input.KeyDir;
-const MouseClick = events.input.MouseClick;
+const game = @import("game");
+const InputEvent = game.input.InputEvent;
+const KeyDir = game.input.KeyDir;
+const MouseClick = game.input.MouseClick;
 
 pub fn translateEvent(event: sdl2.SDL_Event) ?InputEvent {
     switch (event.@"type") {

@@ -18,8 +18,9 @@ const MapGenType = gen.MapGenType;
 const actions = @import("actions.zig");
 const ActionMode = actions.ActionMode;
 const InputAction = actions.InputAction;
-const GameState = actions.GameState;
-const Settings = actions.Settings;
+const g = @import("game");
+const GameState = g.GameState;
+const Settings = g.Settings;
 
 const TALENT_KEYS = [_]u8{ 'q', 'w', 'e', 'r' };
 const SKILL_KEYS = [_]u8{ 'a', 's', 'd', 'f' };

@@ -308,49 +308,47 @@ fn mark_visible(pos: Pos, tiles: []const []const i32, visible: *ArrayList(Pos)) 
         try visible.append(pos);
     }
 }
-//
-//test "expansive walls" {
-//    const origin = Pos.init(1, 2);
-//
-//    const tiles = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
-//
-//    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-//    var visible = ArrayList(Pos).init(allocator.allocator());
-//    defer visible.deinit();
-//
-//    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
-//
-//    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
-//    try matchingVisible(expected[0..], &visible);
-//}
 
-//test "test_expanding_shadows" {
-//    const origin = Pos.init(0, 0);
-//
-//    const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 1, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 } };
-//
-//    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-//    var visible = ArrayList(Pos).init(allocator.allocator());
-//    defer visible.deinit();
-//
-//    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
-//
-//    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 0, 0, 1, 1, 1 }, &.{ 1, 1, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 0, 0, 0, 0 } };
-//    try matchingVisible(expected[0..], &visible);
-//}
+test "expansive walls" {
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var visible = ArrayList(Pos).init(allocator.allocator());
+    defer visible.deinit();
 
-//test "test_no_blind_corners" {
-//    const origin = Pos.init(3, 0);
-//
-//    const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 1, 1, 1, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 } };
-//
-//    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-//    var visible = ArrayList(Pos).init(allocator.allocator());
-//    defer visible.deinit();
-//
-//    try computeFov(origin, tiles[0..], &visible, is_blocking_fn);
-//
-//    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 0, 0, 0, 0, 1, 1, 1 }, &.{ 0, 0, 0, 0, 0, 1, 1 } };
-//
-//    try matchingVisible(expected[0..], &visible);
-//}
+    const origin = Pos.init(1, 2);
+    const tiles = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
+    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+
+    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
+    try matchingVisible(expected[0..], &visible);
+}
+
+test "test_expanding_shadows" {
+    const origin = Pos.init(0, 0);
+
+    const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 1, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 } };
+
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var visible = ArrayList(Pos).init(allocator.allocator());
+    defer visible.deinit();
+
+    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+
+    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 0, 0, 1, 1, 1 }, &.{ 1, 1, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 0, 0, 0, 0 } };
+    try matchingVisible(expected[0..], &visible);
+}
+
+test "test_no_blind_corners" {
+    const origin = Pos.init(3, 0);
+
+    const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 1, 1, 1, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 } };
+
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var visible = ArrayList(Pos).init(allocator.allocator());
+    defer visible.deinit();
+
+    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+
+    const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 0, 0, 0, 0, 1, 1, 1 }, &.{ 0, 0, 0, 0, 0, 1, 1 } };
+
+    try matchingVisible(expected[0..], &visible);
+}

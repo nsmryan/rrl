@@ -50,12 +50,7 @@ pub const Game = struct {
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
         std.log.debug("input {any}\n", .{input_action});
-
-        switch (input_action) {
-            // TODO for now esc exits, but when menus work only exit should exit the game.
-            .esc => game.changeState(.exit),
-            else => {},
-        }
+        events.actions.resolveAction(game, input_action);
     }
 
     pub fn changeState(game: *Game, new_state: GameState) void {

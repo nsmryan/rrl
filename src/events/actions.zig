@@ -129,3 +129,11 @@ pub const LevelExitCondition = enum {
     rightEdge,
     keyAndGoal,
 };
+
+pub fn resolveAction(game: *Game, input_action: InputAction) void {
+    switch (input_action) {
+        // TODO for now esc exits, but when menus work only exit should exit the game.
+        .esc => game.changeState(.exit),
+        else => {},
+    }
+}

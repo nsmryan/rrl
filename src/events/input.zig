@@ -27,6 +27,8 @@ const ITEM_KEYS = [_]u8{ 'z', 'x', 'c' };
 const CLASSES = [_]ItemClass{ ItemClass.primary, ItemClass.consumable, ItemClass.misc };
 const DEBUG_TOGGLE_KEY: u8 = '\\';
 
+const REPEAT_DELAY: f32 = 0.35;
+
 pub const KeyDir = enum {
     up,
     held,
@@ -93,6 +95,10 @@ pub const InputEvent = union(enum) {
     esc,
     tab,
     quit,
+
+    pub fn initChar(chr: u8, keyDir: KeyDir) InputEvent {
+        return InputEvent{ .char = .{ .chr = chr, .keyDir = keyDir } };
+    }
 };
 
 pub const Input = struct {
@@ -118,6 +124,11 @@ pub const Input = struct {
         };
     }
 
+    pub fn deinit(input: *Input) void {
+        input.char_down_order.deinit();
+        input.char_held.deinit();
+    }
+
     pub fn actionMode(self: Input) ActionMode {
         if (self.ctrl) {
             return ActionMode.alternate;
@@ -134,7 +145,7 @@ pub const Input = struct {
         return false;
     }
 
-    pub fn handleEvent(self: *Input, event: InputEvent, settings: *Settings, ticks: u64, config: *const Config) !InputAction {
+    pub fn handleEvent(self: *Input, event: InputEvent, settings: *Settings, ticks: u64) !InputAction {
         var action: InputAction = InputAction.none;
 
         // Remember characters that are pressed down.
@@ -203,7 +214,7 @@ pub const Input = struct {
             },
 
             InputEvent.char => |chr| {
-                action = try self.handleChar(chr.chr, chr.keyDir, ticks, settings, config);
+                action = try self.handleChar(chr.chr, chr.keyDir, ticks, settings);
             },
 
             InputEvent.mouseClick => |click| {
@@ -214,11 +225,11 @@ pub const Input = struct {
         return action;
     }
 
-    fn handleChar(self: *Input, chr: u8, dir: KeyDir, ticks: u64, settings: *const Settings, config: *const Config) !InputAction {
+    fn handleChar(self: *Input, chr: u8, dir: KeyDir, ticks: u64, settings: *const Settings) !InputAction {
         return switch (dir) {
             KeyDir.up => try self.handleCharUp(chr, settings),
             KeyDir.down => self.handleCharDown(chr, settings),
-            KeyDir.held => try self.handleCharHeld(chr, ticks, settings, config),
+            KeyDir.held => try self.handleCharHeld(chr, ticks, settings),
         };
     }
 
@@ -354,7 +365,7 @@ pub const Input = struct {
         return action;
     }
 
-    fn handleCharHeld(self: *Input, chr: u8, ticks: u64, settings: *const Settings, config: *const Config) !InputAction {
+    fn handleCharHeld(self: *Input, chr: u8, ticks: u64, settings: *const Settings) !InputAction {
         var action: InputAction = InputAction.none;
 
         if (self.char_held.get(chr)) |held_state| {
@@ -363,7 +374,7 @@ pub const Input = struct {
                 const key = self.char_down_order.items[self.char_down_order.items.len - 1];
                 const time_since = ticks - held_state.down_time;
 
-                const new_repeats = @floatToInt(usize, @intToFloat(f32, time_since) / config.repeat_delay);
+                const new_repeats = @floatToInt(usize, @intToFloat(f32, time_since) / REPEAT_DELAY);
                 if (new_repeats > held_state.repetitions) {
                     action = self.applyChar(key, settings);
 
@@ -519,4 +530,136 @@ fn getItemIndex(chr: u8) ?usize {
 
 fn getSkillIndex(chr: u8) ?usize {
     return std.mem.indexOfScalar(u8, &SKILL_KEYS, chr);
+}
+
+test "test input movement" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var input = Input.init(allocator);
+    defer input.deinit();
+    var settings = Settings.init();
+    const time = 0;
+
+    {
+        const event = InputEvent.initChar('4', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.none, input_action);
+    }
+
+    {
+        const event = InputEvent.initChar('4', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .move = Direction.left }, input_action);
+    }
+}
+
+test "test input use mode enter" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var input = Input.init(allocator);
+    defer input.deinit();
+    var settings = Settings.init();
+    const time = 0;
+
+    {
+        const event = InputEvent.initChar('z', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+    }
+
+    // letting item up outside of use-mode does not cause any action.
+    {
+        const event = InputEvent.initChar('z', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.none, input_action);
+    }
+
+    // down and up
+    {
+        const event = InputEvent.initChar('z', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+    }
+
+    settings.state = GameState.use;
+
+    {
+        const event = InputEvent.initChar('z', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.none, input_action);
+    }
+}
+
+test "input use mode exit" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var input = Input.init(allocator);
+    defer input.deinit();
+    var settings = Settings.init();
+    const time = 0;
+
+    {
+        const event = InputEvent.initChar('z', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+    }
+
+    settings.state = GameState.use;
+
+    {
+        const event = InputEvent.initChar('z', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.none, input_action);
+    }
+
+    {
+        const event = InputEvent.initChar('4', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .useDir = Direction.left }, input_action);
+    }
+
+    {
+        const event = InputEvent.initChar('4', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.finalizeUse, input_action);
+    }
+}
+
+test "input use mode abort" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var input = Input.init(allocator);
+    defer input.deinit();
+    var settings = Settings.init();
+    const time = 0;
+
+    {
+        const event = InputEvent.initChar('z', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+    }
+
+    settings.state = GameState.use;
+
+    {
+        const event = InputEvent.initChar(' ', KeyDir.down);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.abortUse, input_action);
+    }
+
+    settings.state = GameState.playing;
+
+    {
+        const event = InputEvent.initChar('4', KeyDir.up);
+        const input_action = try input.handleEvent(event, &settings, time);
+        try std.testing.expectEqual(InputAction.none, input_action);
+    }
 }

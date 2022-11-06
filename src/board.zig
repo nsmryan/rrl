@@ -6,12 +6,8 @@ pub const rotate = @import("board/rotate.zig");
 pub const shadowcasting = @import("board/shadowcasting.zig");
 pub const tile = @import("board/tile.zig");
 
-test "board test set" {
-    _ = @import("board/blocking.zig");
-    _ = @import("board/fov.zig");
-    _ = @import("board/map.zig");
-    _ = @import("board/pathing.zig");
-    _ = @import("board/tile.zig");
-    _ = @import("board/rotate.zig");
-    _ = @import("board/shadowcasting.zig");
+comptime {
+    if (@import("builtin").is_test) {
+        @import("std").testing.refAllDecls(@This());
+    }
 }

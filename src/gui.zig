@@ -45,8 +45,6 @@ pub const Gui = struct {
     }
 
     pub fn step(gui: *Gui) void {
-        // Poll for sdl2 events.
-        // translateEvent input into InputAction (maybe rename Action)
         // dispatch based on state and turn InputAction into messages
         // Messages must be implemented, and include a "now" concept to simplfy use code.
         // Add a resolve function which then modifies the game based on the messages.
@@ -55,16 +53,15 @@ pub const Gui = struct {
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
-                const input_action = gui.input.handleEvent(input_event, &gui.settings, ticks, &gui.config);
+                const input_action = gui.input.handleEvent(input_event, &gui.settings, ticks);
                 std.debug.print("input {any}\n", .{input_action});
             }
         }
     }
 };
 
-test "gui test set" {
-    _ = @import("gui/display.zig");
-    _ = @import("gui/keyboard.zig");
-    _ = @import("gui/drawing.zig");
-    _ = @import("gui/sdl2.zig");
+comptime {
+    if (@import("builtin").is_test) {
+        @import("std").testing.refAllDecls(@This());
+    }
 }

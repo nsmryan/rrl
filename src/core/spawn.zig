@@ -27,4 +27,5 @@ pub fn spawnPlayer(entities: *Entities) !void {
     try entities.name.insert(id, .player);
     try entities.move_mode.insert(id, MoveMode.walk);
     try entities.move_left.insert(id, 0);
+    try entities.blocking.insert(id, true);
 }

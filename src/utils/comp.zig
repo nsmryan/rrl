@@ -71,7 +71,14 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
-        pub fn get_ptr(self: *Self, id: Id) ?*T {
+        pub fn has(self: *Self, id: Id) bool {
+            switch (binarySearchKeys(id, self.ids.items)) {
+                .found => return true,
+                .not_found => return false,
+            }
+        }
+
+        pub fn getPtr(self: *Self, id: Id) ?*T {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| return &self.store.items[loc],
                 .not_found => return null,
@@ -225,7 +232,7 @@ test "comp get" {
     try std.testing.expectEqual(value, comp.get(3));
 }
 
-test "comp get_ptr" {
+test "comp getPtr" {
     var allocator = std.heap.GeneralPurposeAllocator(.{}){};
     var comp = Comp(u64).init(allocator.allocator());
 
@@ -236,22 +243,22 @@ test "comp get_ptr" {
     var value: u64 = 0;
 
     value = 10;
-    var ptr = comp.get_ptr(0).?;
+    var ptr = comp.getPtr(0).?;
     try std.testing.expectEqual(value, ptr.*);
 
     // Test that we can modify the pointer and change the item in the Comp's storage.
     ptr.* = 100;
     value = 100;
-    try std.testing.expectEqual(value, comp.get_ptr(0).?.*);
+    try std.testing.expectEqual(value, comp.getPtr(0).?.*);
 
     value = 11;
-    try std.testing.expectEqual(value, comp.get_ptr(1).?.*);
+    try std.testing.expectEqual(value, comp.getPtr(1).?.*);
 
     value = 12;
-    try std.testing.expectEqual(value, comp.get_ptr(2).?.*);
+    try std.testing.expectEqual(value, comp.getPtr(2).?.*);
 
     var null_value: ?*usize = null;
-    try std.testing.expectEqual(null_value, comp.get_ptr(3));
+    try std.testing.expectEqual(null_value, comp.getPtr(3));
 }
 
 test "comp contains key" {

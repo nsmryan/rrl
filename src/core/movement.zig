@@ -1,3 +1,34 @@
+const board = @import("board");
+const Height = board.tile.Tile.Height;
+
+const core = @import("core");
+const Pos = core.pos.Pos;
+const Direction = core.direction.Direction;
+
+pub const HitWall = struct {
+    height: Height,
+    blocked_tile: bool,
+
+    pub fn init(height: Height, blocked_tile: bool) HitWall {
+        return HitWall{ .height = height, .blocked_tile = blocked_tile };
+    }
+};
+
+pub const Collision = struct {
+    entity: bool,
+    wall: ?HitWall,
+    pos: Pos,
+    dir: Direction,
+
+    pub fn init(pos: Pos, dir: Direction) Collision {
+        return Collision{ .id = null, .wall = null, .pos = pos, .dir = dir };
+    }
+
+    pub fn hit(collision: Collision) bool {
+        return collision.entity || collision.wall != null;
+    }
+};
+
 pub const MoveMode = enum {
     sneak,
     walk,

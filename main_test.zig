@@ -6,5 +6,4 @@ test {
     _ = @import("src/drawcmd.zig");
     _ = @import("src/game.zig");
     _ = @import("src/gui.zig");
-    _ = @import("src/events.zig");
 }

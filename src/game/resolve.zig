@@ -8,6 +8,10 @@ pub fn resolve(game: *Game) !void {
         switch (msg) {
             .tryMove => |args| {
                 std.debug.print("msg {}\n", .{args});
+                // TODO use level checkCollision.
+                // If possible, move.
+                // If amount is not 0, add new try move.
+                // then implement move itself.
             },
         }
     }

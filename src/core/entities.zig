@@ -28,6 +28,7 @@ pub const Entities = struct {
     pos: Comp(Pos),
     typ: Comp(Type),
     name: Comp(Name),
+    blocking: Comp(bool),
     move_mode: Comp(MoveMode),
     move_left: Comp(usize),
 
@@ -98,6 +99,7 @@ pub const Entities = struct {
         try self.pos.insert(id, position);
         try self.typ.insert(id, typ);
         try self.name.insert(id, name);
+        try self.blocking.insert(id, false);
 
         return id;
     }
@@ -109,8 +111,8 @@ test "basic entities" {
     defer entities.deinit();
 
     const id = try entities.createEntity(Pos.init(0, 0), Name.player, Type.player);
-    try std.testing.expectEqual(@as(Id, 0), id);
-    try std.testing.expectEqual(@as(Id, 1), entities.next_id);
+    try std.testing.expectEqual(@as(Id, 1), id);
+    try std.testing.expectEqual(@as(Id, 2), entities.next_id);
     try std.testing.expectEqual(@as(usize, 1), entities.pos.store.items.len);
 
     entities.clear();
@@ -125,7 +127,7 @@ test "remove entity" {
 
     const id = try entities.createEntity(Pos.init(0, 0), Name.player, Type.player);
     entities.remove(id);
-    try std.testing.expectEqual(@as(Id, 1), entities.next_id);
+    try std.testing.expectEqual(@as(Id, 2), entities.next_id);
     try std.testing.expectEqual(@as(usize, 0), entities.pos.store.items.len);
 }
 

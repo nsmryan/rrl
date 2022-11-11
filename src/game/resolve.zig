@@ -68,7 +68,7 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
         }
     } else {
         // No collision, just move to location.
-        try game.log.now(.move, .{ id, MoveType.jumpWall, move_mode, move_pos });
+        try game.log.now(.move, .{ id, MoveType.move, move_mode, move_pos });
         if (amount > 1) {
             try game.log.now(.tryMove, .{ id, dir, amount - 1 });
         }
@@ -79,7 +79,6 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     const start_pos = game.level.entities.pos.get(id).?;
 
     game.level.entities.pos.set(id, pos);
-
     const changed_pos = !std.meta.eql(start_pos, pos);
 
     if (move_mode == MoveMode.run) {

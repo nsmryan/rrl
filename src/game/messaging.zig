@@ -80,10 +80,11 @@ pub const MsgLog = struct {
         // If a message is retrieved, log it in 'all' as the final ordering of message
         // processing.
         var msg: ?Msg = undefined;
+        // NOTE(performance) this ordered remove is O(n). A dequeue would be better.
         if (msg_log.instant.items.len > 0) {
-            msg = msg_log.instant.pop();
+            msg = msg_log.instant.orderedRemove(0);
         } else if (msg_log.remaining.items.len > 0) {
-            msg = msg_log.remaining.pop();
+            msg = msg_log.remaining.orderedRemove(0);
         } else {
             msg = null;
         }

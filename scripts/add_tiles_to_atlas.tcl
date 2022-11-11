@@ -1,4 +1,4 @@
-lassign $::argv spriteAtlasName tileLocationsName finalAtlasName
+lassign $::argv spriteAtlasName tileLocationsName
 
 set spriteFile [open $spriteAtlasName r]
 set tileLocationsFile [open $tileLocationsName r]
@@ -18,7 +18,8 @@ dict for {key value} $tileLocations {
     dict set sprites $value [list [expr $x + $x_offset] [expr $y + $y_offset] $dim $dim]
 }
 
-set finalAtlas [open $finalAtlasName w]
+close $spriteFile
+set finalAtlas [open $spriteAtlasName w]
 dict for { key value } $sprites {
     puts $finalAtlas [concat $key $value]
 }

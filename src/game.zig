@@ -16,6 +16,7 @@ const movement = core.movement;
 
 const board = @import("board");
 const Map = board.map.Map;
+const Tile = board.tile.Tile;
 
 const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
@@ -171,4 +172,25 @@ test "walk around a bit" {
 
     try game.handleInputAction(InputAction{ .move = .downRight });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0).?);
+}
+
+test "walk into full tile wall" {
+    const allocator = std.testing.allocator;
+
+    var game = try Game.init(0, allocator);
+    defer game.deinit();
+
+    game.level.map = try Map.fromDims(3, 3, allocator);
+    game.level.map.set(Pos.init(1, 1), Tile.impassable());
+
+    try game.handleInputAction(InputAction{ .move = .downRight });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    game.level.map.set(Pos.init(1, 0), Tile.tallWall());
+
+    try game.handleInputAction(InputAction{ .move = .right });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0).?);
 }

@@ -168,7 +168,7 @@ pub fn blockedDir(map: *const Map, position: Pos, dir: Direction, blocked_type: 
 }
 
 pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type: BlockedType) ?Blocked {
-    const end_pos = dir.offsetPos(start_pos, 1);
+    const end_pos = dir.move(start_pos);
     var blocked = Blocked.init(start_pos, end_pos, dir, false, .empty);
 
     // If the target position is out of bounds, we are blocked.
@@ -182,6 +182,7 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
     blocked.height = blocked_type.tileBlocks(map.get(end_pos));
     if (blocked.height != .empty) {
         blocked.blocked_tile = true;
+        return blocked;
     }
 
     if (dir.horiz()) {
@@ -198,12 +199,12 @@ pub fn moveBlocked(map: *const Map, start_pos: Pos, dir: Direction, blocked_type
         const counterclockwise_dir = dir.counterclockwise();
 
         const height0 = blockedDir(map, start_pos, clockwise_dir, blocked_type);
-        const height1 = blockedDir(map, counterclockwise_dir.offsetPos(start_pos, 1), clockwise_dir, blocked_type);
+        const height1 = blockedDir(map, counterclockwise_dir.move(start_pos), clockwise_dir, blocked_type);
         blocked.height = blocked.height.join(height0.meet(height1));
 
         // Other Size
         const height2 = blockedDir(map, start_pos, counterclockwise_dir, blocked_type);
-        const height3 = blockedDir(map, clockwise_dir.offsetPos(start_pos, 1), counterclockwise_dir, blocked_type);
+        const height3 = blockedDir(map, clockwise_dir.move(start_pos), counterclockwise_dir, blocked_type);
         blocked.height = blocked.height.join(height2.meet(height3));
     }
 
@@ -230,14 +231,20 @@ test "move blocked" {
         try std.testing.expect(null == moveBlocked(&map, start, dir, BlockedType.move));
 
         // A tile with a wall is blocked.
-        map.getPtr(dir.offsetPos(start, 1)).center.height = .short;
-        var blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, true, .short);
+        map.getPtr(dir.move(start)).center.height = .short;
+        var blocked = Blocked.init(start, dir.move(start), dir, true, .short);
+        try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
+
+        // An impassable tile
+        map.clear();
+        map.getPtr(dir.move(start)).impassable = true;
+        blocked = Blocked.init(start, dir.move(start), dir, true, .tall);
         try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
         // A tile with an intertile wall is blocked to direct movement.
         map.clear();
         map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
-        blocked = Blocked.init(start, dir.offsetPos(start, 1), dir, false, .short);
+        blocked = Blocked.init(start, dir.move(start), dir, false, .short);
         try std.testing.expectEqual(blocked, moveBlocked(&map, start, dir, BlockedType.move).?);
 
         // A tile with a short wall does not block FoV.
@@ -262,20 +269,20 @@ test "move blocked" {
 
         // Short walls in both corners do block diagonal movement.
         map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
-        blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+        blocked = Blocked.init(start, diag_dir.move(start), diag_dir, false, .short);
         try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
 
         map.clear();
         map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
         try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-        map.placeIntertileDir(diag_dir.offsetPos(start, 1), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
+        map.placeIntertileDir(diag_dir.move(start), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
         map.placeIntertileDir(start, dir, Wall.init(Height.short, Material.stone));
         try std.testing.expect(null == moveBlocked(&map, start, diag_dir, BlockedType.move));
 
-        map.placeIntertileDir(perp_dir.offsetPos(start, 1), dir, Wall.init(Height.short, Material.stone));
-        map.placeIntertileDir(diag_dir.offsetPos(start, 1), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
-        blocked = Blocked.init(start, diag_dir.offsetPos(start, 1), diag_dir, false, .short);
+        map.placeIntertileDir(perp_dir.move(start), dir, Wall.init(Height.short, Material.stone));
+        map.placeIntertileDir(diag_dir.move(start), perp_dir.reverse(), Wall.init(Height.short, Material.stone));
+        blocked = Blocked.init(start, diag_dir.move(start), diag_dir, false, .short);
         try std.testing.expectEqual(blocked, moveBlocked(&map, start, diag_dir, BlockedType.move).?);
     }
 }
@@ -285,7 +292,7 @@ pub fn reachableNeighbors(map: *const Map, start: Pos, blocked_type: BlockedType
 
     for (Direction.directions()) |dir| {
         if (moveBlocked(map, start, dir, blocked_type) == null) {
-            try neighbors.append(dir.offsetPos(start, 1));
+            try neighbors.append(dir.move(start));
         }
     }
 }

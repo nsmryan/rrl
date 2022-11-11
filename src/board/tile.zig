@@ -1,5 +1,7 @@
 pub const Tile = struct {
+    /// Has the tile been seen yet?
     explored: bool,
+    /// Is the tile part of the game (aka not a 'water' tile).
     impassable: bool,
     center: Wall,
     down: Wall,
@@ -87,7 +89,7 @@ pub const Tile = struct {
     }
 
     pub fn impassable() Tile {
-        return Tile{ .explored = false, .impassable = false, .center = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
+        return Tile{ .explored = false, .impassable = true, .center = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
     }
 
     pub fn empty() Tile {

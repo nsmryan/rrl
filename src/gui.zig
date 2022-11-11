@@ -15,6 +15,8 @@ const Config = core.config.Config;
 
 const gen = @import("gen");
 
+const rendering = @import("rendering.zig");
+
 const game = @import("game");
 const Input = game.input.Input;
 const UseAction = game.actions.UseAction;
@@ -53,10 +55,16 @@ pub const Gui = struct {
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
                 try gui.game.step(input_event, ticks);
+                try gui.draw();
             }
         }
 
         return gui.game.settings.state != GameState.exit;
+    }
+
+    pub fn draw(gui: *Gui) !void {
+        try rendering.render(&gui.game, &gui.display.sprites.sheets, &gui.display.panel, &gui.display.drawcmds);
+        gui.display.present();
     }
 };
 

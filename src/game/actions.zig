@@ -9,6 +9,7 @@ const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
 const Entities = core.entities.Entities;
+const MoveMode = core.movement.MoveMode;
 
 const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
@@ -87,10 +88,15 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
     switch (game.settings.state) {
         .playing => {
             switch (input_action) {
-                .move => |dir| {
-                    std.log.debug("input action move {}", .{dir});
-                    try game.log.log(.tryMove, .{ Entities.player_id, dir, game.settings.move_mode.moveAmount(), game.settings.move_mode });
-                },
+                .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).?.moveAmount() }),
+
+                .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
+
+                .sneak => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.sneak }),
+
+                .walk => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.walk }),
+
+                .pass => try game.log.log(.pass, Entities.player_id),
 
                 // TODO for now esc exits, but when menus work only exit should exit the game.
                 .esc => game.changeState(.exit),

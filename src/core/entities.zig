@@ -70,6 +70,7 @@ pub const Entities = struct {
     name: Comp(Name),
     blocking: Comp(bool),
     move_mode: Comp(MoveMode),
+    next_move_mode: Comp(MoveMode),
     move_left: Comp(usize),
     turn: Comp(Turn),
     needs_removal: Comp(bool),

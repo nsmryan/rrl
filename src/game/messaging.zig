@@ -18,7 +18,7 @@ const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
 
 pub const Msg = union(enum) {
-    tryMove: struct { id: Id, dir: Direction, amount: usize, move_mode: MoveMode },
+    tryMove: struct { id: Id, dir: Direction, amount: usize },
     collided: struct { id: Id, pos: Pos },
     faceTowards: struct { id: Id, pos: Pos },
     jumpWall: struct { id: Id, from: Pos, to: Pos },
@@ -26,6 +26,8 @@ pub const Msg = union(enum) {
     gainEnergy: struct { id: Id, amount: u32 },
     sound: struct { id: Id, pos: Pos, amount: usize },
     stance: struct { id: Id, stance: Stance },
+    nextMoveMode: struct { id: Id, move_mode: MoveMode },
+    pass: Id,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

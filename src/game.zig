@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const Random = std.rand.Random;
@@ -13,6 +14,7 @@ const Level = core.level.Level;
 const MoveMode = core.movement.MoveMode;
 const Config = core.config.Config;
 const movement = core.movement;
+const Stance = core.entities.Stance;
 
 const board = @import("board");
 const Map = board.map.Map;
@@ -100,7 +102,6 @@ pub const Settings = struct {
     use_action: UseAction = UseAction.interact,
     cursor_action: ?UseAction = null,
     use_dir: ?Direction = null,
-    move_mode: movement.MoveMode = movement.MoveMode.walk,
     debug_enabled: bool = false,
     map_load_config: MapLoadConfig = MapLoadConfig.empty,
     map_changed: bool = false,
@@ -192,5 +193,59 @@ test "walk into full tile wall" {
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
 
     try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0).?);
+}
+
+test "interact with intertile walls" {
+    const allocator = std.testing.allocator;
+
+    var game = try Game.init(0, allocator);
+    defer game.deinit();
+
+    game.level.map = try Map.fromDims(3, 3, allocator);
+    game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
+
+    // Try to walk into wall- should fail.
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    // Try to walk past wall diagonally- should succeed
+    try game.handleInputAction(InputAction{ .move = .downRight });
+    try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0).?);
+
+    // Try to walk back past wall diagonally- should succeed
+    try game.handleInputAction(InputAction{ .move = .upLeft });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    // Run
+    try game.handleInputAction(InputAction.run);
+    try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0).?);
+
+    // Jump over wall
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0).?);
+
+    // Sneak
+    try game.handleInputAction(InputAction.sneak);
+    try std.testing.expectEqual(MoveMode.sneak, game.level.entities.next_move_mode.get(0).?);
+
+    // Can't jump over wall
+    try game.handleInputAction(InputAction{ .move = .up });
+    try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0).?);
+    try std.testing.expectEqual(MoveMode.sneak, game.level.entities.next_move_mode.get(0).?);
+
+    // Pass turn to change stance
+    try game.handleInputAction(InputAction.pass);
+    try std.testing.expectEqual(Stance.standing, game.level.entities.stance.get(0).?);
+
+    try game.handleInputAction(InputAction.pass);
+    try std.testing.expectEqual(Stance.crouching, game.level.entities.stance.get(0).?);
+
+    // Run again
+    try game.handleInputAction(InputAction.run);
+    try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0).?);
+
+    // Try to run over wall- should fail because crouched from sneaking.
+    try game.handleInputAction(InputAction{ .move = .up });
     try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0).?);
 }

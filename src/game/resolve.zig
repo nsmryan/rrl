@@ -28,17 +28,21 @@ const Game = g.Game;
 pub fn resolve(game: *Game) !void {
     while (try game.log.pop()) |msg| {
         switch (msg) {
-            .tryMove => |args| try resolveTryMove(args.id, args.dir, args.amount, args.move_mode, game),
+            .tryMove => |args| try resolveTryMove(args.id, args.dir, args.amount, game),
             .move => |args| try resolveMove(args.id, args.move_type, args.move_mode, args.pos, game),
             .gainEnergy => |args| resolveGainEnergy(args.id, args.amount, game),
+            .nextMoveMode => |args| resolveNextMoveMode(args.id, args.move_mode, game),
+            .pass => |args| try resolvePassTurn(args, game),
             else => {},
         }
     }
 }
 
-fn resolveTryMove(id: Id, dir: Direction, amount: usize, move_mode: MoveMode, game: *Game) !void {
+fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
     // NOTE if this does happen, consider making amount == 0 a Msg.pass.
     std.debug.assert(amount > 0);
+
+    const move_mode = game.level.entities.next_move_mode.get(id).?;
 
     const start_pos = game.level.entities.pos.get(id).?;
     const move_pos = dir.move(start_pos);
@@ -66,7 +70,7 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, move_mode: MoveMode, ga
         // No collision, just move to location.
         try game.log.now(.move, .{ id, MoveType.jumpWall, move_mode, move_pos });
         if (amount > 1) {
-            try game.log.now(.tryMove, .{ id, dir, amount - 1, move_mode });
+            try game.log.now(.tryMove, .{ id, dir, amount - 1 });
         }
     }
 }
@@ -369,5 +373,18 @@ pub fn trampleGrassMove(level: *Level, start_pos: Pos, end_pos: Pos) void {
             level.map.getPtr(wall_pos).*.down.material = Material.stone;
             level.map.getPtr(wall_pos).*.down.height = Height.empty;
         }
+    }
+}
+
+fn resolveNextMoveMode(id: Id, move_mode: MoveMode, game: *Game) void {
+    game.level.entities.next_move_mode.getPtr(id).?.* = move_mode;
+}
+
+fn resolvePassTurn(id: Id, game: *Game) !void {
+    game.level.entities.turn.getPtr(id).?.*.pass = true;
+
+    if (game.level.entities.stance.get(id)) |stance| {
+        game.level.entities.stance.getPtr(id).?.* = updateStance(.pass, game.level.entities.next_move_mode.get(id).?, stance);
+        try game.log.now(.stance, .{ id, game.level.entities.stance.get(id).? });
     }
 }

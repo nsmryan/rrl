@@ -28,6 +28,8 @@ pub fn spawnPlayer(entities: *Entities, config: *const Config) !void {
 
     entities.blocking.getPtr(id).?.* = true;
     try entities.move_mode.insert(id, MoveMode.walk);
+    try entities.next_move_mode.insert(id, MoveMode.walk);
     try entities.move_left.insert(id, 0);
     try entities.energy.insert(id, config.player_energy);
+    try entities.stance.insert(id, .standing);
 }

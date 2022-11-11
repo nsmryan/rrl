@@ -12,16 +12,17 @@ pub const Map = struct {
     width: i32,
     height: i32,
     tiles: []Tile,
+    allocator: Allocator,
 
     // NOTE(perf) this likely does need to be added back in for performance.
     //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
 
-    pub fn empty() Map {
-        return Map{ .width = 0, .height = 0, .tiles = &.{} };
+    pub fn empty(allocator: Allocator) Map {
+        return Map{ .width = 0, .height = 0, .tiles = &.{}, .allocator = allocator };
     }
 
-    pub fn fromSlice(tiles: []Tile, width: i32, height: i32) Map {
-        return Map{ .tiles = tiles, .width = width, .height = height };
+    pub fn fromSlice(tiles: []Tile, width: i32, height: i32, allocator: Allocator) Map {
+        return Map{ .tiles = tiles, .width = width, .height = height, .allocator = allocator };
     }
 
     pub fn fromDims(width: i32, height: i32, allocator: Allocator) !Map {
@@ -30,8 +31,9 @@ pub const Map = struct {
 
         var tiles = try allocator.alloc(Tile, @intCast(usize, width * height));
         std.mem.set(Tile, tiles, Tile.empty());
-        return Map.fromSlice(tiles, width, height);
+        return Map.fromSlice(tiles, width, height, allocator);
     }
+
     pub fn get(self: *const Map, position: Pos) Tile {
         const index = position.x + position.y * self.width;
         return self.tiles[@intCast(usize, index)];
@@ -53,8 +55,8 @@ pub const Map = struct {
         return x_bounds and y_bounds;
     }
 
-    pub fn deinit(self: *Map, allocator: Allocator) void {
-        allocator.free(self.tiles);
+    pub fn deinit(self: *Map) void {
+        self.allocator.free(self.tiles);
     }
 
     pub fn printLayers(self: *Map) void {

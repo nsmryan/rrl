@@ -92,6 +92,11 @@ pub const Sprites = struct {
     pub fn init(texture: *Texture, sheets: ArrayList(SpriteSheet)) Sprites {
         return Sprites{ .texture = texture, .sheets = sheets };
     }
+
+    pub fn deinit(sprites: *Sprites) void {
+        sdl2.SDL_DestroyTexture(sprites.texture);
+        sprites.sheets.deinit();
+    }
 };
 
 pub fn processDrawCmd(panel: *Panel, renderer: *Renderer, texture: *Texture, sprites: *Sprites, ascii_texture: AsciiTexture, draw_cmd: *const DrawCmd) void {

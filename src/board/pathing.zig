@@ -114,7 +114,7 @@ test "path finding" {
     var allocator = std.testing.allocator;
 
     var map = try Map.fromDims(3, 3, allocator);
-    defer map.deinit(allocator);
+    defer map.deinit();
 
     const start = Pos.init(0, 0);
     const end = Pos.init(2, 2);

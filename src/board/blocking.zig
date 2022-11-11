@@ -220,7 +220,7 @@ test "move blocked" {
     const start = Pos.init(1, 1);
 
     var map = try Map.fromDims(3, 3, allocator);
-    defer map.deinit(allocator);
+    defer map.deinit();
 
     const directions: [4]Direction = .{ .left, .right, .up, .down };
     for (directions) |dir| {
@@ -293,7 +293,7 @@ pub fn reachableNeighbors(map: *const Map, start: Pos, blocked_type: BlockedType
 test "reachable neighbors" {
     var allocator = std.testing.allocator;
     var map = try Map.fromDims(3, 3, allocator);
-    defer map.deinit(allocator);
+    defer map.deinit();
 
     const start = Pos.init(0, 0);
     map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();

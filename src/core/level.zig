@@ -28,8 +28,13 @@ pub const Level = struct {
         return Level{ .map = map, .entities = entities };
     }
 
+    pub fn deinit(level: *Level) void {
+        level.map.deinit();
+        level.entities.deinit();
+    }
+
     pub fn empty(allocator: Allocator) Level {
-        return Level.init(Map.empty(), Entities.init(allocator));
+        return Level.init(Map.empty(allocator), Entities.init(allocator));
     }
 
     pub fn fromDims(width: i32, height: i32, allocator: Allocator) !Level {

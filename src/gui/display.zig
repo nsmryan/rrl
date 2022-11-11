@@ -41,12 +41,12 @@ pub const Display = struct {
     panel: Panel,
 
     drawcmds: ArrayList(DrawCmd),
-    //arena: std.heap.ArenaAllocator,
+    allocator: Allocator,
 
-    pub fn init(window_width: c_int, window_height: c_int) !Display {
+    pub fn init(window_width: c_int, window_height: c_int, allocator: Allocator) !Display {
         // Create the allocator internally for a simpler TCL interface.
         //var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        var allocator = std.heap.page_allocator; //arena.allocator();
+        //var allocator = std.heap.page_allocator; //arena.allocator();
 
         var drawcmds = ArrayList(DrawCmd).init(allocator);
 
@@ -81,8 +81,7 @@ pub const Display = struct {
         // back buffer so we can save/restore/etc the screen buffer.
         //if (sdl2.SDL_SetRenderTarget(renderer, screen_texture) != 0) {
         //    sdl2.SDL_Log("Unable to set render target: %s", sdl2.SDL_GetError());
-        //    return error.SDLInitializationFailed;
-        //}
+        //    return error.SDLInitializationFailed; //}
 
         const sprite_surface = sdl2.IMG_Load("data/spriteAtlas.png") orelse {
             sdl2.SDL_Log("Unable to load sprite image: %s", sdl2.SDL_GetError());
@@ -118,7 +117,7 @@ pub const Display = struct {
             .sprites = sprites,
             .screen_texture = screen_texture,
             .drawcmds = drawcmds,
-            //.arena = arena,
+            .allocator = allocator,
         };
         return game;
     }
@@ -162,7 +161,7 @@ pub const Display = struct {
         sdl2.SDL_DestroyRenderer(self.renderer);
         sdl2.SDL_DestroyWindow(self.window);
         sdl2.SDL_Quit();
-        //self.arena.deinit();
+        self.sprites.deinit();
     }
 
     pub fn render(self: *Display) !void {

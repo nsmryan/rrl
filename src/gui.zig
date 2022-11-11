@@ -33,9 +33,14 @@ pub const Gui = struct {
     pub fn init(seed: u64, allocator: Allocator) !Gui {
         var rng = RndGen.init(seed);
         return Gui{
-            .display = try display.Display.init(800, 640),
+            .display = try display.Display.init(800, 640, allocator),
             .game = try Game.init(rng.random(), allocator),
         };
+    }
+
+    pub fn deinit(gui: *Gui) void {
+        gui.display.deinit();
+        gui.game.deinit();
     }
 
     pub fn step(gui: *Gui) !bool {
@@ -59,4 +64,13 @@ comptime {
     if (@import("builtin").is_test) {
         @import("std").testing.refAllDecls(@This());
     }
+}
+
+test "gui alloc dealloc" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var gui = try Gui.init(0, allocator);
+    defer gui.deinit();
 }

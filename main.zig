@@ -21,6 +21,8 @@ pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
 
     var gui = try g.Gui.init(0, allocator);
+    defer gui.deinit();
+
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();
 

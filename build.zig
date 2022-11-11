@@ -30,6 +30,7 @@ pub fn build(b: *std.build.Builder) void {
     exe_tests.setBuildMode(mode);
     addPackages(exe_tests);
     addCDeps(exe_tests);
+    exe_tests.linkLibC();
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);

@@ -40,10 +40,6 @@ pub const Msg = union(enum) {
         if (arg_type_info == .Struct and arg_type_info.Struct.is_tuple) {
             comptime var index = 0;
             inline while (index < args.len) {
-                //if (@TypeOf(args[index]) != field_type_info.Struct.fields[index].field_type) {
-                //@compileError("hmm");
-                //}
-
                 @field(value, field_type_info.Struct.fields[index].name) = args[index];
                 index += 1;
             }

@@ -12,6 +12,8 @@ proc moveTo { x y } {
     Comp(Pos) with [entities ptr pos] call set $playerId [pos $x $y]]
 }
 
+set playerId 0
+
 set locFile [open data/tile_locations.txt r]
 set indexToName [read $locFile]
 close $locFile
@@ -25,9 +27,11 @@ Map create map
 map setBytes [Map call fromDims 3 3 $zigtcl::tclAllocator]
 map call set [pos 1 1] [Tile call shortLeftAndDownWall]
 
+Config create config fromFile data/config.txt
+
 Entities create entities
 entities setBytes [Entities call init $zigtcl::tclAllocator]
-set playerId [spawn call spawnPlayer [entities ptr]]
+spawn call spawnPlayer [entities ptr] [config ptr]
 
 Display create disp
 disp setBytes [Display call init 800 600]
@@ -55,7 +59,8 @@ proc setPlayerPos { pos } {
 proc renderMap { } {
     global floorSprite downWall leftWall
 
-    set black [Color call black] for { set y 0 } { $y < [map get height] } { incr y } { for { set x 0 } { $x < [map get width] } { incr x } {
+    set black [Color call black] 
+    for { set y 0 } { $y < [map get height] } { incr y } { for { set x 0 } { $x < [map get width] } { incr x } {
             set pos [pos $x $y]
             set tileCmd [DrawCmd call sprite $floorSprite $black $pos]
             disp call push $tileCmd
@@ -102,7 +107,9 @@ proc renderPeriodically { } {
     after 100 renderPeriodically
 }
 
-Comp(Pos) create compPos
-compPos setBytes [rrl::Comp(Pos) call init $zigtcl::tclAllocator]
+#Comp(Pos) create compPos
+#compPos setBytes [rrl::Comp(Pos) call init $zigtcl::tclAllocator]
 
 renderPeriodically
+
+vwait forever

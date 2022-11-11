@@ -9,6 +9,7 @@ const utils = @import("utils");
 const Pos = utils.pos.Pos;
 
 const core = @import("core");
+const Config = core.config.Config;
 
 const board = @import("board");
 const math = @import("math");
@@ -30,6 +31,7 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     var ns = zt.tcl.Tcl_CreateNamespace(interp, "rrl", null, null);
 
+    _ = zt.RegisterStruct(core.config.Config, "Config", namespace, interp);
     // Map
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
     _ = zt.RegisterStruct(board.map.Map, "Map", namespace, interp);

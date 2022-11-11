@@ -1,14 +1,14 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
     const target = b.standardTargetOptions(.{});
-
     const mode = b.standardReleaseOptions();
 
     buildMain(b, target, mode);
     buildTests(b, target, mode);
     buildTclExtension(b, target, mode);
+    try runAtlas(b, target, mode);
 }
 
 // Main Executable
@@ -27,7 +27,7 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
         run_cmd.addArgs(args);
     }
 
-    const run_step = b.step("run", "Run the app");
+    const run_step = b.step("run", "Run the game");
     run_step.dependOn(&run_cmd.step);
 }
 
@@ -69,6 +69,53 @@ fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: s
 
     const lib_step = b.step("tcl", "Build TCL extension");
     lib_step.dependOn(&lib.step);
+}
+
+// Run Atlas Process
+fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) !void {
+    const exe = b.addExecutable("atlas", null);
+    exe.setTarget(target);
+    exe.setBuildMode(mode);
+    exe.linkLibC();
+
+    // C source
+    exe.addCSourceFile("deps/atlas/main.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/bitmap.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/util.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/lib/stb/stb_image.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/lib/stb/stb_image_write.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/lib/stb/stb_rect_pack.c", &[_][]const u8{});
+    exe.addCSourceFile("deps/atlas/lib/stb/stb_truetype.c", &[_][]const u8{});
+
+    // C include paths
+    exe.addIncludePath("deps/atlas");
+    exe.addIncludePath("deps/atlas/lib/stb");
+
+    exe.install();
+
+    const run_cmd = exe.run();
+    run_cmd.step.dependOn(b.getInstallStep());
+    var dir = try std.fs.cwd().openIterableDir("data/sprites/animations/", .{});
+    var walker = try dir.walk(b.allocator);
+    defer walker.deinit();
+    while (try walker.next()) |entry| {
+        if (entry.kind == .Directory) {
+            const path = try std.mem.join(b.allocator, "/", &[_][]const u8{ "data/sprites/animations", entry.path });
+            defer b.allocator.free(path);
+            run_cmd.addArg(path);
+        }
+    }
+    run_cmd.addArg("data/sprites/misc/"[0..]);
+    run_cmd.addArg("data/sprites/UI/"[0..]);
+    run_cmd.addArg("data/sprites/tileset/"[0..]);
+
+    run_cmd.addArg("--imageout"[0..]);
+    run_cmd.addArg("data/spriteAtlas.png"[0..]);
+    run_cmd.addArg("--textout"[0..]);
+    run_cmd.addArg("data/spriteAtlas.txt"[0..]);
+
+    const run_step = b.step("atlas", "Run the atlas creation process");
+    run_step.dependOn(&run_cmd.step);
 }
 
 const pkgs = struct {

@@ -83,19 +83,7 @@ pub const Display = struct {
         //    sdl2.SDL_Log("Unable to set render target: %s", sdl2.SDL_GetError());
         //    return error.SDLInitializationFailed; //}
 
-        const sprite_surface = sdl2.IMG_Load("data/spriteAtlas.png") orelse {
-            sdl2.SDL_Log("Unable to load sprite image: %s", sdl2.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
-        defer sdl2.SDL_FreeSurface(sprite_surface);
-
-        const sprite_texture = sdl2.SDL_CreateTextureFromSurface(renderer, sprite_surface) orelse {
-            sdl2.SDL_Log("Unable to create sprite texture: %s", sdl2.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
-
-        var sheets = try sprite.parseAtlasFile("data/spriteAtlas.txt"[0..], allocator);
-        var sprites = Sprites.init(sprite_texture, sheets);
+        var sprites = try loadSprites("data/spriteAtlas.txt", "data/spriteAtlas.png\x00", renderer, allocator);
 
         const font = sdl2.TTF_OpenFont("data/Inconsolata-Bold.ttf", 20) orelse {
             sdl2.SDL_Log("Unable to create font from tff: %s", sdl2.SDL_GetError());
@@ -296,6 +284,24 @@ pub const Display = struct {
         return self.sprites.sheets.items[key].num_sprites;
     }
 };
+
+fn loadSprites(atlas_text: []const u8, atlas_image: []const u8, renderer: *Renderer, allocator: Allocator) !Sprites {
+    // NOTE technically this cast isn't valid- the string is not necessarily null terminated since it starts as a slice.
+    const sprite_surface = sdl2.IMG_Load(@ptrCast([*c]const u8, atlas_image.ptr)) orelse {
+        sdl2.SDL_Log("Unable to load sprite image: %s", sdl2.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+    defer sdl2.SDL_FreeSurface(sprite_surface);
+
+    const sprite_texture = sdl2.SDL_CreateTextureFromSurface(renderer, sprite_surface) orelse {
+        sdl2.SDL_Log("Unable to create sprite texture: %s", sdl2.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+
+    var sheets = try sprite.parseAtlasFile(atlas_text, allocator);
+    var sprites = Sprites.init(sprite_texture, sheets);
+    return sprites;
+}
 
 // Color palette structure and load from palette.txt file
 //    pub fn fromFile(file_name: []u8) !Config {

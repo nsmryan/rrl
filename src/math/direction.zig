@@ -22,7 +22,7 @@ pub const Direction = enum {
         } else if (position.x > 0 and position.y == 0) {
             return .right;
         } else if (position.x < 0 and position.y == 0) {
-            return .kleft;
+            return .left;
         } else if (position.x > 0 and position.y > 0) {
             return .downRight;
         } else if (position.x > 0 and position.y < 0) {
@@ -32,11 +32,11 @@ pub const Direction = enum {
         } else if (position.x < 0 and position.y < 0) {
             return .upLeft;
         } else {
-            std.debug.panic("Direction should not exist for {}", position);
+            std.debug.panic("Direction should not exist for {}", .{position});
         }
     }
 
-    pub fn fromPositions(start: Pos, end: Pos) Direction {
+    pub fn fromPositions(start: Pos, end: Pos) ?Direction {
         const delta = end.sub(start);
         return fromPosition(delta);
     }
@@ -86,6 +86,10 @@ pub const Direction = enum {
         const index = @floatToInt(usize, flt * 8.0);
         const dirs = Direction.directions();
         return dirs[index];
+    }
+
+    pub fn move(self: Direction, position: Pos) Pos {
+        return self.offsetPos(position, 1);
     }
 
     pub fn offsetPos(self: Direction, position: Pos, amount: i32) Pos {

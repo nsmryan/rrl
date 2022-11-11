@@ -10,11 +10,13 @@ const BlockedType = board.blocking.BlockedType;
 const utils = @import("utils");
 const Id = utils.comp.Id;
 
-const core = @import("core");
-const Pos = core.pos.Pos;
-const Direction = core.direction.Direction;
-const Collision = core.movement.Collision;
-const HitWall = core.movement.HitWall;
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Direction = math.direction.Direction;
+
+const movement = @import("movement.zig");
+const Collision = movement.Collision;
+const HitWall = movement.HitWall;
 
 const Entities = @import("entities.zig").Entities;
 
@@ -46,9 +48,9 @@ pub const Level = struct {
     }
 
     pub fn blockingEntityAt(level: *Level, pos: Pos) bool {
-        for (level.entities.id.items) |id| {
+        for (level.entities.ids.items) |id| {
             if (level.entities.pos.get(id)) |entity_pos| {
-                if (entity_pos == pos and level.entities.blocking.has(id)) {
+                if (entity_pos.eql(pos) and level.entities.blocking.has(id)) {
                     return true;
                 }
             }

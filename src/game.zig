@@ -40,14 +40,15 @@ pub const Game = struct {
     log: MsgLog,
 
     pub fn init(rng: Random, allocator: Allocator) !Game {
+        const config = try Config.fromFile(CONFIG_PATH[0..]);
         var level = Level.empty(allocator);
         // Spawn the player so a game always has a player at index 0.
-        try core.spawn.spawnPlayer(&level.entities);
+        try core.spawn.spawnPlayer(&level.entities, &config);
         return Game{
             .level = level,
             .rng = rng,
             .input = Input.init(allocator),
-            .config = try Config.fromFile(CONFIG_PATH[0..]),
+            .config = config,
             .settings = Settings.init(),
             .log = MsgLog.init(allocator),
         };

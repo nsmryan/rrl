@@ -14,22 +14,36 @@ const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
 const MoveMode = core.movement.MoveMode;
+const MoveType = core.movement.MoveType;
+const Stance = core.entities.Stance;
 
 pub const Msg = union(enum) {
     tryMove: struct { id: Id, dir: Direction, amount: usize, move_mode: MoveMode },
+    collided: struct { id: Id, pos: Pos },
+    faceTowards: struct { id: Id, pos: Pos },
+    jumpWall: struct { id: Id, from: Pos, to: Pos },
+    move: struct { id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos },
+    gainEnergy: struct { id: Id, amount: u32 },
+    sound: struct { id: Id, pos: Pos, amount: usize },
+    stance: struct { id: Id, stance: Stance },
 
-    pub fn genericMsg(msg_type: MsgType, args: anytype) Msg {
+    pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);
-        const field = fields[@enumToInt(msg_type)];
-        const field_type_info = @typeInfo(field.field_type);
 
-        var value: field.field_type = undefined;
+        const field_type = fields[@enumToInt(msg_type)].field_type;
+        const field_type_info = @typeInfo(field_type);
+
+        var value: field_type = undefined;
 
         const arg_type_info = @typeInfo(@TypeOf(args));
         // NOTE(zig) std.meta.trait.isTuple returns false here for some reason.
         if (arg_type_info == .Struct and arg_type_info.Struct.is_tuple) {
             comptime var index = 0;
             inline while (index < args.len) {
+                //if (@TypeOf(args[index]) != field_type_info.Struct.fields[index].field_type) {
+                //@compileError("hmm");
+                //}
+
                 @field(value, field_type_info.Struct.fields[index].name) = args[index];
                 index += 1;
             }
@@ -75,11 +89,15 @@ pub const MsgLog = struct {
         return msg;
     }
 
-    pub fn log(msg_log: *MsgLog, msg_type: MsgType, args: anytype) !void {
+    pub fn log(msg_log: *MsgLog, comptime msg_type: MsgType, args: anytype) !void {
         try msg_log.remaining.append(Msg.genericMsg(msg_type, args));
     }
 
-    pub fn now(msg_log: *MsgLog, msg_type: MsgType, args: anytype) !void {
+    pub fn now(msg_log: *MsgLog, comptime msg_type: MsgType, args: anytype) !void {
         try msg_log.instant.append(Msg.genericMsg(msg_type, args));
+    }
+
+    pub fn rightNow(msg_log: *MsgLog, comptime msg_type: MsgType, args: anytype) !void {
+        try msg_log.instant.insert(0, Msg.genericMsg(msg_type, args));
     }
 };

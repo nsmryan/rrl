@@ -112,6 +112,10 @@ pub const Pos = struct {
     pub fn dot(self: Pos, other: Pos) i32 {
         return self.x * other.x + self.y * other.y;
     }
+
+    pub fn eql(self: Pos, other: Pos) bool {
+        return self.x == other.x and self.y == other.y;
+    }
 };
 
 test "test in direction of" {

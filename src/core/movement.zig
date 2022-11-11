@@ -1,9 +1,9 @@
 const board = @import("board");
 const Height = board.tile.Tile.Height;
 
-const core = @import("core");
-const Pos = core.pos.Pos;
-const Direction = core.direction.Direction;
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Direction = math.direction.Direction;
 
 pub const HitWall = struct {
     height: Height,
@@ -15,17 +15,17 @@ pub const HitWall = struct {
 };
 
 pub const Collision = struct {
-    entity: bool,
-    wall: ?HitWall,
-    pos: Pos,
-    dir: Direction,
+    entity: bool = false,
+    wall: ?HitWall = null,
+    pos: Pos = Pos.init(0, 0),
+    dir: Direction = Direction.left,
 
     pub fn init(pos: Pos, dir: Direction) Collision {
-        return Collision{ .id = null, .wall = null, .pos = pos, .dir = dir };
+        return Collision{ .pos = pos, .dir = dir };
     }
 
     pub fn hit(collision: Collision) bool {
-        return collision.entity || collision.wall != null;
+        return collision.entity or collision.wall != null;
     }
 };
 
@@ -57,4 +57,12 @@ pub const MoveMode = enum {
             .run => 2,
         };
     }
+};
+
+pub const MoveType = enum {
+    move,
+    pass,
+    jumpWall,
+    blink,
+    misc,
 };

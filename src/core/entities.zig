@@ -13,11 +13,51 @@ const Pos = math.pos.Pos;
 const movement = @import("movement.zig");
 const MoveMode = movement.MoveMode;
 
-pub const EntityClass = enum {
+const items = @import("items.zig");
+const Item = items.Item;
+
+pub const SkillClass = enum {
     body,
     grass,
     monolith,
     wind,
+};
+
+pub const Stance = enum {
+    crouching,
+    standing,
+    running,
+
+    pub fn waited(stance: Stance, move_mode: MoveMode) Stance {
+        if (stance == .crouching and move_mode == .run) return .standing;
+        if (stance == .standing and move_mode == .sneak) return .crouching;
+        if (stance == .running) return .standing;
+        return stance;
+    }
+};
+
+pub const Turn = struct {
+    pass: bool = false,
+    walk: bool = false,
+    run: bool = false,
+    jump: bool = false,
+    attack: bool = false,
+    skill: bool = false,
+    interactTrap: bool = false,
+    blink: bool = false,
+
+    pub fn init() Turn {
+        return Turn{};
+    }
+
+    pub fn any(turn: Turn) bool {
+        for (std.meta.fields()) |field| {
+            if (@field(turn, field.name)) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 pub const Entities = struct {
@@ -31,6 +71,11 @@ pub const Entities = struct {
     blocking: Comp(bool),
     move_mode: Comp(MoveMode),
     move_left: Comp(usize),
+    turn: Comp(Turn),
+    needs_removal: Comp(bool),
+    stance: Comp(Stance),
+    item: Comp(Item),
+    energy: Comp(u32),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -94,14 +139,18 @@ pub const Entities = struct {
         const id = self.next_id;
         self.next_id += 1;
         try self.ids.append(id);
+        try self.addBasicComponents(id, position, name, typ);
+        return id;
+    }
 
+    pub fn addBasicComponents(self: *Entities, id: Id, position: Pos, name: Name, typ: Type) !void {
         // Add fields that all entities share.
         try self.pos.insert(id, position);
         try self.typ.insert(id, typ);
         try self.name.insert(id, name);
         try self.blocking.insert(id, false);
-
-        return id;
+        try self.turn.insert(id, Turn.init());
+        try self.needs_removal.insert(id, false);
     }
 };
 

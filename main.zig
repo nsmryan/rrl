@@ -17,6 +17,8 @@ const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Color = drawcmd.utils.Color;
 
+const rendering = @import("src/rendering.zig");
+
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
 
@@ -27,6 +29,7 @@ pub fn main() anyerror!void {
     gui.display.present();
 
     while (try gui.step()) {
+        try gui.draw();
         std.time.sleep(100000000);
     }
 }

@@ -23,9 +23,12 @@ foreach { num name } $indexToName {
     dict set tileLocations $name [expr $num - 1]
 }
 
+Game create game init 0 $zigtcl::tclAllocator
+
 Map create map
 map setBytes [Map call fromDims 3 3 $zigtcl::tclAllocator]
 map call set [pos 1 1] [Tile call shortLeftAndDownWall]
+
 
 Config create config fromFile data/config.txt
 

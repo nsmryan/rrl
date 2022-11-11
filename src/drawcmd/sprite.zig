@@ -200,7 +200,7 @@ const SpriteLookupError = error{
     SpriteNameNotFound,
 };
 
-pub fn lookupSpritekey(sprites: *ArrayList(SpriteSheet), name: []const u8) !SpriteKey {
+pub fn lookupSpritekey(sprites: *const ArrayList(SpriteSheet), name: []const u8) !SpriteKey {
     for (sprites.items) |sheet, index| {
         if (name.len > sheet.name.len) {
             break;

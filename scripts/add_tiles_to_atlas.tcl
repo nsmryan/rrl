@@ -15,7 +15,9 @@ set dim 16
 dict for {key value} $tileLocations {
     set x_offset [expr $dim * ($key % 16)]
     set y_offset [expr $dim * ($key / 16)]
-    dict set sprites $value [list [expr $x + $x_offset] [expr $y + $y_offset] $dim $dim]
+    set new_x [expr $x + $x_offset]
+    set new_y [expr $y + $y_offset]
+    dict set sprites $value [list $new_x $new_y $dim $dim]
 }
 
 close $spriteFile

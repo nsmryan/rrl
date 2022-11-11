@@ -44,10 +44,6 @@ pub const Display = struct {
     allocator: Allocator,
 
     pub fn init(window_width: c_int, window_height: c_int, allocator: Allocator) !Display {
-        // Create the allocator internally for a simpler TCL interface.
-        //var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        //var allocator = std.heap.page_allocator; //arena.allocator();
-
         var drawcmds = ArrayList(DrawCmd).init(allocator);
 
         if (sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0) {

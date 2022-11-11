@@ -22,9 +22,3 @@ set finalAtlas [open $finalAtlasName w]
 dict for { key value } $sprites {
     puts $finalAtlas [concat $key $value]
 }
-close $finalAtlas
-
-
-close $spriteFile
-close $tileLocationsFile
-

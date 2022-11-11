@@ -50,8 +50,8 @@ pub const Game = struct {
     settings: Settings,
     log: MsgLog,
 
-    pub fn init(seed: ?u64, allocator: Allocator) !Game {
-        var rng = RndGen.init(seed orelse 0);
+    pub fn init(seed: u64, allocator: Allocator) !Game {
+        var rng = RndGen.init(seed);
         const config = try Config.fromFile(CONFIG_PATH[0..]);
         var level = Level.empty(allocator);
 

@@ -29,7 +29,7 @@ pub const Gui = struct {
     display: display.Display,
     game: Game,
 
-    pub fn init(seed: ?u64, allocator: Allocator) !Gui {
+    pub fn init(seed: u64, allocator: Allocator) !Gui {
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
             .game = try Game.init(seed, allocator),

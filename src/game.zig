@@ -213,6 +213,36 @@ test "run around" {
     try std.testing.expectEqual(Pos.init(0, 2), game.level.entities.pos.get(0).?);
 }
 
+test "run blocked" {
+    const allocator = std.testing.allocator;
+
+    var game = try Game.init(0, allocator);
+    defer game.deinit();
+
+    game.level.map = try Map.fromDims(3, 3, allocator);
+    game.level.entities.pos.set(0, Pos.init(0, 0));
+
+    game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
+    game.level.map.set(Pos.init(0, 1), Tile.tallWall());
+
+    try game.handleInputAction(InputAction.run);
+    try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0).?);
+
+    // Can't run into blocked tile
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    // Can't even run into short wall tile
+    game.level.map.set(Pos.init(0, 1), Tile.shortWall());
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+
+    // Not even if there is no intertile wall
+    game.level.map.set(Pos.init(0, 0), Tile.empty());
+    try game.handleInputAction(InputAction{ .move = .down });
+    try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0).?);
+}
+
 test "interact with intertile wall" {
     const allocator = std.testing.allocator;
 

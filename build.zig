@@ -112,7 +112,7 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
     run_cmd.addArg("--imageout"[0..]);
     run_cmd.addArg("data/spriteAtlas.png"[0..]);
     run_cmd.addArg("--textout"[0..]);
-    run_cmd.addArg("data/spriteAtlasInitial.txt"[0..]);
+    run_cmd.addArg("data/spriteAtlas.txt"[0..]);
 
     const tileset_cmd = b.addSystemCommand(&[_][]const u8{"tclsh"});
     tileset_cmd.addArg("scripts/add_tiles_to_atlas.tcl"[0..]);

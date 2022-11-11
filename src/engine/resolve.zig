@@ -22,7 +22,7 @@ const Stance = core.entities.Stance;
 const Type = core.entities.Type;
 const MoveType = core.movement.MoveType;
 
-const g = @import("game");
+const g = @import("game.zig");
 const Game = g.Game;
 
 pub fn resolve(game: *Game) !void {

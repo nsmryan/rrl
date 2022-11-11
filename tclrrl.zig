@@ -11,6 +11,9 @@ const Pos = utils.pos.Pos;
 const core = @import("core");
 const Config = core.config.Config;
 
+const engine = @import("engine");
+const Game = engine.game.Game;
+
 const board = @import("board");
 const math = @import("math");
 const drawcmd = @import("drawcmd");
@@ -31,7 +34,9 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     var ns = zt.tcl.Tcl_CreateNamespace(interp, "rrl", null, null);
 
+    // Core
     _ = zt.RegisterStruct(core.config.Config, "Config", namespace, interp);
+
     // Map
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);
     _ = zt.RegisterStruct(board.map.Map, "Map", namespace, interp);
@@ -51,6 +56,10 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     _ = zt.RegisterStruct(drawcmd.utils.Color, "Color", namespace, interp);
     _ = zt.RegisterUnion(drawcmd.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
 
+    // Game
+    _ = zt.RegisterStruct(Game, "Game", namespace, interp);
+
+    // Misc
     _ = zt.RegisterStruct(std.mem.Allocator, "Allocator", "zigtcl", interp);
     _ = zt.tcl.Tcl_CreateObjCommand(interp, "zigtcl::tcl_allocator", zt.StructCommand(std.mem.Allocator).StructInstanceCommand, @ptrCast(zt.tcl.ClientData, &zt.alloc.tcl_allocator), null);
 

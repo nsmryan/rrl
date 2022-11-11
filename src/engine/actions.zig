@@ -19,9 +19,11 @@ const input = @import("input.zig");
 const MouseClick = input.MouseClick;
 const KeyDir = input.KeyDir;
 
-const g = @import("game");
+const s = @import("settings.zig");
+const GameState = s.GameState;
+
+const g = @import("game.zig");
 const Game = g.Game;
-const GameState = g.GameState;
 
 pub const ActionMode = enum {
     primary,

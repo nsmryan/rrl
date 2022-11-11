@@ -34,7 +34,7 @@ entities setBytes [Entities call init $zigtcl::tclAllocator]
 spawn call spawnPlayer [entities ptr] [config ptr]
 
 Display create disp
-disp setBytes [Display call init 800 600]
+disp setBytes [Display call init 800 600 $zigtcl::tclAllocator]
 
 proc makeTileSprite { name } {
     global tileLocations 

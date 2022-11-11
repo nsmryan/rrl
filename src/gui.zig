@@ -1,9 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const g = @import("game.zig");
-const Game = g.Game;
-
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
@@ -16,11 +13,12 @@ const gen = @import("gen");
 
 const rendering = @import("rendering.zig");
 
-const game = @import("game");
-const Input = game.input.Input;
-const UseAction = game.actions.UseAction;
-const Settings = game.actions.Settings;
-const GameState = game.GameState;
+const engine = @import("engine");
+const Game = engine.game.Game;
+const Input = engine.input.Input;
+const UseAction = engine.actions.UseAction;
+const Settings = engine.actions.Settings;
+const GameState = engine.settings.GameState;
 
 pub const display = @import("gui/display.zig");
 pub const keyboard = @import("gui/keyboard.zig");

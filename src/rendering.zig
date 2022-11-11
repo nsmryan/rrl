@@ -3,8 +3,8 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const RndGen = std.rand.DefaultPrng;
 
-const g = @import("game");
-const Game = g.Game;
+const engine = @import("engine");
+const Game = engine.game.Game;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;

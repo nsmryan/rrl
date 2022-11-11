@@ -24,17 +24,21 @@ const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
 const MapLoadConfig = gen.make_map.MapLoadConfig;
 
-pub const actions = @import("game/actions.zig");
-pub const input = @import("game/input.zig");
+pub const actions = @import("actions.zig");
+pub const input = @import("input.zig");
 const Input = input.Input;
 const UseAction = actions.UseAction;
 const InputAction = actions.InputAction;
 const InputEvent = input.InputEvent;
 
-pub const resolve = @import("game/resolve.zig");
+pub const resolve = @import("resolve.zig");
 
-pub const messaging = @import("game/messaging.zig");
+pub const messaging = @import("messaging.zig");
 pub const MsgLog = messaging.MsgLog;
+
+pub const s = @import("settings.zig");
+pub const GameState = s.GameState;
+pub const Settings = s.Settings;
 
 const CONFIG_PATH = "data/config.txt";
 
@@ -72,7 +76,7 @@ pub const Game = struct {
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
         std.log.debug("input {any}", .{input_action});
-        game.handleInputAction(input_action);
+        try game.handleInputAction(input_action);
     }
 
     pub fn handleInputAction(game: *Game, input_action: InputAction) !void {
@@ -82,58 +86,6 @@ pub const Game = struct {
 
     pub fn changeState(game: *Game, new_state: GameState) void {
         game.settings.state = new_state;
-    }
-};
-
-pub const LevelExitCondition = enum {
-    rightEdge,
-    keyAndGoal,
-};
-
-pub const Settings = struct {
-    turn_count: usize = 0,
-    test_mode: bool = false,
-    map_type: MapGenType = MapGenType.island,
-    state: GameState = GameState.playing,
-    overlay: bool = false,
-    level_num: usize = 0,
-    running: bool = true,
-    cursor: ?Pos = null,
-    use_action: UseAction = UseAction.interact,
-    cursor_action: ?UseAction = null,
-    use_dir: ?Direction = null,
-    debug_enabled: bool = false,
-    map_load_config: MapLoadConfig = MapLoadConfig.empty,
-    map_changed: bool = false,
-    exit_condition: LevelExitCondition = LevelExitCondition.rightEdge,
-
-    pub fn init() Settings {
-        return Settings{};
-    }
-
-    pub fn isCursorMode(self: *const Settings) bool {
-        return self.cursor != null;
-    }
-};
-
-pub const GameState = enum {
-    playing,
-    win,
-    lose,
-    inventory,
-    skillMenu,
-    classMenu,
-    helpMenu,
-    confirmQuit,
-    use,
-    exit,
-
-    pub fn isMenu(self: GameState) bool {
-        return self == .inventory or
-            self == .skillMenu or
-            self == .confirmQuit or
-            self == .helpMenu or
-            self == .classMenu;
     }
 };
 

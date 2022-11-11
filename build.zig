@@ -6,7 +6,13 @@ pub fn build(b: *std.build.Builder) void {
 
     const mode = b.standardReleaseOptions();
 
-    // Main Executable
+    buildMain(b, target, mode);
+    buildTests(b, target, mode);
+    buildTclExtension(b, target, mode);
+}
+
+// Main Executable
+fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
     const exe = b.addExecutable("rustrl", "main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
@@ -23,8 +29,10 @@ pub fn build(b: *std.build.Builder) void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+}
 
-    // Unit tests
+// Unit tests
+fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
     const exe_tests = b.addTest("main_test.zig");
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
@@ -34,9 +42,12 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+}
 
-    // Shared Library TCL Extension
-    const lib = b.addSharedLibrary("rrl", "src/tclrrl.zig", b.version(0, 1, 0));
+// Shared Library TCL Extension
+fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+    const lib = b.addSharedLibrary("rrl", "tclrrl.zig", b.version(0, 1, 0));
+    lib.setTarget(target);
     lib.setBuildMode(mode);
     lib.linkLibC();
 
@@ -50,7 +61,6 @@ pub fn build(b: *std.build.Builder) void {
         lib.addObjectFile("deps/tcl/lib/libtclstub8.6.a");
     }
 
-    // Add packages
     lib.addPackagePath("zigtcl", "deps/zig_tcl/zigtcl.zig");
     addPackages(lib);
     addCDeps(lib);

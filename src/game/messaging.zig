@@ -66,6 +66,12 @@ pub const MsgLog = struct {
         };
     }
 
+    pub fn deinit(msg_log: *MsgLog) void {
+        msg_log.remaining.deinit();
+        msg_log.instant.deinit();
+        msg_log.all.deinit();
+    }
+
     pub fn pop(msg_log: *MsgLog) !?Msg {
         // First attempt to get a message from the 'instant' log to empty it first.
         // Then attempt to get from the main log, remaining.

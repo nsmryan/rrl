@@ -47,7 +47,7 @@ pub const Level = struct {
             collision.wall = HitWall.init(blocked.height, blocked.blocked_tile);
         }
 
-        collision.entity = level.blockingEntityAt(pos);
+        collision.entity = level.blockingEntityAt(dir.move(pos));
 
         return collision;
     }

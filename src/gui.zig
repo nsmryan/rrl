@@ -1,6 +1,5 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const RndGen = std.rand.DefaultPrng;
 
 const g = @import("game.zig");
 const Game = g.Game;
@@ -32,11 +31,10 @@ pub const Gui = struct {
     display: display.Display,
     game: Game,
 
-    pub fn init(seed: u64, allocator: Allocator) !Gui {
-        var rng = RndGen.init(seed);
+    pub fn init(seed: ?u64, allocator: Allocator) !Gui {
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
-            .game = try Game.init(rng.random(), allocator),
+            .game = try Game.init(seed, allocator),
         };
     }
 

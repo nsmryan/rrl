@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const math = @import("math");
 const Direction = math.direction.Direction;
 const Pos = math.pos.Pos;
@@ -86,6 +88,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
         .playing => {
             switch (input_action) {
                 .move => |dir| {
+                    std.log.debug("input action move {}", .{dir});
                     try game.log.log(.tryMove, .{ Entities.player_id, dir, game.settings.move_mode.moveAmount(), game.settings.move_mode });
                 },
 

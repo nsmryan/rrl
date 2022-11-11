@@ -121,8 +121,12 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
     tileset_cmd.addArg("data/spriteAtlas.txt"[0..]);
     tileset_cmd.step.dependOn(&run_cmd.step);
 
+    const rm_cmd = b.addSystemCommand(&[_][]const u8{"rm"});
+    rm_cmd.addArg("data/spriteAtlasInitial.txt"[0..]);
+    rm_cmd.step.dependOn(&tileset_cmd.step);
+
     const run_step = b.step("atlas", "Run the atlas creation process");
-    run_step.dependOn(&tileset_cmd.step);
+    run_step.dependOn(&rm_cmd.step);
 }
 
 const pkgs = struct {

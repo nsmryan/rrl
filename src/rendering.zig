@@ -30,7 +30,7 @@ pub fn render(game: *Game, sprites: *const ArrayList(SpriteSheet), panel: *const
     try renderMapMiddle(game, sprites, drawcmds);
     try renderEntities(game, sprites, drawcmds);
     // TODO render map upper level with down walls and FoV darkening
-    //try renderMapHigh(game, sprites, drawcmds);
+    try renderMapHigh(game, sprites, drawcmds);
 }
 
 fn renderMapLow(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
@@ -123,6 +123,46 @@ fn intertileSprite(wall: Tile.Wall, stone_name: []const u8, grass_name: []const 
         unreachable;
     }
     return null;
+}
+
+fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
+    const wall_color = Color.black();
+
+    var y: i32 = 0;
+    while (y < game.level.map.height) : (y += 1) {
+        var x: i32 = 0;
+        while (x < game.level.map.width) : (x += 1) {
+            const pos = Pos.init(x, y);
+            const tile = game.level.map.get(pos);
+
+            // Down walls
+            if (try intertileSprite(tile.down, "down_intertile_wall", "down_intertile_grass_wall", sprites)) |sprite| {
+                try drawcmds.append(DrawCmd.sprite(sprite, wall_color, pos));
+            }
+
+            // TODO FoV
+            //let fov_result = display_state.pos_is_in_fov(pos);
+
+            //// apply a FoW darkening to cells
+            //if config.fog_of_war && fov_result != FovResult::Inside {
+            //    let is_in_fov_ext = fov_result == FovResult::Edge;
+
+            //    let mut blackout_color = Color::black();
+            //    //let sprite = Sprite::new(254 as u32, sprite_key);
+            //    if is_in_fov_ext {
+            //        blackout_color.a = config.fov_edge_alpha;
+            //        //panel.sprite_cmd(sprite, blackout_color, pos);
+            //        panel.highlight_cmd(blackout_color, pos);
+            //    } else if display_state.map[pos].explored {
+            //        blackout_color.a = config.explored_alpha;
+            //        //panel.sprite_cmd(sprite, blackout_color, pos);
+            //        panel.highlight_cmd(blackout_color, pos);
+            //    } else {
+            //        panel.fill_cmd(pos, blackout_color);
+            //    }
+            //}
+        }
+    }
 }
 
 ///// Render Wall Shadows (full tile and intertile walls, left and down)

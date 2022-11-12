@@ -10,6 +10,9 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const Color = math.utils.Color;
 
+const board = @import("board");
+const Map = board.map.Map;
+
 const core = @import("core");
 
 const g = @import("gui");
@@ -25,6 +28,8 @@ pub fn main() anyerror!void {
 
     var gui = try g.Gui.init(0, allocator);
     defer gui.deinit();
+
+    gui.game.level.map = try Map.fromDims(3, 3, allocator);
 
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();

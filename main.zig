@@ -31,6 +31,7 @@ pub fn main() anyerror!void {
 
     gui.game.level.map = try Map.fromDims(3, 3, allocator);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
+    gui.game.level.map.set(Pos.init(2, 0), board.tile.Tile.tallWall());
 
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();

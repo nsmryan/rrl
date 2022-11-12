@@ -29,7 +29,6 @@ pub fn render(game: *Game, sprites: *const ArrayList(SpriteSheet), panel: *const
     try renderMapLow(game, sprites, drawcmds);
     try renderMapMiddle(game, sprites, drawcmds);
     try renderEntities(game, sprites, drawcmds);
-    // TODO render map upper level with down walls and FoV darkening
     try renderMapHigh(game, sprites, drawcmds);
 }
 
@@ -55,7 +54,6 @@ fn renderEntities(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds:
     try drawcmds.append(DrawCmd.sprite(player_sprite, Color.black(), pos));
 }
 
-// TODO render left right and upper intertile walls
 fn renderMapMiddle(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
     const wall_sprite = try drawcmd.sprite.lookupSingleSprite(sprites, "horizontal_wall");
 
@@ -66,8 +64,7 @@ fn renderMapMiddle(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds
             const pos = Pos.init(x, y);
             const tile = game.level.map.get(pos);
 
-            // TODO render wall shadows
-            //renderWallShadow
+            try renderWallShadow(pos, game, sprites, drawcmds);
 
             if (tile.center.height == .tall) {
                 try drawcmds.append(DrawCmd.sprite(wall_sprite, Color.black(), pos));
@@ -144,7 +141,7 @@ fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: 
             //let fov_result = display_state.pos_is_in_fov(pos);
 
             //// apply a FoW darkening to cells
-            //if config.fog_of_war && fov_result != FovResult::Inside {
+            //if config.fog_of_war and fov_result != FovResult::Inside {
             //    let is_in_fov_ext = fov_result == FovResult::Edge;
 
             //    let mut blackout_color = Color::black();
@@ -165,81 +162,87 @@ fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: 
     }
 }
 
-///// Render Wall Shadows (full tile and intertile walls, left and down)
-//fn renderWallShadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
-//    let shadow_sprite_key = lookup_spritekey(sprites, "shadowtiles");
-//
-//    let tile = display_state.map[pos];
-//
-//    let (_map_width, map_height) = display_state.map.size();
-//    let (x, y) = pos.to_tuple();
-//
-//    let left_valid = x - 1 > 0;
-//    let down_valid = y + 1 < map_height;
-//    let down_left_valid = left_valid && down_valid;
-//    let left_wall = left_valid && display_state.map[(x - 1, y)].tile_type == TileType::Wall;
-//    let down_wall = down_valid && display_state.map[(x, y + 1)].tile_type == TileType::Wall;
-//    let down_left_wall = down_left_valid && display_state.map[(x - 1, y + 1)].tile_type == TileType::Wall;
-//
-//    /* render full tile wall shadows */
-//    if tile.tile_type == TileType::Wall {
-//        if left_valid && !left_wall {
-//            // left
-//            let shadow_pos = Pos::new(x - 1, y);
-//            let shadow_left_upper = Sprite::new(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
-//            panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
-//        }
-//
-//        if down_left_valid && !down_left_wall {
-//            let shadow_pos = Pos::new(x - 1, y + 1);
-//            let shadow_left_lower = Sprite::new(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
-//            panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
-//        }
-//
-//        if down_valid && !down_wall {
-//            // lower
-//            let shadow_lower_right = Sprite::new(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
-//            let shadow_pos = Pos::new(x, y + 1);
-//            panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
-//        }
-//
-//        if down_left_valid && !down_left_wall {
-//            let shadow_lower_left = Sprite::new(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
-//            let shadow_pos = Pos::new(x - 1, y + 1);
-//            panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
-//        }
-//    }
-//
-//    /* render inter-tile wall shadows */
-//    if tile.left_wall == Wall::ShortWall {
-//        // left
-//        if left_valid {
-//            let shadow_pos = Pos::new(x - 1, y);
-//            let shadow_left_upper = Sprite::new(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
-//            panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
-//        }
-//
-//        // left down
-//        if down_left_valid {
-//            let shadow_pos = Pos::new(x - 1, y + 1);
-//            let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
-//            panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
-//        }
-//    }
-//
-//    if tile.bottom_wall == Wall::ShortWall {
-//        // lower
-//        if down_valid {
-//            let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
-//            let shadow_pos = Pos::new(x, y + 1);
-//            panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
-//        }
-//
-//        // left down
-//        if down_left_valid {
-//            let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
-//            let shadow_pos = Pos::new(x - 1, y + 1);
-//            panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
-//        }
-//    }
-//}
+/// Render Wall Shadows (full tile and intertile walls, left and down)
+fn renderWallShadow(pos: Pos, game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
+    const SHADOW_FULLTILE_LEFT: u32 = 2;
+    const SHADOW_FULLTILE_LEFT_DOWN: u32 = 6;
+    const SHADOW_FULLTILE_DOWN: u32 = 1;
+    const SHADOW_FULLTILE_DOWN_LEFT: u32 = 0;
+
+    const SHADOW_INTERTILE_LEFT: u32 = 3;
+    const SHADOW_INTERTILE_LEFT_DOWN: u32 = 7;
+    const SHADOW_INTERTILE_DOWN: u32 = 5;
+    const SHADOW_INTERTILE_DOWN_LEFT: u32 = 4;
+
+    const tile = game.level.map.get(pos);
+
+    const left_pos = pos.moveX(-1);
+    const down_pos = pos.moveY(1);
+    const down_left_pos = pos.moveX(-1).moveY(1);
+
+    const left_valid = game.level.map.isWithinBounds(left_pos);
+    const down_valid = game.level.map.isWithinBounds(down_pos);
+    const down_left_valid = left_valid and down_valid;
+
+    const left_tile_is_wall = left_valid and game.level.map.get(left_pos).center.height == .tall;
+    const down_tile_is_wall = down_valid and game.level.map.get(down_pos).center.height == .tall;
+    const down_left_tile_is_wall = down_left_valid and game.level.map.get(down_left_pos).center.height == .tall;
+
+    var shadow_sprite = try drawcmd.sprite.lookupSingleSprite(sprites, "shadowtiles");
+
+    // Render full tile wall shadows.
+    if (tile.center.height == .tall) {
+        // left
+        if (left_valid and !left_tile_is_wall) {
+            shadow_sprite.index = SHADOW_FULLTILE_LEFT;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, left_pos));
+        }
+
+        // left down
+        if (down_left_valid and !down_left_tile_is_wall) {
+            shadow_sprite.index = SHADOW_FULLTILE_LEFT_DOWN;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_left_pos));
+        }
+
+        // down
+        if (down_valid and !down_tile_is_wall) {
+            shadow_sprite.index = SHADOW_FULLTILE_DOWN;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_pos));
+        }
+
+        // Down left
+        if (down_left_valid and !down_left_tile_is_wall) {
+            shadow_sprite.index = SHADOW_FULLTILE_DOWN_LEFT;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_left_pos));
+        }
+    }
+
+    // Render inter-tile wall shadows.
+    if (tile.left.height == .short) {
+        // left
+        if (left_valid) {
+            shadow_sprite.index = SHADOW_INTERTILE_LEFT;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, left_pos));
+        }
+
+        // left down
+        if (down_left_valid) {
+            shadow_sprite.index = SHADOW_INTERTILE_LEFT_DOWN;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_left_pos));
+        }
+    }
+
+    if (tile.down.height == .short) {
+        // lower
+        if (down_valid) {
+            shadow_sprite.index = SHADOW_INTERTILE_DOWN;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_pos));
+        }
+
+        // left down
+        if (down_left_valid) {
+            shadow_sprite.index = SHADOW_INTERTILE_DOWN_LEFT;
+            try drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_left_pos));
+        }
+    }
+}

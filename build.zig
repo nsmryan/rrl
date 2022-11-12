@@ -27,7 +27,10 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
         run_cmd.addArgs(args);
     }
 
-    const run_step = b.step("run", "Run the game");
+    const rustrl_step = b.step("rustrl", "Build the zig version of the game");
+    rustrl_step.dependOn(&exe.step);
+
+    const run_step = b.step("run", "Run the zig version of the game");
     run_step.dependOn(&run_cmd.step);
 }
 

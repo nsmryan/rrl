@@ -15,13 +15,15 @@ const drawcmd = @import("drawcmd");
 const panel = drawcmd.panel;
 const area = drawcmd.area;
 const Justify = drawcmd.drawcmd.Justify;
-
-const utils = @import("utils");
 const sprite = drawcmd.sprite;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
 const Dims = area.Dims;
 const SpriteSheet = sprite.SpriteSheet;
+const SpriteAnimation = sprite.SpriteAnimation;
+
+const utils = @import("utils");
+const Comp = utils.comp.Comp;
 
 const drawing = @import("drawing.zig");
 const Sprites = drawing.Sprites;
@@ -40,6 +42,7 @@ pub const Display = struct {
     sprites: Sprites,
     panel: Panel,
 
+    animations: Comp(SpriteAnimation),
     drawcmds: ArrayList(DrawCmd),
     allocator: Allocator,
 
@@ -92,6 +95,8 @@ pub const Display = struct {
         const cell_dims = Dims.init(3, 3);
         const screen_panel = Panel.init(num_pixels, cell_dims);
 
+        const animations = Comp(SpriteAnimation).init(allocator);
+
         var game: Display = Display{
             .window = window,
             .renderer = renderer,
@@ -100,6 +105,7 @@ pub const Display = struct {
             .panel = screen_panel,
             .sprites = sprites,
             .screen_texture = screen_texture,
+            .animations = animations,
             .drawcmds = drawcmds,
             .allocator = allocator,
         };

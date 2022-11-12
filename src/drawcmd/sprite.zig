@@ -34,7 +34,7 @@ pub const Sprite = struct {
 };
 
 pub const SpriteAnimation = struct {
-    name: [64]u8,
+    name: [MAX_NAME_SIZE]u8,
     sprite: Sprite,
     start_index: SpriteIndex,
     max_index: SpriteIndex,
@@ -76,11 +76,11 @@ pub const SpriteSheet = struct {
     x_offset: u32,
     y_offset: u32,
 
-    pub fn init(name: [64]u8, num_sprites: usize, rows: usize, cols: usize, width: usize, height: usize, x_offset: u32, y_offset: u32) SpriteSheet {
+    pub fn init(name: [MAX_NAME_SIZE]u8, num_sprites: usize, rows: usize, cols: usize, width: usize, height: usize, x_offset: u32, y_offset: u32) SpriteSheet {
         return SpriteSheet{ .name = name, .num_sprites = num_sprites, .rows = rows, .cols = cols, .width = width, .height = height, .x_offset = x_offset, .y_offset = y_offset };
     }
 
-    pub fn withOffset(name: [64]u8, x_offset: u32, y_offset: u32, width: usize, height: usize) SpriteSheet {
+    pub fn withOffset(name: [MAX_NAME_SIZE]u8, x_offset: u32, y_offset: u32, width: usize, height: usize) SpriteSheet {
         const rows = height / @intCast(usize, FONT_HEIGHT);
         const cols = width / @intCast(usize, FONT_WIDTH);
         const num_sprites = cols * rows;
@@ -97,7 +97,7 @@ pub const SpriteSheet = struct {
         };
     }
 
-    pub fn single(name: [64]u8, width: usize, height: usize) SpriteSheet {
+    pub fn single(name: [MAX_NAME_SIZE]u8, width: usize, height: usize) SpriteSheet {
         const num_sprites = 1;
         const rows = 1;
         const cols = 1;
@@ -175,7 +175,7 @@ pub fn parseAtlasFile(atlas_file: []const u8, allocator: Allocator) !ArrayList(S
             return ParseAtlasError.SpriteNameTooLong;
         }
 
-        var name: [64]u8 = [_]u8{0} ** 64;
+        var name: [MAX_NAME_SIZE]u8 = [_]u8{0} ** MAX_NAME_SIZE;
         std.mem.copy(u8, name[0..], sprite_name[0..]);
         const x = try std.fmt.parseInt(u32, parts.next() orelse return ParseAtlasError.MissingField, 10);
         const y = try std.fmt.parseInt(u32, parts.next() orelse return ParseAtlasError.MissingField, 10);

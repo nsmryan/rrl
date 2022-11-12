@@ -14,10 +14,11 @@ const Panel = pnl.Panel;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Sprite = sprite.Sprite;
 const SpriteSheet = sprite.SpriteSheet;
-const Rect = drawcmd.utils.Rect;
-const Color = drawcmd.utils.Color;
 
-const Pos = @import("math").pos.Pos;
+const math = @import("math");
+const Pos = math.pos.Pos;
+const Color = math.utils.Color;
+const Rect = math.utils.Rect;
 
 pub const Canvas = struct {
     panel: *Panel,
@@ -55,9 +56,9 @@ pub const AsciiTexture = struct {
         while (chr_index < 256) : (chr_index += 1) {
             chrs[chr_index] = @intCast(u8, chr_index);
         }
-        chrs[drawcmd.utils.ASCII_END + 1] = 0;
+        chrs[math.utils.ASCII_END + 1] = 0;
 
-        var text_surface = sdl2.TTF_RenderUTF8_Blended(font, chrs[drawcmd.utils.ASCII_START..drawcmd.utils.ASCII_END], makeColor(255, 255, 255, 255));
+        var text_surface = sdl2.TTF_RenderUTF8_Blended(font, chrs[math.utils.ASCII_START..math.utils.ASCII_END], makeColor(255, 255, 255, 255));
         defer sdl2.SDL_FreeSurface(text_surface);
 
         var font_texture = sdl2.SDL_CreateTextureFromSurface(renderer, text_surface) orelse {
@@ -71,7 +72,7 @@ pub const AsciiTexture = struct {
         var h: c_int = undefined;
         _ = sdl2.SDL_QueryTexture(font_texture, &format, &access, &w, &h);
 
-        const ascii_width = drawcmd.utils.ASCII_END - drawcmd.utils.ASCII_START;
+        const ascii_width = math.utils.ASCII_END - math.utils.ASCII_START;
         const ascii_texture = AsciiTexture.init(
             font_texture,
             ascii_width,
@@ -127,7 +128,7 @@ pub fn processDrawCmd(panel: *Panel, renderer: *Renderer, texture: *Texture, spr
 }
 
 pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color, pixel_pos: Pos, scale: f32) void {
-    const ascii_width = drawcmd.utils.ASCII_END - drawcmd.utils.ASCII_START;
+    const ascii_width = math.utils.ASCII_END - math.utils.ASCII_START;
 
     const cell_dims = canvas.panel.cellDims();
 
@@ -150,7 +151,7 @@ pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color
         }
 
         const chr_num = std.ascii.toLower(chr);
-        const chr_index = @intCast(i32, chr_num) - @intCast(i32, drawcmd.utils.ASCII_START);
+        const chr_index = @intCast(i32, chr_num) - @intCast(i32, math.utils.ASCII_START);
 
         const src_rect = Rect.init(@intCast(i32, font_width) * chr_index, 0, @intCast(u32, font_width), @intCast(u32, font_height));
 

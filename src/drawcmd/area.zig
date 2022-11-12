@@ -1,8 +1,8 @@
 const assert = @import("std").debug.assert;
 
-const utils = @import("utils.zig");
-
-const Pos = utils.Pos;
+const math = @import("math");
+const utils = math.utils;
+const Pos = math.Pos;
 
 pub const Dims = struct {
     width: usize,

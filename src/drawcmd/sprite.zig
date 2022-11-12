@@ -2,8 +2,9 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
+const math = @import("math");
+const Rect = math.utils.Rect;
 const area = @import("area.zig");
-const Rect = @import("utils.zig").Rect;
 
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;

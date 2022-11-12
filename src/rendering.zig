@@ -8,10 +8,10 @@ const Game = engine.game.Game;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
+const Color = math.utils.Color;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
-const Color = drawcmd.utils.Color;
 const Panel = drawcmd.panel.Panel;
 const Sprites = drawcmd.sprite.Sprites;
 const Sprite = drawcmd.sprite.Sprite;

@@ -6,8 +6,6 @@ const Allocator = std.mem.Allocator;
 const zt = @import("zigtcl");
 
 const utils = @import("utils");
-const Pos = utils.pos.Pos;
-
 const core = @import("core");
 const Config = core.config.Config;
 
@@ -16,6 +14,8 @@ const Game = engine.game.Game;
 
 const board = @import("board");
 const math = @import("math");
+const Pos = math.pos.Pos;
+
 const drawcmd = @import("drawcmd");
 const gui = @import("gui");
 const display = gui.display;
@@ -53,7 +53,7 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     // Display
     _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);
     _ = zt.RegisterStruct(drawcmd.sprite.Sprite, "Sprite", namespace, interp);
-    _ = zt.RegisterStruct(drawcmd.utils.Color, "Color", namespace, interp);
+    _ = zt.RegisterStruct(math.utils.Color, "Color", namespace, interp);
     _ = zt.RegisterUnion(drawcmd.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
 
     // Game

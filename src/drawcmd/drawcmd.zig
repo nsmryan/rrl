@@ -1,12 +1,11 @@
 const std = @import("std");
 
 const Sprite = @import("sprite.zig").Sprite;
-const utils = @import("utils.zig");
-const Color = utils.Color;
 
 const math = @import("math");
 const MoveDirection = math.direction.MoveDirection;
 const Pos = math.pos.Pos;
+const Color = math.utils.Color;
 
 pub const Justify = enum {
     right,

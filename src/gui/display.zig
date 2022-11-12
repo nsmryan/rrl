@@ -14,7 +14,6 @@ const Window = sdl2.SDL_Window;
 const drawcmd = @import("drawcmd");
 const panel = drawcmd.panel;
 const area = drawcmd.area;
-const Color = drawcmd.utils.Color;
 const Justify = drawcmd.drawcmd.Justify;
 
 const utils = @import("utils");
@@ -30,6 +29,7 @@ const Sprites = drawing.Sprites;
 const math = @import("math");
 const Pos = math.pos.Pos;
 const MoveDirection = math.direction.MoveDirection;
+const Color = math.utils.Color;
 
 pub const Display = struct {
     window: *Window,

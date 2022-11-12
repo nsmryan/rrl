@@ -4,9 +4,10 @@ const assert = @import("std").debug.assert;
 const area = @import("area.zig");
 const Area = area.Area;
 const Dims = area.Dims;
-const utils = @import("utils.zig");
-const Rect = utils.Rect;
-const Pos = utils.Pos;
+
+const math = @import("math");
+const Rect = math.utils.Rect;
+const Pos = math.pos.Pos;
 
 pub const Panel = struct {
     cells: Dims,

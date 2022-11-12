@@ -5,8 +5,10 @@ const Allocator = std.mem.Allocator;
 const utils = @import("utils");
 const comp = utils.comp;
 const Comp = comp.Comp;
+
 const math = @import("math");
 const Pos = math.pos.Pos;
+const Color = math.utils.Color;
 
 const core = @import("core");
 
@@ -15,7 +17,6 @@ const Display = g.display.Display;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
-const Color = drawcmd.utils.Color;
 
 const rendering = @import("src/rendering.zig");
 

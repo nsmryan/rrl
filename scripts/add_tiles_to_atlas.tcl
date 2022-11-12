@@ -13,6 +13,8 @@ lassign [dict get $sprites rustrogueliketiles] x y width height
 
 set dim 16
 dict for {key value} $tileLocations {
+    # Keys are 1 indexed, so move back to 0.
+    set key [expr $key - 1]
     set x_offset [expr $dim * ($key % 16)]
     set y_offset [expr $dim * ($key / 16)]
     set new_x [expr $x + $x_offset]

@@ -18,8 +18,8 @@ const Sprite = drawcmd.sprite.Sprite;
 const SpriteSheet = drawcmd.sprite.SpriteSheet;
 
 pub fn render(game: *Game, sprites: *const ArrayList(SpriteSheet), panel: *const Panel, drawcmds: *ArrayList(DrawCmd)) !void {
-    _ = game;
     _ = panel;
+    _ = game;
 
     const open_tile = try drawcmd.sprite.lookupSpritekey(sprites, "open_tile");
     const open_tile_sprite = Sprite.init(0, open_tile);

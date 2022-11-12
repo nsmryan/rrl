@@ -1,4 +1,6 @@
 const std = @import("std");
+const math = @import("math");
+const Color = math.utils.Color;
 
 pub const Config = struct {
     load_map_file_every_frame: bool,
@@ -115,6 +117,30 @@ pub const Config = struct {
 
     display_center_map_on_player: bool,
 
+    color_dark_brown: Color,
+    color_medium_brown: Color,
+    color_light_green: Color,
+    color_tile_blue_light: Color,
+    color_tile_blue_dark: Color,
+    color_light_brown: Color,
+    color_ice_blue: Color,
+    color_dark_blue: Color,
+    color_very_dark_blue: Color,
+    color_orange: Color,
+    color_red: Color,
+    color_light_red: Color,
+    color_medium_grey: Color,
+    color_mint_green: Color,
+    color_blueish_grey: Color,
+    color_pink: Color,
+    color_rose_red: Color,
+    color_light_orange: Color,
+    color_bone_white: Color,
+    color_warm_grey: Color,
+    color_soft_green: Color,
+    color_light_grey: Color,
+    color_shadow: Color,
+
     pub fn fromFile(file_name: []const u8) !Config {
         var file = try std.fs.cwd().openFile(file_name, .{});
         defer file.close();
@@ -140,6 +166,15 @@ pub const Config = struct {
                     const field_type_info = @typeInfo(field.field_type);
                     if (field_type_info == .Float) {
                         @field(config, field.name) = try std.fmt.parseFloat(field.field_type, field_value);
+                    } else if (field_type_info == .Struct) {
+                        // The only struct right now is Color.
+                        var color_parts = std.mem.split(u8, field_value, " ");
+                        var color: Color = undefined;
+                        color.r = try parseInt(u8, color_parts.next() orelse return ParseConfigError.ParseColorError);
+                        color.g = try parseInt(u8, color_parts.next() orelse return ParseConfigError.ParseColorError);
+                        color.b = try parseInt(u8, color_parts.next() orelse return ParseConfigError.ParseColorError);
+                        color.a = try parseInt(u8, color_parts.next() orelse return ParseConfigError.ParseColorError);
+                        @field(config, field.name) = color;
                     } else if (field_type_info == .Bool) {
                         if (std.mem.eql(u8, field_value, "true")) {
                             @field(config, field.name) = true;
@@ -157,8 +192,17 @@ pub const Config = struct {
     }
 };
 
+fn parseInt(comptime IntType: type, str: []const u8) !IntType {
+    if (str.len > 2 and str[0] == '0' and str[1] == 'x') {
+        return try std.fmt.parseInt(u8, str[2..], 16);
+    } else {
+        return try std.fmt.parseInt(u8, str, 10);
+    }
+}
+
 pub const ParseConfigError = error{
     NameFormatError,
     ValueFormatError,
     ParseBoolError,
+    ParseColorError,
 };

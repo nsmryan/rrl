@@ -216,3 +216,7 @@ pub fn lookupSpritekey(sprites: *const ArrayList(SpriteSheet), name: []const u8)
     // NOTE(log) log the missing name.
     return SpriteLookupError.SpriteNameNotFound;
 }
+
+pub fn lookupSingleSprite(sprites: *const ArrayList(SpriteSheet), name: []const u8) !Sprite {
+    return Sprite.init(0, try lookupSpritekey(sprites, name));
+}

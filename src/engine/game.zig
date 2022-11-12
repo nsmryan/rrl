@@ -75,7 +75,6 @@ pub const Game = struct {
 
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
-        std.log.debug("input {any}", .{input_action});
         try game.handleInputAction(input_action);
     }
 

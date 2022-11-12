@@ -30,6 +30,7 @@ pub fn main() anyerror!void {
     defer gui.deinit();
 
     gui.game.level.map = try Map.fromDims(3, 3, allocator);
+    gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
 
     try gui.display.push(DrawCmd.text("Hello, drawcmd!", Pos.init(0, 0), Color.white(), 1.0));
     gui.display.present();

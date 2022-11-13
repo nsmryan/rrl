@@ -20,6 +20,7 @@ const rendering = @import("rendering.zig");
 const engine = @import("engine");
 const Game = engine.game.Game;
 const Input = engine.input.Input;
+const InputEvent = engine.input.InputEvent;
 const UseAction = engine.actions.UseAction;
 const Settings = engine.actions.Settings;
 const GameState = engine.settings.GameState;
@@ -55,8 +56,7 @@ pub const Gui = struct {
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
-                try gui.game.step(input_event, ticks);
-                gui.resolveMessages();
+                try gui.inputEvent(input_event, ticks);
             }
         }
 
@@ -64,6 +64,11 @@ pub const Gui = struct {
         try gui.draw();
 
         return gui.game.settings.state != GameState.exit;
+    }
+
+    pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
+        try gui.game.step(input_event, ticks);
+        gui.resolveMessages();
     }
 
     pub fn resolveMessages(gui: *Gui) void {

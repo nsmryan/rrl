@@ -47,8 +47,12 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     // Entities
     _ = zt.RegisterStruct(core.entities.Entities, "Entities", namespace, interp);
-    _ = zt.RegisterStruct(engine.spawn, "spawn", namespace, interp);
     _ = zt.RegisterStruct(utils.comp.Comp(math.pos.Pos), "Comp(Pos)", namespace, interp);
+
+    // Engine
+    _ = zt.RegisterStruct(engine.spawn, "spawn", namespace, interp);
+    _ = zt.RegisterUnion(engine.input.InputEvent, "InputEvent", namespace, interp);
+    _ = zt.RegisterEnum(engine.input.KeyDir, "KeyDir", namespace, interp);
 
     // Display
     _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);

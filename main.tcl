@@ -1,5 +1,4 @@
 #!/usr/bin/tclsh
-#
 load zig-out/lib/librrl.so
 package require rrl
 namespace import rrl::*
@@ -7,11 +6,6 @@ namespace import rrl::*
 
 proc pos { x y } {
     return [Pos call init $x $y]
-}
-
-proc moveTo { x y } {
-    global playerId
-    Comp(Pos) with [entities ptr pos] call set $playerId [pos $x $y]]
 }
 
 set playerId 0
@@ -83,9 +77,6 @@ proc renderPeriodically { } {
         set running 0
     }
 }
-
-#Comp(Pos) create compPos
-#compPos setBytes [rrl::Comp(Pos) call init $zigtcl::tclAllocator]
 
 renderPeriodically
 

@@ -22,21 +22,39 @@ const Stance = core.entities.Stance;
 const Type = core.entities.Type;
 const MoveType = core.movement.MoveType;
 
+const messaging = @import("messaging.zig");
+const Msg = messaging.Msg;
+const MsgType = messaging.MsgType;
+
 const g = @import("game.zig");
 const Game = g.Game;
 
 pub fn resolve(game: *Game) !void {
     while (try game.log.pop()) |msg| {
-        switch (msg) {
-            .tryMove => |args| try resolveTryMove(args.id, args.dir, args.amount, game),
-            .move => |args| try resolveMove(args.id, args.move_type, args.move_mode, args.pos, game),
-            .gainEnergy => |args| resolveGainEnergy(args.id, args.amount, game),
-            .nextMoveMode => |args| resolveNextMoveMode(args.id, args.move_mode, game),
-            .pass => |args| try resolvePassTurn(args, game),
-            else => {},
-        }
+        try resolveMsg(game, msg);
     }
 }
+
+pub fn resolveMsg(game: *Game, msg: Msg) !void {
+    switch (msg) {
+        .tryMove => |args| try resolveTryMove(args.id, args.dir, args.amount, game),
+        .move => |args| try resolveMove(args.id, args.move_type, args.move_mode, args.pos, game),
+        .gainEnergy => |args| resolveGainEnergy(args.id, args.amount, game),
+        .nextMoveMode => |args| resolveNextMoveMode(args.id, args.move_mode, game),
+        .pass => |args| try resolvePassTurn(args, game),
+        .stance => |args| resolveStance(args.id, args.stance, game),
+        else => {},
+    }
+}
+
+// NOTE the use of recursion here with resolveMsg results in an error inferring error sets.
+//pub fn resolveRightNow(game: *Game, comptime msg_type: MsgType, args: anytype) @typeInfo(@typeInfo(@TypeOf(resolveMsg)).Fn.return_type.?).ErrorUnion.error_set!void {
+//    // Resolve a message immediately. First create the message, append it to the log
+//    // as if it was already processed, and then execute its effect.
+//    const msg = Msg.genericMsg(msg_type, args);
+//    try game.log.all.append(msg);
+//    try resolveMsg(game, msg);
+//}
 
 fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
     // NOTE if this does happen, consider making amount == 0 a Msg.pass.
@@ -104,8 +122,10 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
             // Only normal movements update the stance. Others like Blink leave it as-is.
             if (move_type != MoveType.blink and move_type != MoveType.misc) {
                 if (game.level.entities.stance.get(id)) |stance| {
-                    game.level.entities.stance.getPtr(id).?.* = updateStance(move_type, move_mode, stance);
-                    try game.log.now(.stance, .{ id, game.level.entities.stance.get(id).? });
+                    const new_stance = updateStance(move_type, move_mode, stance);
+
+                    try game.log.record(.stance, .{ id, new_stance });
+                    resolveStance(id, new_stance, game);
                 }
             }
 
@@ -383,7 +403,12 @@ fn resolvePassTurn(id: Id, game: *Game) !void {
     game.level.entities.turn.getPtr(id).?.*.pass = true;
 
     if (game.level.entities.stance.get(id)) |stance| {
-        game.level.entities.stance.getPtr(id).?.* = updateStance(.pass, game.level.entities.next_move_mode.get(id).?, stance);
-        try game.log.now(.stance, .{ id, game.level.entities.stance.get(id).? });
+        const new_stance = updateStance(.pass, game.level.entities.next_move_mode.get(id).?, stance);
+        try game.log.record(.stance, .{ id, new_stance });
+        resolveStance(id, new_stance, game);
     }
+}
+
+fn resolveStance(id: Id, stance: Stance, game: *Game) void {
+    game.level.entities.stance.set(id, stance);
 }

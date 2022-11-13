@@ -108,6 +108,10 @@ pub const MsgLog = struct {
         try msg_log.instant.insert(0, Msg.genericMsg(msg_type, args));
     }
 
+    pub fn record(msg_log: *MsgLog, comptime msg_type: MsgType, args: anytype) !void {
+        try msg_log.all.append(Msg.genericMsg(msg_type, args));
+    }
+
     pub fn clear(msg_log: *MsgLog) void {
         msg_log.remaining.clearRetainingCapacity();
         msg_log.instant.clearRetainingCapacity();

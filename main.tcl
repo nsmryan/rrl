@@ -20,20 +20,30 @@ Gui create gui
 gui setBytes [Gui call init 0 $zigtcl::tclAllocator]
 
 InputEvent create event
-proc keyDown { value } {
-    scan $value %c chr
+proc keyDown { chr } {
     event variant char $chr [KeyDir value down]
     gui call inputEvent [event bytes] 0
 }
 
-proc keyUp { value } {
-    scan $value %c chr
+proc keyUp { chr } {
     event variant char $chr [KeyDir value up]
     gui call inputEvent [event bytes] 0
 }
-proc key { value } {
+
+proc key { chr } {
+    scan $chr %c value
     keyDown $value
     keyUp $value
+}
+
+proc space { } {
+    keyUp 32
+    keyDown 32
+}
+
+proc esc { } {
+    keyUp 27
+    keyDown 27
 }
 
 proc mkKey { name value } { proc $name { } "key $value" }
@@ -68,6 +78,7 @@ proc renderPeriodically { } {
         gui call draw
         after 100 renderPeriodically
     } else {
+        gui call deinit
         global running
         set running 0
     }

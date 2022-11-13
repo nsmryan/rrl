@@ -28,14 +28,11 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
     }
     const namespace = "rrl";
 
-    //_ = zt.CreateObjCommand(interp, "zigtcl::zigcreate", Hello_ZigTclCmd) catch return zt.tcl.TCL_ERROR;
-
-    //zt.WrapFunction(test_function, "zigtcl::zig_function", interp) catch return zt.tcl.TCL_ERROR;
-
     var ns = zt.tcl.Tcl_CreateNamespace(interp, "rrl", null, null);
 
     // Core
     _ = zt.RegisterStruct(core.config.Config, "Config", namespace, interp);
+    _ = zt.RegisterStruct(core.level.Level, "Level", namespace, interp);
 
     // Map
     _ = zt.RegisterStruct(math.pos.Pos, "Pos", namespace, interp);

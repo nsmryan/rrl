@@ -1,6 +1,9 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const utils = @import("utils");
+const Comp = utils.comp.Comp;
+
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
@@ -20,6 +23,9 @@ const UseAction = engine.actions.UseAction;
 const Settings = engine.actions.Settings;
 const GameState = engine.settings.GameState;
 
+const drawcmd = @import("drawcmd");
+const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
+
 pub const display = @import("gui/display.zig");
 pub const keyboard = @import("gui/keyboard.zig");
 pub const drawing = @import("gui/drawing.zig");
@@ -28,11 +34,13 @@ pub const sdl2 = @import("gui/sdl2.zig");
 pub const Gui = struct {
     display: display.Display,
     game: Game,
+    animations: Comp(SpriteAnimation),
 
     pub fn init(seed: u64, allocator: Allocator) !Gui {
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
             .game = try Game.init(seed, allocator),
+            .animations = Comp(SpriteAnimation).init(allocator),
         };
     }
 
@@ -42,24 +50,36 @@ pub const Gui = struct {
     }
 
     pub fn step(gui: *Gui) !bool {
-        // dispatch based on state and turn InputAction into messages
-        // Messages must be implemented, and include a "now" concept to simplfy use code.
-        // Add a resolve function which then modifies the game based on the messages.
-        //
         const ticks = sdl2.SDL_GetTicks64();
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
                 try gui.game.step(input_event, ticks);
-                try gui.draw();
+                gui.resolveMessages();
             }
         }
+
+        // Draw whether or not there is an event to update animations, effects, etc.
+        try gui.draw();
 
         return gui.game.settings.state != GameState.exit;
     }
 
+    pub fn resolveMessages(gui: *Gui) void {
+        for (gui.game.log.all.items) |msg| {
+            switch (msg) {
+                .spawn => |args| {
+                    _ = args;
+                    //gui.animations.set(args.id, animationFromName(gui.display.sprites, args.name));
+                },
+
+                else => {},
+            }
+        }
+    }
+
     pub fn draw(gui: *Gui) !void {
-        try rendering.render(&gui.game, &gui.display.sprites.sheets, &gui.display.panel, &gui.display.drawcmds);
+        try rendering.render(&gui.game, &gui.display.sprites.sheets, &gui.display.drawcmds);
         gui.display.present();
     }
 };

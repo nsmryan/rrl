@@ -40,6 +40,8 @@ pub const s = @import("settings.zig");
 pub const GameState = s.GameState;
 pub const Settings = s.Settings;
 
+pub const spawn = @import("spawn.zig");
+
 const CONFIG_PATH = "data/config.txt";
 
 pub const Game = struct {
@@ -54,9 +56,11 @@ pub const Game = struct {
         var rng = RndGen.init(seed);
         const config = try Config.fromFile(CONFIG_PATH[0..]);
         var level = Level.empty(allocator);
+        var log = MsgLog.init(allocator);
 
         // Always spawn a player entity even if there is nothing else in the game.
-        try core.spawn.spawnPlayer(&level.entities, &config);
+        try spawn.spawnPlayer(&level.entities, &log, &config);
+        level.map = try Map.fromDims(3, 3, allocator);
 
         return Game{
             .level = level,
@@ -64,7 +68,7 @@ pub const Game = struct {
             .input = Input.init(allocator),
             .config = config,
             .settings = Settings.init(),
-            .log = MsgLog.init(allocator),
+            .log = log,
         };
     }
 
@@ -74,6 +78,7 @@ pub const Game = struct {
     }
 
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
+        game.log.clear();
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
         try game.handleInputAction(input_action);
     }
@@ -105,6 +110,7 @@ test "walk around a bit" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
 
     try game.handleInputAction(InputAction{ .move = .right });
@@ -132,6 +138,7 @@ test "walk into full tile wall" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
     game.level.map.set(Pos.init(1, 1), Tile.impassable());
 
@@ -153,6 +160,7 @@ test "run around" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
 
     game.level.entities.pos.set(0, Pos.init(0, 0));
@@ -170,6 +178,7 @@ test "run blocked" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
@@ -200,6 +209,7 @@ test "interact with intertile wall" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
 
@@ -256,6 +266,7 @@ test "interact with intertile corners" {
 
     game.level.entities.pos.set(0, Pos.init(1, 1));
 
+    game.level.map.deinit();
     game.level.map = try Map.fromDims(3, 3, allocator);
     game.level.map.set(Pos.init(1, 1), Tile.shortLeftAndDownWall());
 

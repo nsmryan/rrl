@@ -63,8 +63,8 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
             try game.log.now(.move, .{ id, MoveType.jumpWall, move_mode, move_pos });
         } else {
             // We hit a wall. Generate messages about this, but don't move the entity.
-            try game.log.now(.collided, .{ id, move_pos });
             try game.log.now(.faceTowards, .{ id, move_pos });
+            try game.log.now(.collided, .{ id, move_pos });
         }
     } else {
         // No collision, just move to location.

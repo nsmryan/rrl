@@ -16,6 +16,7 @@ const ItemClass = core.items.ItemClass;
 const MoveMode = core.movement.MoveMode;
 const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
+const Name = core.entities.Name;
 
 pub const Msg = union(enum) {
     tryMove: struct { id: Id, dir: Direction, amount: usize },
@@ -28,6 +29,7 @@ pub const Msg = union(enum) {
     stance: struct { id: Id, stance: Stance },
     nextMoveMode: struct { id: Id, move_mode: MoveMode },
     pass: Id,
+    spawn: struct { id: Id, name: Name },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);
@@ -104,5 +106,11 @@ pub const MsgLog = struct {
 
     pub fn rightNow(msg_log: *MsgLog, comptime msg_type: MsgType, args: anytype) !void {
         try msg_log.instant.insert(0, Msg.genericMsg(msg_type, args));
+    }
+
+    pub fn clear(msg_log: *MsgLog) void {
+        msg_log.remaining.clearRetainingCapacity();
+        msg_log.instant.clearRetainingCapacity();
+        msg_log.all.clearRetainingCapacity();
     }
 };

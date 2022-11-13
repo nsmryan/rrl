@@ -20,7 +20,6 @@ const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
 const Dims = area.Dims;
 const SpriteSheet = sprite.SpriteSheet;
-const SpriteAnimation = sprite.SpriteAnimation;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
@@ -42,7 +41,6 @@ pub const Display = struct {
     sprites: Sprites,
     panel: Panel,
 
-    animations: Comp(SpriteAnimation),
     drawcmds: ArrayList(DrawCmd),
     allocator: Allocator,
 
@@ -65,6 +63,11 @@ pub const Display = struct {
             sdl2.SDL_Log("Unable to create window: %s", sdl2.SDL_GetError());
             return error.SDLInitializationFailed;
         };
+
+        // If testing, do not bring up window.
+        if (@import("builtin").is_test) {
+            sdl2.SDL_HideWindow(window);
+        }
 
         const renderer = sdl2.SDL_CreateRenderer(window, -1, sdl2.SDL_RENDERER_ACCELERATED) orelse {
             sdl2.SDL_Log("Unable to create renderer: %s", sdl2.SDL_GetError());
@@ -95,8 +98,6 @@ pub const Display = struct {
         const cell_dims = Dims.init(3, 3);
         const screen_panel = Panel.init(num_pixels, cell_dims);
 
-        const animations = Comp(SpriteAnimation).init(allocator);
-
         var game: Display = Display{
             .window = window,
             .renderer = renderer,
@@ -105,7 +106,6 @@ pub const Display = struct {
             .panel = screen_panel,
             .sprites = sprites,
             .screen_texture = screen_texture,
-            .animations = animations,
             .drawcmds = drawcmds,
             .allocator = allocator,
         };

@@ -47,7 +47,7 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     // Entities
     _ = zt.RegisterStruct(core.entities.Entities, "Entities", namespace, interp);
-    _ = zt.RegisterStruct(core.spawn, "spawn", namespace, interp);
+    _ = zt.RegisterStruct(engine.spawn, "spawn", namespace, interp);
     _ = zt.RegisterStruct(utils.comp.Comp(math.pos.Pos), "Comp(Pos)", namespace, interp);
 
     // Display
@@ -58,6 +58,9 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     // Game
     _ = zt.RegisterStruct(Game, "Game", namespace, interp);
+
+    // Gui
+    _ = zt.RegisterStruct(gui.Gui, "Gui", namespace, interp);
 
     // Misc
     _ = zt.RegisterStruct(std.mem.Allocator, "Allocator", "zigtcl", interp);

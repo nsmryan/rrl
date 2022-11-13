@@ -23,9 +23,7 @@ const Sprites = drawcmd.sprite.Sprites;
 const Sprite = drawcmd.sprite.Sprite;
 const SpriteSheet = drawcmd.sprite.SpriteSheet;
 
-pub fn render(game: *Game, sprites: *const ArrayList(SpriteSheet), panel: *const Panel, drawcmds: *ArrayList(DrawCmd)) !void {
-    _ = panel;
-
+pub fn render(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
     try renderMapLow(game, sprites, drawcmds);
     try renderMapMiddle(game, sprites, drawcmds);
     try renderEntities(game, sprites, drawcmds);

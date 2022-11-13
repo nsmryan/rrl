@@ -68,8 +68,9 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     var allocatorObj = zt.tcl.Tcl_NewByteArrayObj(@ptrCast([*]const u8, &zt.alloc.tcl_allocator), @sizeOf(@TypeOf(zt.alloc.tcl_allocator)));
     _ = zt.tcl.Tcl_SetVar2Ex(interp, "zigtcl::tclAllocator", null, allocatorObj, 0);
-    //const Inner = Struct.Inner;
-    //_ = zt.RegisterStruct(Inner, "Inner", "zigtcl", interp);
+
+    var pageAllocatorObj = zt.tcl.Tcl_NewByteArrayObj(@ptrCast([*]const u8, &std.heap.page_allocator), @sizeOf(@TypeOf(std.heap.page_allocator)));
+    _ = zt.tcl.Tcl_SetVar2Ex(interp, "zigtcl::pageAllocator", null, pageAllocatorObj, 0);
 
     _ = zt.tcl.Tcl_Export(interp, ns, "*", 0);
 

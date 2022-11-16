@@ -8,6 +8,7 @@ const astar = utils.astar;
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Line = math.line.Line;
+const Direction = math.direction.Direction;
 
 const blocking = @import("blocking.zig");
 const Blocked = blocking.Blocked;
@@ -37,7 +38,8 @@ pub fn pathBlocked(map: Map, start_pos: Pos, end_pos: Pos, blocked_type: Blocked
 
     var last_pos = start_pos;
     while (line.next()) |target_pos| {
-        const blocked = blocking.moveBlocked(map, last_pos, target_pos, blocked_type);
+        const dir = Direction.fromPositions(last_pos, target_pos);
+        const blocked = blocking.moveBlocked(&map, last_pos, dir.?, blocked_type);
         if (blocked != null) {
             return blocked;
         }

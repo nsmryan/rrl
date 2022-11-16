@@ -7,7 +7,7 @@ const Allocator = std.mem.Allocator;
 const math = @import("math");
 const Pos = math.pos.Pos;
 
-const Error = error{Overflow} || Allocator.Error;
+pub const Error = error{Overflow} || Allocator.Error;
 
 /// Compute FOV information for a given position using the shadow mapping algorithm.
 ///
@@ -18,9 +18,9 @@ const Error = error{Overflow} || Allocator.Error;
 /// This type cannot be used in some cases, such as a slice constructed from an array, so it is an anytype
 /// instead.
 ///
-pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), is_blocking: anytype) Error!void {
+pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), comptime is_blocking: anytype) Error!void {
     // Mark the origin as visible.
-    try mark_visible(origin, map, visible);
+    try mark_visible(origin, visible);
 
     var index: usize = 0;
     while (index < 4) : (index += 1) {
@@ -28,52 +28,56 @@ pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), is_blocki
 
         const first_row = Row.new(1, Rational.new(-1, 1), Rational.new(1, 1));
 
-        try scan(first_row, quadrant, map, visible, is_blocking);
+        try Scan(@TypeOf(map), is_blocking).scan(first_row, quadrant, map, visible);
     }
 }
 
-fn scan(input_row: Row, quadrant: Quadrant, map: anytype, visible: *ArrayList(Pos), is_blocking: anytype) Error!void {
-    var prev_tile: ?Pos = null;
+fn Scan(comptime MapType: type, comptime is_blocking: anytype) type {
+    return struct {
+        fn scan(input_row: Row, quadrant: Quadrant, map: MapType, visible: *ArrayList(Pos)) Error!void {
+            var prev_tile: ?Pos = null;
 
-    var row = input_row;
+            var row = input_row;
 
-    var iter: RowIter = row.tiles();
-    while (iter.next()) |tile| {
-        const tile_is_wall = is_blocking(quadrant.transform(tile), map);
-        const tile_is_floor = !tile_is_wall;
+            var iter: RowIter = row.tiles();
+            while (iter.next()) |tile| {
+                const tile_is_wall = is_blocking(quadrant.transform(tile), map);
+                const tile_is_floor = !tile_is_wall;
 
-        var prev_is_wall = false;
-        var prev_is_floor = false;
-        if (prev_tile) |prev| {
-            prev_is_wall = is_blocking(quadrant.transform(prev), map);
-            prev_is_floor = !prev_is_wall;
+                var prev_is_wall = false;
+                var prev_is_floor = false;
+                if (prev_tile) |prev| {
+                    prev_is_wall = is_blocking(quadrant.transform(prev), map);
+                    prev_is_floor = !prev_is_wall;
+                }
+
+                if (tile_is_wall or try is_symmetric(row, tile)) {
+                    const pos = quadrant.transform(tile);
+
+                    try mark_visible(pos, visible);
+                }
+
+                if (prev_is_wall and tile_is_floor) {
+                    row.start_slope = slope(tile);
+                }
+
+                if (prev_is_floor and tile_is_wall) {
+                    var next_row = row.next();
+                    next_row.end_slope = slope(tile);
+
+                    try Scan(MapType, is_blocking).scan(next_row, quadrant, map, visible);
+                }
+
+                prev_tile = tile;
+            }
+
+            if (prev_tile) |tile| {
+                if (!is_blocking(quadrant.transform(tile), map)) {
+                    try Scan(MapType, is_blocking).scan(row.next(), quadrant, map, visible);
+                }
+            }
         }
-
-        if (tile_is_wall or try is_symmetric(row, tile)) {
-            const pos = quadrant.transform(tile);
-
-            try mark_visible(pos, map, visible);
-        }
-
-        if (prev_is_wall and tile_is_floor) {
-            row.start_slope = slope(tile);
-        }
-
-        if (prev_is_floor and tile_is_wall) {
-            var next_row = row.next();
-            next_row.end_slope = slope(tile);
-
-            try scan(next_row, quadrant, map, visible, is_blocking);
-        }
-
-        prev_tile = tile;
-    }
-
-    if (prev_tile) |tile| {
-        if (!is_blocking(quadrant.transform(tile), map)) {
-            try scan(row.next(), quadrant, map, visible, is_blocking);
-        }
-    }
+    };
 }
 
 const Cardinal = enum {
@@ -303,8 +307,13 @@ fn contains(visible: *ArrayList(Pos), pos: Pos) bool {
     return false;
 }
 
-fn mark_visible(pos: Pos, tiles: []const []const i32, visible: *ArrayList(Pos)) !void {
-    if (inside_map(pos, tiles) and !contains(visible, pos)) {
+//fn mark_visible(pos: Pos, tiles: []const []const i32, visible: *ArrayList(Pos)) !void {
+//    if (inside_map(pos, tiles) and !contains(visible, pos)) {
+//        try visible.append(pos);
+//    }
+//}
+fn mark_visible(pos: Pos, visible: *ArrayList(Pos)) !void {
+    if (!contains(visible, pos)) {
         try visible.append(pos);
     }
 }

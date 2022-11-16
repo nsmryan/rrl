@@ -178,6 +178,7 @@ pub const Map = struct {
                 try chars.append(chr);
             }
         }
+
         return chars;
     }
 

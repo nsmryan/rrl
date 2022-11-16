@@ -2,23 +2,34 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-const utils = @import("utils");
-const pos = utils.pos;
+const math = @import("math");
+const pos = math.pos;
 const Pos = pos.Pos;
-const Direction = utils.direction.Direction;
+const Direction = math.direction.Direction;
 
 const blocking = @import("blocking.zig");
 const FovResult = blocking.FovResult;
+const Blocked = blocking.Blocked;
 
 const pathing = @import("pathing.zig");
 
 const Map = @import("map.zig").Map;
+const Height = @import("tile.zig").Tile.Height;
 
-const shadowcasting = @import("shadowcasting.zig").Map;
+const shadowcasting = @import("shadowcasting.zig");
 
-pub fn isInFovEdge(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, allocator: Allocator) FovResult {
-    if (map.isInFov(start_pos, end_pos, radius + 1, low, allocator)) {
-        if (pos.distanceMaximum(start_pos, end_pos) == radius + 1) {
+pub const FovError = error{OutOfMemory} || shadowcasting.Error;
+
+pub const FovBlock = union(enum) {
+    block,
+    transparent,
+    opaqu: usize,
+    magnify: usize,
+};
+
+pub fn isInFovEdge(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, allocator: Allocator) FovError!FovResult {
+    if (try isInFov(map, start_pos, end_pos, radius + 1, low, allocator)) {
+        if (start_pos.distanceMaximum(end_pos) == radius + 1) {
             return FovResult.edge;
         } else {
             return FovResult.inside;
@@ -28,26 +39,26 @@ pub fn isInFovEdge(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: boo
     }
 }
 
-pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, allocator: Allocator) bool {
-    if (pos.distanceMaximum(start_pos, end_pos) > radius) {
+pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, allocator: Allocator) FovError!bool {
+    if (start_pos.distanceMaximum(end_pos) > radius) {
         return false;
     }
 
-    if (isInFovShadowcast(map, start_pos, end_pos, allocator)) {
+    if (try isInFovShadowcast(map, start_pos, end_pos, allocator)) {
         // Make sure there is a clear path, but allow the player to
         // see walls (blocking position is the end_pos tile).
-        var path_fov = undefined;
+        var path_fov: ?Blocked = undefined;
         if (low) {
-            path_fov = pathing.pathBlockedFovLow(map, start_pos, end_pos, allocator);
+            path_fov = pathing.pathBlockedFovLow(map, start_pos, end_pos);
         } else {
-            path_fov = pathing.pathBlockedFov(map, start_pos, end_pos, allocator);
+            path_fov = pathing.pathBlockedFov(map, start_pos, end_pos);
         }
 
         if (path_fov) |blocked| {
             // If we get here, the position is in FOV but blocked.
             // The only blocked positions that are visible are at the end of the
             // path that are also block tiles (like a wall).
-            return end_pos == blocked.end_pos and blocked.blocked_tile;
+            return end_pos.eql(blocked.end_pos) and blocked.blocked_tile;
         } else {
             // Path not blocked, so in FoV.
             return true;
@@ -59,12 +70,13 @@ pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, a
 
 // NOTE could this be duplicated for Fov and FovLow? The use of 'low' above helps but may not be perfect.
 pub fn isBlocking(position: Pos, map: Map) bool {
-    return map.is_within_bounds(pos) and blocking.BlockedType.fov.tileBlocks(map.get(position));
+    return map.isWithinBounds(position) and blocking.BlockedType.fov.tileBlocks(map.get(position)) != Height.empty;
 }
 
-pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allocator) bool {
+pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allocator) FovError!bool {
     // NOTE(perf) add back in with fov_cache
     //if (self.fov_cache.borrow_mut().get(&start_pos)) |visible| {
+    //
     //    return visible.contains(&end_pos);
     //}
 
@@ -76,13 +88,13 @@ pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allo
     //}
 
     // NOTE(perf) this pre-allocation speeds up FOV significantly
-    var visible_positions = ArrayList(Pos).init_capacity(allocator, 120);
+    var visible_positions: ArrayList(Pos) = try ArrayList(Pos).initCapacity(allocator, 120);
 
-    shadowcasting.computeFov(start_pos, map, &visible_positions, isBlocking);
+    try shadowcasting.computeFov(start_pos, map, &visible_positions, isBlocking);
 
     var in_fov = false;
     for (visible_positions.items) |position| {
-        if (position == end_pos) {
+        if (position.eql(end_pos)) {
             in_fov = true;
             break;
         }
@@ -94,11 +106,11 @@ pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allo
     return in_fov;
 }
 
-pub fn isInFovDirection(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction, low: bool, allocator: Allocator) bool {
-    if (start_pos == end_pos) {
+pub fn isInFovDirection(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction, low: bool, allocator: Allocator) FovError!bool {
+    if (start_pos.eql(end_pos)) {
         return true;
-    } else if (isInFov(map, start_pos, end_pos, radius, low, allocator)) {
-        return utils.visibleInDirection(start_pos, end_pos, dir);
+    } else if (try isInFov(map, start_pos, end_pos, radius, low, allocator)) {
+        return math.visibleInDirection(start_pos, end_pos, dir);
     } else {
         return false;
     }

@@ -9,9 +9,13 @@ const Comp = comp.Comp;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
+const Direction = math.direction.Direction;
 
 const movement = @import("movement.zig");
 const MoveMode = movement.MoveMode;
+
+const board = @import("board");
+const FovBlock = board.fov.FovBlock;
 
 const items = @import("items.zig");
 const Item = items.Item;
@@ -77,6 +81,10 @@ pub const Entities = struct {
     stance: Comp(Stance),
     item: Comp(Item),
     energy: Comp(u32),
+    fov_radius: Comp(i32),
+    illuminate: Comp(usize),
+    facing: Comp(Direction),
+    fov_block: Comp(FovBlock),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

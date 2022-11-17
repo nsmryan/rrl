@@ -166,6 +166,8 @@ pub const Config = struct {
                     const field_type_info = @typeInfo(field.field_type);
                     if (field_type_info == .Float) {
                         @field(config, field.name) = try std.fmt.parseFloat(field.field_type, field_value);
+                    } else if (field_type_info == .Int) {
+                        @field(config, field.name) = try parseInt(field.field_type, field_value);
                     } else if (field_type_info == .Struct) {
                         // The only struct right now is Color.
                         var color_parts = std.mem.split(u8, field_value, " ");

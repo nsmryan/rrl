@@ -19,6 +19,7 @@ const Stance = core.entities.Stance;
 const board = @import("board");
 const Map = board.map.Map;
 const Tile = board.tile.Tile;
+const FovResult = board.blocking.FovResult;
 
 const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
@@ -304,4 +305,26 @@ test "interact with intertile corners" {
     game.level.entities.pos.set(0, Pos.init(1, 2));
     try game.handleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0).?);
+}
+
+test "basic level fov" {
+    const allocator = std.testing.allocator;
+
+    var game = try Game.init(0, allocator);
+    defer game.deinit();
+
+    game.level.map.deinit();
+    game.level.map = try Map.fromDims(3, 3, allocator);
+    game.level.map.set(Pos.init(1, 1), Tile.tallWall());
+    game.level.entities.pos.set(0, Pos.init(1, 0));
+
+    // in fov
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 0), false, allocator));
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(1, 0), false, allocator));
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(2, 0), false, allocator));
+
+    // out of fov
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 2), false, allocator));
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 3), false, allocator));
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 4), false, allocator));
 }

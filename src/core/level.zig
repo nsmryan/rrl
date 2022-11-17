@@ -10,6 +10,7 @@ const FovResult = board.blocking.FovResult;
 const fov = board.fov;
 const FovBlock = fov.FovBlock;
 const FovError = fov.FovError;
+const Tile = board.tile.Tile;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
@@ -89,19 +90,6 @@ pub const Level = struct {
 
     pub fn posInFov(level: *Level, id: Id, other_pos: Pos, allocator: Allocator) FovError!bool {
         return try level.posInFovEdge(id, other_pos, allocator) == FovResult.inside;
-    }
-
-    fn fovCheckPlayer(level: *Level, id: Id, check_pos: Pos, crouching: bool, view_distance: i32, allocator: Allocator) FovError!FovResult {
-        const entity_pos = level.entities.pos.get(id).?;
-        const fov_result = try fov.isInFovEdge(level.map, entity_pos, check_pos, view_distance, crouching, allocator);
-
-        // If we can't see the tile, check for a latern that illuminates it, allowing
-        // us to see it anyway. Ignore tiles that are blocked for sight anyway.
-        //if fov_result != FovResult::Inside and !level.map[check_pos].block_sight {
-        //fov_result = level.check_illumination(id, fov_result, check_pos, ILLUMINATE_FOV_RADIUS, crouching);
-        //}
-
-        return fov_result;
     }
 
     // NOTE(implement) magnification
@@ -197,13 +185,15 @@ pub const Level = struct {
         return reduction;
     }
 
-    fn fovCheck(level: *Level, id: Id, check_pos: Pos, crouching: bool, allocator: Allocator) FovError!FovResult {
+    pub fn fovCheck(level: *Level, id: Id, check_pos: Pos, crouching: bool, allocator: Allocator) FovError!FovResult {
         if (!level.map.isWithinBounds(check_pos)) {
             return FovResult.outside;
         }
 
         const entity_pos = level.entities.pos.get(id).?;
         var view_distance: i32 = level.entities.fov_radius.get(id).?;
+
+        std.debug.print("{} fov radius{}\n", .{ id, view_distance });
 
         // Add in the result of magnification effects.
         // NOTE(implement) magnification
@@ -214,7 +204,11 @@ pub const Level = struct {
         // The player and the other entities have slightly different FoV checks.
         // The other entities have directional FoV which is layered on the base FoV algorithm.
         if (level.entities.typ.get(id).? == Type.player) {
-            fov_result = try level.fovCheckPlayer(id, check_pos, crouching, view_distance, allocator);
+            fov_result = try fov.isInFovEdge(level.map, entity_pos, check_pos, view_distance, crouching, allocator);
+            // If we can't see the tile, check for a latern that illuminates it, allowing
+            // us to see it anyway. Ignore tiles that are blocked for sight anyway.
+            //if fov_result != FovResult::Inside and !level.map[check_pos].block_sight {
+            //fov_result = level.check_illumination(id, fov_result, check_pos, ILLUMINATE_FOV_RADIUS, crouching);
         } else {
             if (level.entities.facing.get(id)) |dir| {
                 if (try fov.isInFovDirection(level.map, entity_pos, check_pos, view_distance, dir, crouching, allocator)) {
@@ -227,24 +221,24 @@ pub const Level = struct {
             }
         }
 
-        var fog_reduction: i32 = 0;
-
         // If the position is within Fov then apply modifiers from fog, etc.
-        if (fov_result != FovResult.outside) {
-            // NOTE(implement) fov reduction from fog
-            //fog_reduction = level.fovReduction(id, check_pos, view_distance);
-            // This subtraction is safe due to checks within fov_reduction.
-            view_distance -= fog_reduction;
+        // NOTE(implement) fog reduction
+        //var fog_reduction: i32 = 0;
+        //if (fov_result != FovResult.outside) {
+        //    // NOTE(implement) fov reduction from fog
+        //    //fog_reduction = level.fovReduction(id, check_pos, view_distance);
+        //    // This subtraction is safe due to checks within fov_reduction.
+        //    view_distance -= fog_reduction;
 
-            const pos_dist = entity_pos.distanceMaximum(check_pos);
-            if (pos_dist == view_distance + 1) {
-                fov_result = FovResult.edge;
-            } else if (pos_dist <= view_distance) {
-                fov_result = FovResult.inside;
-            } else {
-                fov_result = FovResult.outside;
-            }
-        }
+        //    const pos_dist = entity_pos.distanceMaximum(check_pos);
+        //    if (pos_dist == view_distance + 1) {
+        //        fov_result = FovResult.edge;
+        //    } else if (pos_dist <= view_distance) {
+        //        fov_result = FovResult.inside;
+        //    } else {
+        //        fov_result = FovResult.outside;
+        //    }
+        //}
 
         // NOTE(implement) illumination
         //if (level.entities.typ.get(id).? == Type.player) {

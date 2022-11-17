@@ -70,7 +70,7 @@ pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, radius: i32, low: bool, a
 
 // NOTE could this be duplicated for Fov and FovLow? The use of 'low' above helps but may not be perfect.
 pub fn isBlocking(position: Pos, map: Map) bool {
-    return map.isWithinBounds(position) and blocking.BlockedType.fov.tileBlocks(map.get(position)) != Height.empty;
+    return !map.isWithinBounds(position) or blocking.BlockedType.fov.tileBlocks(map.get(position)) != Height.empty;
 }
 
 pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allocator) FovError!bool {
@@ -89,6 +89,7 @@ pub fn isInFovShadowcast(map: Map, start_pos: Pos, end_pos: Pos, allocator: Allo
 
     // NOTE(perf) this pre-allocation speeds up FOV significantly
     var visible_positions: ArrayList(Pos) = try ArrayList(Pos).initCapacity(allocator, 120);
+    defer visible_positions.deinit();
 
     try shadowcasting.computeFov(start_pos, map, &visible_positions, isBlocking);
 

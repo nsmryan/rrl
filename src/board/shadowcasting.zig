@@ -318,7 +318,7 @@ fn mark_visible(pos: Pos, visible: *ArrayList(Pos)) !void {
     }
 }
 
-test "expansive walls" {
+test "shadowcasting expansive walls" {
     var allocator = std.heap.GeneralPurposeAllocator(.{}){};
     var visible = ArrayList(Pos).init(allocator.allocator());
     defer visible.deinit();
@@ -331,7 +331,7 @@ test "expansive walls" {
     try matchingVisible(expected[0..], &visible);
 }
 
-test "test_expanding_shadows" {
+test "shadowcasting expanding shadows" {
     const origin = Pos.init(0, 0);
 
     const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 1, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 } };
@@ -346,7 +346,7 @@ test "test_expanding_shadows" {
     try matchingVisible(expected[0..], &visible);
 }
 
-test "test_no_blind_corners" {
+test "shadowcasting no blind corners" {
     const origin = Pos.init(3, 0);
 
     const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 1, 1, 1, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 } };

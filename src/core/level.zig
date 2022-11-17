@@ -193,8 +193,6 @@ pub const Level = struct {
         const entity_pos = level.entities.pos.get(id).?;
         var view_distance: i32 = level.entities.fov_radius.get(id).?;
 
-        std.debug.print("{} fov radius{}\n", .{ id, view_distance });
-
         // Add in the result of magnification effects.
         // NOTE(implement) magnification
         //view_distance += try level.fovMagnification(id, check_pos, crouching, allocator);

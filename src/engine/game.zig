@@ -328,3 +328,28 @@ test "basic level fov" {
     try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 3), false, allocator));
     try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 4), false, allocator));
 }
+
+test "short wall level fov" {
+    const allocator = std.testing.allocator;
+
+    var game = try Game.init(0, allocator);
+    defer game.deinit();
+
+    game.level.map.deinit();
+    game.level.map = try Map.fromDims(3, 3, allocator);
+    game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
+    game.level.entities.pos.set(0, Pos.init(0, 0));
+
+    // in fov
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 0), false, allocator));
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(1, 0), false, allocator));
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(2, 0), false, allocator));
+
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 1), false, allocator));
+    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 2), false, allocator));
+
+    // out of fov
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 1), true, allocator));
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 2), true, allocator));
+    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 3), true, allocator));
+}

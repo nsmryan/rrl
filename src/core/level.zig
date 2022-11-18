@@ -83,13 +83,13 @@ pub const Level = struct {
         return try level.fovCheck(id, other_pos, crouching, allocator);
     }
 
-    pub fn posInFovEdge(level: *Level, id: Id, other_pos: Pos, allocator: Allocator) FovError!FovResult {
+    pub fn posInFov(level: *Level, id: Id, other_pos: Pos, allocator: Allocator) FovError!FovResult {
         const crouching = level.entities.stance.get(id).? == Stance.crouching;
         return try level.fovCheck(id, other_pos, crouching, allocator);
     }
 
-    pub fn posInFov(level: *Level, id: Id, other_pos: Pos, allocator: Allocator) FovError!bool {
-        return try level.posInFovEdge(id, other_pos, allocator) == FovResult.inside;
+    pub fn posInsideFov(level: *Level, id: Id, other_pos: Pos, allocator: Allocator) FovError!bool {
+        return try level.posInFov(id, other_pos, allocator) == FovResult.inside;
     }
 
     // NOTE(implement) magnification

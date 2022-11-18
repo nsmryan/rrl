@@ -11,6 +11,7 @@ const Entities = core.entities.Entities;
 
 const board = @import("board");
 const Tile = board.tile.Tile;
+const FovResult = board.blocking.FovResult;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -40,7 +41,7 @@ fn renderMapLow(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *
             const pos = Pos.init(x, y);
             const tile = game.level.map.get(pos);
             if (tile.center.material == Tile.Material.stone) {
-                try drawcmds.append(DrawCmd.sprite(open_tile_sprite, Color.black(), pos));
+                try drawcmds.append(DrawCmd.sprite(open_tile_sprite, Color.white(), pos));
             }
         }
     }
@@ -49,7 +50,7 @@ fn renderMapLow(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *
 fn renderEntities(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
     const pos = game.level.entities.pos.get(Entities.player_id).?;
     const player_sprite = try drawcmd.sprite.lookupSingleSprite(sprites, "player_standing_right");
-    try drawcmds.append(DrawCmd.sprite(player_sprite, Color.black(), pos));
+    try drawcmds.append(DrawCmd.sprite(player_sprite, Color.white(), pos));
 }
 
 fn renderMapMiddle(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
@@ -65,7 +66,7 @@ fn renderMapMiddle(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds
             try renderWallShadow(pos, game, sprites, drawcmds);
 
             if (tile.center.height == .tall) {
-                try drawcmds.append(DrawCmd.sprite(wall_sprite, Color.black(), pos));
+                try drawcmds.append(DrawCmd.sprite(wall_sprite, Color.white(), pos));
             }
             try renderIntertileWalls(pos, game, sprites, drawcmds);
         }
@@ -74,7 +75,7 @@ fn renderMapMiddle(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds
 
 fn renderIntertileWalls(pos: Pos, game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
     const tile = game.level.map.get(pos);
-    const wall_color = Color.black();
+    const wall_color = Color.white();
 
     // Left walls
     if (try intertileSprite(tile.left, "left_intertile_wall", "left_intertile_grass_wall", sprites)) |sprite| {
@@ -121,7 +122,7 @@ fn intertileSprite(wall: Tile.Wall, stone_name: []const u8, grass_name: []const 
 }
 
 fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
-    const wall_color = Color.black();
+    const wall_color = Color.white();
 
     var y: i32 = 0;
     while (y < game.level.map.height) : (y += 1) {
@@ -135,27 +136,21 @@ fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: 
                 try drawcmds.append(DrawCmd.sprite(sprite, wall_color, pos));
             }
 
-            // TODO FoV
-            //let fov_result = display_state.pos_is_in_fov(pos);
+            const fov_result = try game.level.posInFov(Entities.player_id, pos, game.allocator);
 
-            //// apply a FoW darkening to cells
-            //if config.fog_of_war and fov_result != FovResult::Inside {
-            //    let is_in_fov_ext = fov_result == FovResult::Edge;
+            // apply a FoW darkening to cells
+            if (game.config.fog_of_war and fov_result != FovResult.inside) {
+                const is_in_fov_ext = fov_result == FovResult.edge;
 
-            //    let mut blackout_color = Color::black();
-            //    //let sprite = Sprite::new(254 as u32, sprite_key);
-            //    if is_in_fov_ext {
-            //        blackout_color.a = config.fov_edge_alpha;
-            //        //panel.sprite_cmd(sprite, blackout_color, pos);
-            //        panel.highlight_cmd(blackout_color, pos);
-            //    } else if display_state.map[pos].explored {
-            //        blackout_color.a = config.explored_alpha;
-            //        //panel.sprite_cmd(sprite, blackout_color, pos);
-            //        panel.highlight_cmd(blackout_color, pos);
-            //    } else {
-            //        panel.fill_cmd(pos, blackout_color);
-            //    }
-            //}
+                var blackout_color = Color.black();
+                //let sprite = Sprite::new(254 as u32, sprite_key);
+                if (is_in_fov_ext) {
+                    blackout_color.a = game.config.fov_edge_alpha;
+                } else if (game.level.map.get(pos).explored) {
+                    blackout_color.a = game.config.explored_alpha;
+                }
+                try drawcmds.append(DrawCmd.highlightTile(pos, blackout_color));
+            }
         }
     }
 }

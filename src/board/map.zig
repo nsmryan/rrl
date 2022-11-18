@@ -6,6 +6,7 @@ const ArrayList = std.ArrayList;
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
+const Dims = math.utils.Dims;
 
 const Tile = @import("tile.zig").Tile;
 
@@ -182,8 +183,9 @@ pub const Map = struct {
         return chars;
     }
 
-    // TODO add back in when Dims type is available
-    //pub fn dims(self: *const Map) Dims
+    pub fn dims(map: *const Map) Dims {
+        return Dims.init(@intCast(usize, map.width), @intCast(usize, map.height));
+    }
 };
 
 // NOTE add these back in if needed

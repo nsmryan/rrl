@@ -18,7 +18,6 @@ const Justify = drawcmd.drawcmd.Justify;
 const sprite = drawcmd.sprite;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
-const Dims = area.Dims;
 const SpriteSheet = sprite.SpriteSheet;
 
 const utils = @import("utils");
@@ -31,6 +30,7 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const MoveDirection = math.direction.MoveDirection;
 const Color = math.utils.Color;
+const Dims = math.utils.Dims;
 
 pub const Display = struct {
     window: *Window,
@@ -39,7 +39,6 @@ pub const Display = struct {
     ascii_texture: drawing.AsciiTexture,
     screen_texture: *Texture,
     sprites: Sprites,
-    panel: Panel,
 
     drawcmds: ArrayList(DrawCmd),
     allocator: Allocator,
@@ -94,16 +93,11 @@ pub const Display = struct {
 
         const ascii_texture = try drawing.AsciiTexture.renderAsciiCharacters(renderer, font);
 
-        const num_pixels = Dims.init(@intCast(usize, window_width), @intCast(usize, window_height));
-        const cell_dims = Dims.init(3, 3);
-        const screen_panel = Panel.init(num_pixels, cell_dims);
-
         var game: Display = Display{
             .window = window,
             .renderer = renderer,
             .font = font,
             .ascii_texture = ascii_texture,
-            .panel = screen_panel,
             .sprites = sprites,
             .screen_texture = screen_texture,
             .drawcmds = drawcmds,
@@ -116,17 +110,23 @@ pub const Display = struct {
         try self.drawcmds.append(cmd);
     }
 
-    pub fn present(self: *Display) void {
-        _ = sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
-        _ = sdl2.SDL_RenderClear(self.renderer);
+    pub fn present(display: *Display, dims: Dims) void {
+        _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
+        _ = sdl2.SDL_RenderClear(display.renderer);
 
-        for (self.drawcmds.items) |cmd| {
-            drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &cmd);
+        var width: c_int = 0;
+        var height: c_int = 0;
+        sdl2.SDL_GetWindowSize(display.window, &width, &height);
+        const num_pixels = Dims.init(@intCast(usize, width), @intCast(usize, height));
+        var screen_panel = Panel.init(num_pixels, dims);
+
+        for (display.drawcmds.items) |cmd| {
+            drawing.processDrawCmd(&screen_panel, display.renderer, display.screen_texture, &display.sprites, display.ascii_texture, &cmd);
         }
 
-        sdl2.SDL_RenderPresent(self.renderer);
+        sdl2.SDL_RenderPresent(display.renderer);
 
-        self.drawcmds.clearRetainingCapacity();
+        display.drawcmds.clearRetainingCapacity();
     }
 
     //fn renderText(self: *Display, text: []const u8, color: sdl2.SDL_Color) !*Texture {
@@ -152,57 +152,6 @@ pub const Display = struct {
         sdl2.SDL_DestroyWindow(self.window);
         sdl2.SDL_Quit();
         self.sprites.deinit();
-    }
-
-    pub fn render(self: *Display) !void {
-        _ = sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
-        _ = sdl2.SDL_RenderClear(self.renderer);
-
-        const fill_cmd = DrawCmd.fill(Pos.init(21, 20), Color.init(255, 0, 0, 255));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &fill_cmd);
-
-        const rect_cmd = DrawCmd.rect(Pos.init(20, 20), 2, 2, 0.2, false, Color.init(0, 255, 0, 255));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &rect_cmd);
-
-        const rect_float_cmd = DrawCmd.rectFloat(20, 20, 5, 5, false, Color.init(0, 255, 0, 255));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &rect_float_cmd);
-
-        const outline_tile_cmd = DrawCmd.outlineTile(Pos.init(10, 10), Color.init(0, 255, 0, 255));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &outline_tile_cmd);
-
-        const outline_tile_cmd_2 = DrawCmd.outlineTile(Pos.init(11, 10), Color.init(0, 255, 0, 255));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &outline_tile_cmd_2);
-
-        const highlight_tile_cmd = DrawCmd.highlightTile(Pos.init(11, 11), Color.init(0, 255, 0, 128));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &highlight_tile_cmd);
-
-        const sprite_key = try sprite.lookupSpritekey(&self.sprites.sheets, "player_standing_right"[0..]);
-        const spr = sprite.Sprite.init(0, sprite_key);
-        const sprite_cmd = DrawCmd.sprite(spr, Color.init(255, 255, 255, 255), Pos.init(20, 20));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &sprite_cmd);
-
-        const sprite_scaled_cmd = DrawCmd.spriteScaled(spr, 0.7, MoveDirection.downRight, Color.init(255, 255, 255, 255), Pos.init(10, 10));
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &sprite_scaled_cmd);
-
-        const sprite_float_cmd = DrawCmd.spriteFloat(spr, Color.init(255, 255, 255, 255), 15.0, 15.0, 2.0, 2.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &sprite_float_cmd);
-
-        const text_cmd = DrawCmd.text("hello"[0..], Pos.init(8, 8), Color.init(0, 255, 0, 128), 1.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_cmd);
-
-        const text_float_cmd = DrawCmd.textFloat("hello"[0..], 9.5, 9.5, Color.init(0, 255, 0, 128), 1.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_float_cmd);
-
-        const text_justify_center_cmd = DrawCmd.textJustify("center"[0..], Justify.center, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_center_cmd);
-
-        const text_justify_left_cmd = DrawCmd.textJustify("left"[0..], Justify.left, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_left_cmd);
-
-        const text_justify_right_cmd = DrawCmd.textJustify("right"[0..], Justify.right, Pos.init(0, 0), Color.init(0, 255, 0, 128), 40, 1.0);
-        drawing.processDrawCmd(&self.panel, self.renderer, self.screen_texture, &self.sprites, self.ascii_texture, &text_justify_right_cmd);
-
-        sdl2.SDL_RenderPresent(self.renderer);
     }
 
     pub fn wait_for_frame(self: *Display) void {

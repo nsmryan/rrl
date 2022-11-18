@@ -52,6 +52,7 @@ pub const Game = struct {
     config: Config,
     settings: Settings,
     log: MsgLog,
+    allocator: Allocator,
 
     pub fn init(seed: u64, allocator: Allocator) !Game {
         var rng = RndGen.init(seed);
@@ -70,6 +71,7 @@ pub const Game = struct {
             .config = config,
             .settings = Settings.init(),
             .log = log,
+            .allocator = allocator,
         };
     }
 
@@ -345,10 +347,11 @@ test "short wall level fov" {
     try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(1, 0), false, allocator));
     try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(2, 0), false, allocator));
 
+    // In fov when standing
     try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 1), false, allocator));
     try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 2), false, allocator));
 
-    // out of fov
+    // out of fov when crouching
     try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 1), true, allocator));
     try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 2), true, allocator));
     try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 3), true, allocator));

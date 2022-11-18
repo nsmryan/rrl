@@ -29,9 +29,9 @@ pub fn main() anyerror!void {
     var gui = try g.Gui.init(0, allocator);
     defer gui.deinit();
 
-    gui.game.level.map = try Map.fromDims(3, 3, allocator);
+    gui.game.level.map = try Map.fromDims(5, 5, allocator);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
-    gui.game.level.map.set(Pos.init(2, 0), board.tile.Tile.tallWall());
+    gui.game.level.map.set(Pos.init(3, 2), board.tile.Tile.tallWall());
 
     while (try gui.step()) {
         try gui.draw();

@@ -86,7 +86,7 @@ pub const Gui = struct {
 
     pub fn draw(gui: *Gui) !void {
         try rendering.render(&gui.game, &gui.display.sprites.sheets, &gui.display.drawcmds);
-        gui.display.present();
+        gui.display.present(gui.game.level.map.dims());
     }
 };
 

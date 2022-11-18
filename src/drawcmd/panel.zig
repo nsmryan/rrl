@@ -3,11 +3,11 @@ const assert = @import("std").debug.assert;
 
 const area = @import("area.zig");
 const Area = area.Area;
-const Dims = area.Dims;
 
 const math = @import("math");
 const Rect = math.utils.Rect;
 const Pos = math.pos.Pos;
+const Dims = math.utils.Dims;
 
 pub const Panel = struct {
     cells: Dims,

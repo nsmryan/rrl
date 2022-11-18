@@ -3,15 +3,7 @@ const assert = @import("std").debug.assert;
 const math = @import("math");
 const utils = math.utils;
 const Pos = math.Pos;
-
-pub const Dims = struct {
-    width: usize,
-    height: usize,
-
-    pub fn init(width: usize, height: usize) Dims {
-        return Dims{ .width = width, .height = height };
-    }
-};
+const Dims = utils.Dims;
 
 pub const AreaSplit = struct {
     first: Area,

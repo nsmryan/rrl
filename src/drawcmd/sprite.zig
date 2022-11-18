@@ -4,7 +4,7 @@ const Allocator = std.mem.Allocator;
 
 const math = @import("math");
 const Rect = math.utils.Rect;
-const area = @import("area.zig");
+const Dims = math.utils.Dims;
 
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;
@@ -116,17 +116,17 @@ pub const SpriteSheet = struct {
         };
     }
 
-    pub fn numCells(self: *SpriteSheet) area.Dims {
-        return area.Dims{ .width = self.cols, .height = self.rows };
+    pub fn numCells(self: *SpriteSheet) Dims {
+        return Dims{ .width = self.cols, .height = self.rows };
     }
 
-    pub fn numPixels(self: *SpriteSheet) area.Dims {
-        return area.Dims.init(self.width, self.height);
+    pub fn numPixels(self: *SpriteSheet) Dims {
+        return Dims.init(self.width, self.height);
     }
 
-    pub fn spriteDims(self: *SpriteSheet) area.Dims {
+    pub fn spriteDims(self: *SpriteSheet) Dims {
         const cell_dims = self.numCells();
-        return area.Dims.init(self.width / cell_dims.width, self.height / cell_dims.height);
+        return Dims.init(self.width / cell_dims.width, self.height / cell_dims.height);
     }
 
     // Get the source rectangle for a particular sprite given by its index into the sprite sheet.

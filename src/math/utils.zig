@@ -23,10 +23,19 @@ pub const Color = struct {
     }
 
     pub fn white() Color {
-        return Color.init(0, 0, 0, 255);
+        return Color.init(255, 255, 255, 255);
     }
 
     pub fn black() Color {
-        return Color.init(255, 255, 255, 255);
+        return Color.init(0, 0, 0, 255);
+    }
+};
+
+pub const Dims = struct {
+    width: usize,
+    height: usize,
+
+    pub fn init(width: usize, height: usize) Dims {
+        return Dims{ .width = width, .height = height };
     }
 };

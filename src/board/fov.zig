@@ -4,8 +4,7 @@ const Allocator = std.mem.Allocator;
 const DynamicBitSet = std.DynamicBitSet;
 
 const math = @import("math");
-const pos = math.pos;
-const Pos = pos.Pos;
+const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Dims = math.utils.Dims;
 
@@ -49,6 +48,10 @@ pub const View = struct {
             .high = try Pov.init(dims, allocator),
             .explored = try DynamicBitSet.initEmpty(allocator, numTiles),
         };
+    }
+
+    pub fn isExplored(view: *const View, pos: Pos) bool {
+        return view.explored.isSet(view.map.dims.toIndex(pos));
     }
 
     pub fn deinit(view: *View) void {

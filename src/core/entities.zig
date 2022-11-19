@@ -80,13 +80,13 @@ pub const Entities = struct {
     ids: ArrayList(Id),
     pos: Comp(Pos),
     typ: Comp(Type),
+    state: Comp(EntityState),
     name: Comp(Name),
     blocking: Comp(bool),
     move_mode: Comp(MoveMode),
     next_move_mode: Comp(MoveMode),
     move_left: Comp(usize),
     turn: Comp(Turn),
-    needs_removal: Comp(bool),
     stance: Comp(Stance),
     item: Comp(Item),
     energy: Comp(u32),
@@ -169,7 +169,19 @@ pub const Entities = struct {
         try self.name.insert(id, name);
         try self.blocking.insert(id, false);
         try self.turn.insert(id, Turn.init());
-        try self.needs_removal.insert(id, false);
+        try self.state.insert(id, .play);
+    }
+
+    pub fn idValid(entities: *Entities, id: Id) bool {
+        if (utils.comp.binarySearchKeys(id, entities.ids.items) == .found) {
+            return entities.state.get(id).? == .play;
+        } else {
+            return false;
+        }
+    }
+
+    pub fn markForRemoval(entities: *Entities, id: Id) void {
+        entities.state.set(id, .remove);
     }
 };
 
@@ -208,6 +220,12 @@ pub const Type = enum {
     trigger,
     environment,
     other,
+};
+
+pub const EntityState = enum {
+    spawn,
+    play,
+    remove,
 };
 
 pub const Name = enum {

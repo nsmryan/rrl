@@ -132,7 +132,7 @@ const SearchResult = union(enum) {
     not_found: usize,
 };
 
-fn binarySearchKeys(key: Id, items: []const Id) SearchResult {
+pub fn binarySearchKeys(key: Id, items: []const Id) SearchResult {
     var left: usize = 0;
     var right: usize = items.len;
 

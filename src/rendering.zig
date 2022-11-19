@@ -144,10 +144,9 @@ fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: 
                 const is_in_fov_ext = fov_result == FovResult.edge;
 
                 var blackout_color = Color.black();
-                //let sprite = Sprite::new(254 as u32, sprite_key);
                 if (is_in_fov_ext) {
                     blackout_color.a = game.config.fov_edge_alpha;
-                } else if (game.level.map.get(pos).explored) {
+                } else if (game.level.posExplored(Entities.player_id, pos)) {
                     blackout_color.a = game.config.explored_alpha;
                 }
                 try drawcmds.append(DrawCmd.highlightTile(pos, blackout_color));

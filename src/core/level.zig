@@ -134,6 +134,10 @@ pub const Level = struct {
         return try level.isInFov(id, other_pos, level.entities.stance.get(id).?.viewHeight());
     }
 
+    pub fn posExplored(level: *Level, id: Id, pos: Pos) bool {
+        return level.entities.view.get(id).?.isExplored(pos);
+    }
+
     pub fn posInsideFov(level: *Level, id: Id, other_pos: Pos) FovError!bool {
         return try level.posInFov(id, other_pos) == FovResult.inside;
     }

@@ -1,6 +1,4 @@
 pub const Tile = struct {
-    /// Has the tile been seen yet?
-    explored: bool,
     /// Is the tile part of the game (aka not a 'water' tile).
     impassable: bool,
     center: Wall,
@@ -85,11 +83,11 @@ pub const Tile = struct {
     };
 
     pub fn init(center: Wall, down: Wall, left: Wall) Tile {
-        return Tile{ .explored = false, .impassable = false, .center = center, .down = down, .left = left };
+        return Tile{ .impassable = false, .center = center, .down = down, .left = left };
     }
 
     pub fn impassable() Tile {
-        return Tile{ .explored = false, .impassable = true, .center = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
+        return Tile{ .impassable = true, .center = Wall.empty(), .down = Wall.empty(), .left = Wall.empty() };
     }
 
     pub fn empty() Tile {
@@ -155,16 +153,9 @@ pub const Tile = struct {
         self.left.material = Material.stone;
     }
 
-    pub fn chrs(self: Tile) [8]u8 {
-        var chars: [8]u8 = undefined;
+    pub fn chrs(self: Tile) [7]u8 {
+        var chars: [7]u8 = undefined;
         var index: usize = 0;
-
-        if (self.explored) {
-            chars[index] = '1';
-        } else {
-            chars[index] = '0';
-        }
-        index += 1;
 
         if (self.impassable) {
             chars[index] = '1';

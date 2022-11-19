@@ -146,7 +146,7 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
             if (game.level.entities.pos.get(entity_id).?.eql(pos) and
                 game.level.entities.typ.get(entity_id) == Type.energy)
             {
-                game.level.entities.needs_removal.getPtr(entity_id).?.* = true;
+                game.level.entities.markForRemoval(entity_id);
 
                 try game.log.rightNow(.gainEnergy, .{ id, 1 });
             }

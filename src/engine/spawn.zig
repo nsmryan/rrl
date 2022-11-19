@@ -12,9 +12,6 @@ const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Dims = math.utils.Dims;
 
-const board = @import("board");
-const View = board.fov.View;
-
 const messaging = @import("messaging.zig");
 const MsgLog = messaging.MsgLog;
 
@@ -24,6 +21,7 @@ const Entities = core.entities.Entities;
 const Type = core.entities.Type;
 const Name = core.entities.Name;
 const Config = core.config.Config;
+const View = core.fov.View;
 
 pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     const id = Entities.player_id;

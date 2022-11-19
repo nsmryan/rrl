@@ -14,10 +14,10 @@ const Direction = math.direction.Direction;
 const movement = @import("movement.zig");
 const MoveMode = movement.MoveMode;
 
-const board = @import("board");
-const FovBlock = board.fov.FovBlock;
-const ViewHeight = board.fov.ViewHeight;
-const View = board.fov.View;
+const fov = @import("fov.zig");
+const FovBlock = fov.FovBlock;
+const ViewHeight = fov.ViewHeight;
+const View = fov.View;
 
 const items = @import("items.zig");
 const Item = items.Item;

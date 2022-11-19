@@ -1,5 +1,4 @@
 pub const blocking = @import("board/blocking.zig");
-pub const fov = @import("board/fov.zig");
 pub const map = @import("board/map.zig");
 pub const pathing = @import("board/pathing.zig");
 pub const rotate = @import("board/rotate.zig");

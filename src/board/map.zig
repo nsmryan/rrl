@@ -16,9 +16,6 @@ pub const Map = struct {
     tiles: []Tile,
     allocator: Allocator,
 
-    // NOTE(perf) this likely does need to be added back in for performance.
-    //fov_cache: std.AutoHashMap(Pos, ArrayList(Pos)),
-
     pub fn empty(allocator: Allocator) Map {
         return Map{ .width = 0, .height = 0, .tiles = &.{}, .allocator = allocator };
     }

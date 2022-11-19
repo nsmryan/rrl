@@ -90,7 +90,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
     switch (game.settings.state) {
         .playing => {
             switch (input_action) {
-                .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).?.moveAmount() }),
+                .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).moveAmount() }),
 
                 .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
 

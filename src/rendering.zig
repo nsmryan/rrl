@@ -49,7 +49,7 @@ fn renderMapLow(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *
 }
 
 fn renderEntities(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: *ArrayList(DrawCmd)) !void {
-    const pos = game.level.entities.pos.get(Entities.player_id).?;
+    const pos = game.level.entities.pos.get(Entities.player_id);
     const player_sprite = try drawcmd.sprite.lookupSingleSprite(sprites, "player_standing_right");
     try drawcmds.append(DrawCmd.sprite(player_sprite, Color.white(), pos));
 }

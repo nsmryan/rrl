@@ -31,7 +31,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
 
     try entities.addBasicComponents(id, Pos.init(0, 0), .player, .player);
 
-    entities.blocking.getPtr(id).?.* = true;
+    entities.blocking.getPtr(id).* = true;
     try entities.move_mode.insert(id, MoveMode.walk);
     try entities.next_move_mode.insert(id, MoveMode.walk);
     try entities.move_left.insert(id, 0);

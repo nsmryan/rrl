@@ -71,7 +71,11 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
-        pub fn get(self: *Self, id: Id) ?T {
+        pub fn get(self: *Self, id: Id) T {
+            return self.getOrNull(id).?;
+        }
+
+        pub fn getOrNull(self: *Self, id: Id) ?T {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| return self.store.items[loc],
                 .not_found => return null,
@@ -85,7 +89,11 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
-        pub fn getPtr(self: *Self, id: Id) ?*T {
+        pub fn getPtr(self: *Self, id: Id) *T {
+            return self.getPtrOrNull(id).?;
+        }
+
+        pub fn getPtrOrNull(self: *Self, id: Id) ?*T {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| return &self.store.items[loc],
                 .not_found => return null,
@@ -227,16 +235,16 @@ test "comp get" {
     var value: ?u64 = null;
 
     value = 10;
-    try std.testing.expectEqual(value, comp.get(0));
+    try std.testing.expectEqual(value, comp.getOrNull(0));
 
     value = 11;
-    try std.testing.expectEqual(value, comp.get(1));
+    try std.testing.expectEqual(value, comp.getOrNull(1));
 
     value = 12;
-    try std.testing.expectEqual(value, comp.get(2));
+    try std.testing.expectEqual(value, comp.getOrNull(2));
 
     value = null;
-    try std.testing.expectEqual(value, comp.get(3));
+    try std.testing.expectEqual(value, comp.getOrNull(3));
 }
 
 test "comp getPtr" {
@@ -250,22 +258,22 @@ test "comp getPtr" {
     var value: u64 = 0;
 
     value = 10;
-    var ptr = comp.getPtr(0).?;
+    var ptr = comp.getPtrOrNull(0).?;
     try std.testing.expectEqual(value, ptr.*);
 
     // Test that we can modify the pointer and change the item in the Comp's storage.
     ptr.* = 100;
     value = 100;
-    try std.testing.expectEqual(value, comp.getPtr(0).?.*);
+    try std.testing.expectEqual(value, comp.getPtrOrNull(0).?.*);
 
     value = 11;
-    try std.testing.expectEqual(value, comp.getPtr(1).?.*);
+    try std.testing.expectEqual(value, comp.getPtrOrNull(1).?.*);
 
     value = 12;
-    try std.testing.expectEqual(value, comp.getPtr(2).?.*);
+    try std.testing.expectEqual(value, comp.getPtrOrNull(2).?.*);
 
     var null_value: ?*usize = null;
-    try std.testing.expectEqual(null_value, comp.getPtr(3));
+    try std.testing.expectEqual(null_value, comp.getPtrOrNull(3));
 }
 
 test "comp contains key" {

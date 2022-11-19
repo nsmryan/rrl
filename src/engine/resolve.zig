@@ -48,7 +48,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
 }
 
 // NOTE the use of recursion here with resolveMsg results in an error inferring error sets.
-//pub fn resolveRightNow(game: *Game, comptime msg_type: MsgType, args: anytype) @typeInfo(@typeInfo(@TypeOf(resolveMsg)).Fn.return_type.?).ErrorUnion.error_set!void {
+//pub fn resolveRightNow(game: *Game, comptime msg_type: MsgType, args: anytype) @typeInfo(@typeInfo(@TypeOf(resolveMsg)).Fn.return_type).ErrorUnion.error_set!void {
 //    // Resolve a message immediately. First create the message, append it to the log
 //    // as if it was already processed, and then execute its effect.
 //    const msg = Msg.genericMsg(msg_type, args);
@@ -60,9 +60,9 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
     // NOTE if this does happen, consider making amount == 0 a Msg.pass.
     std.debug.assert(amount > 0);
 
-    const move_mode = game.level.entities.next_move_mode.get(id).?;
+    const move_mode = game.level.entities.next_move_mode.get(id);
 
-    const start_pos = game.level.entities.pos.get(id).?;
+    const start_pos = game.level.entities.pos.get(id);
     const move_pos = dir.move(start_pos);
 
     game.level.entities.move_mode.set(id, move_mode);
@@ -94,16 +94,16 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
 }
 
 fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game: *Game) !void {
-    const start_pos = game.level.entities.pos.get(id).?;
+    const start_pos = game.level.entities.pos.get(id);
 
     game.level.entities.pos.set(id, pos);
     try game.level.updateFov(id);
     const changed_pos = !std.meta.eql(start_pos, pos);
 
     if (move_mode == MoveMode.run) {
-        game.level.entities.turn.getPtr(id).?.*.run = true;
+        game.level.entities.turn.getPtr(id).*.run = true;
     } else {
-        game.level.entities.turn.getPtr(id).?.*.walk = true;
+        game.level.entities.turn.getPtr(id).*.walk = true;
     }
 
     // TODO if not blink, monsters make a sound
@@ -122,7 +122,7 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
         } else {
             // Only normal movements update the stance. Others like Blink leave it as-is.
             if (move_type != MoveType.blink and move_type != MoveType.misc) {
-                if (game.level.entities.stance.get(id)) |stance| {
+                if (game.level.entities.stance.getOrNull(id)) |stance| {
                     const new_stance = updateStance(move_type, move_mode, stance);
 
                     try game.log.record(.stance, .{ id, new_stance });
@@ -138,12 +138,12 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     }
 
     // This is cleared in the start of the next turn when the game is stepped.
-    game.level.entities.turn.getPtr(id).?.*.blink = move_type == MoveType.blink;
+    game.level.entities.turn.getPtr(id).*.blink = move_type == MoveType.blink;
 
     // Check if player walks on energy.
     if (id == core.entities.Entities.player_id) {
         for (game.level.entities.ids.items) |entity_id| {
-            if (game.level.entities.pos.get(entity_id).?.eql(pos) and
+            if (game.level.entities.pos.get(entity_id).eql(pos) and
                 game.level.entities.typ.get(entity_id) == Type.energy)
             {
                 game.level.entities.markForRemoval(entity_id);
@@ -270,7 +270,7 @@ test "test update stance" {
 }
 
 fn resolveGainEnergy(id: Id, amount: u32, game: *Game) void {
-    game.level.entities.energy.getPtr(id).?.* += amount;
+    game.level.entities.energy.getPtr(id).* += amount;
 }
 
 // NOTE(implement) trap triggering
@@ -397,14 +397,14 @@ pub fn trampleGrassMove(level: *Level, start_pos: Pos, end_pos: Pos) void {
 }
 
 fn resolveNextMoveMode(id: Id, move_mode: MoveMode, game: *Game) void {
-    game.level.entities.next_move_mode.getPtr(id).?.* = move_mode;
+    game.level.entities.next_move_mode.getPtr(id).* = move_mode;
 }
 
 fn resolvePassTurn(id: Id, game: *Game) !void {
-    game.level.entities.turn.getPtr(id).?.*.pass = true;
+    game.level.entities.turn.getPtr(id).*.pass = true;
 
-    if (game.level.entities.stance.get(id)) |stance| {
-        const new_stance = updateStance(.pass, game.level.entities.next_move_mode.get(id).?, stance);
+    if (game.level.entities.stance.getOrNull(id)) |stance| {
+        const new_stance = updateStance(.pass, game.level.entities.next_move_mode.get(id), stance);
         try game.log.record(.stance, .{ id, new_stance });
         resolveStance(id, new_stance, game);
     }

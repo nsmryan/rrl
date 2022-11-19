@@ -68,7 +68,7 @@ pub const Level = struct {
 
     pub fn blockingEntityAt(level: *Level, pos: Pos) bool {
         for (level.entities.ids.items) |id| {
-            if (level.entities.pos.get(id)) |entity_pos| {
+            if (level.entities.pos.getOrNull(id)) |entity_pos| {
                 if (entity_pos.eql(pos) and level.entities.blocking.has(id)) {
                     return true;
                 }
@@ -84,9 +84,9 @@ pub const Level = struct {
     }
 
     pub fn updateFov(level: *Level, id: Id) !void {
-        const start_pos = level.entities.pos.get(id).?;
+        const start_pos = level.entities.pos.get(id);
 
-        var view_ptr = level.entities.view.getPtr(id).?;
+        var view_ptr = level.entities.view.getPtr(id);
         try view_ptr.resize(level.map.dims());
 
         view_ptr.low.clear();
@@ -107,7 +107,7 @@ pub const Level = struct {
             }
         }
         // Determine which Pov to use based on stance, and update 'explored' to include new tiles.
-        if (level.entities.stance.get(id).? == .crouching) {
+        if (level.entities.stance.get(id) == .crouching) {
             view_ptr.explored.setUnion(view_ptr.low.visible);
         } else {
             view_ptr.explored.setUnion(view_ptr.high.visible);
@@ -115,8 +115,8 @@ pub const Level = struct {
     }
 
     pub fn entityInFov(level: *Level, id: Id, other: Id) FovError!FovResult {
-        const stance = level.entities.stance.get(id).?;
-        const other_stance = level.entities.stance.get(other) orelse Stance.standing;
+        const stance = level.entities.stance.get(id);
+        const other_stance = level.entities.stance.getOrNull(other) orelse Stance.standing;
         var view_height: ViewHeight = undefined;
         if (stance == Stance.crouching or other_stance == Stance.crouching) {
             view_height = .low;
@@ -124,16 +124,16 @@ pub const Level = struct {
             view_height = .high;
         }
 
-        const other_pos = level.entities.pos.get(other).?;
+        const other_pos = level.entities.pos.get(other);
         return try level.isInFov(id, other_pos, view_height);
     }
 
     pub fn posInFov(level: *Level, id: Id, other_pos: Pos) FovError!FovResult {
-        return try level.isInFov(id, other_pos, level.entities.stance.get(id).?.viewHeight());
+        return try level.isInFov(id, other_pos, level.entities.stance.get(id).viewHeight());
     }
 
     pub fn posExplored(level: *Level, id: Id, pos: Pos) bool {
-        return level.entities.view.get(id).?.isExplored(pos);
+        return level.entities.view.get(id).isExplored(pos);
     }
 
     pub fn posInsideFov(level: *Level, id: Id, other_pos: Pos) FovError!bool {
@@ -142,12 +142,12 @@ pub const Level = struct {
 
     pub fn isInFov(level: *Level, id: Id, other_pos: Pos, view_height: ViewHeight) FovError!FovResult {
         const in_fov = switch (view_height) {
-            .low => level.entities.view.get(id).?.low.isVisible(other_pos),
-            .high => level.entities.view.get(id).?.high.isVisible(other_pos),
+            .low => level.entities.view.get(id).low.isVisible(other_pos),
+            .high => level.entities.view.get(id).high.isVisible(other_pos),
         };
 
-        const start_pos = level.entities.pos.get(id).?;
-        const fov_radius = level.entities.fov_radius.get(id).?;
+        const start_pos = level.entities.pos.get(id);
+        const fov_radius = level.entities.fov_radius.get(id);
         if (in_fov) {
             return FovResult.fromPositions(start_pos, other_pos, fov_radius);
         } else {
@@ -157,7 +157,7 @@ pub const Level = struct {
 
     // NOTE(implement) magnification
     //fn fovMagnification(level: *Level, id: Id, check_pos: Pos, crouching: bool, allocator: Allocator) FovError!i32 {
-    //    const entity_pos = level.entities.pos.get(id).?;
+    //    const entity_pos = level.entities.pos.get(id);
     //    var magnification: i32 = 0;
 
     //    for (level.entities.fov_block.ids.items) |fov_block_id| {
@@ -172,7 +172,7 @@ pub const Level = struct {
     //            while (from_line.next()) |from_pos| {
     //                // If the lines overlap, check for magnifiers
     //                if (to_pos.eql(from_pos)) {
-    //                    if (level.entities.pos.get(fov_block_id).?.eql(to_pos)) {
+    //                    if (level.entities.pos.get(fov_block_id).eql(to_pos)) {
     //                        if (fov_block) |fov_block_value| {
     //                            switch (fov_block_value) {
     //                                FovBlock.magnify => {
@@ -201,7 +201,7 @@ pub const Level = struct {
     //fn fovReduction(level: *Level, id: Id, check_pos: Pos, view_distance: i32) i32 {
     //    var reduction: i32 = 0;
 
-    //    const entity_pos = level.entities.pos.get(id).?;
+    //    const entity_pos = level.entities.pos.get(id);
 
     //    // Search along a line from the entity, to the given position,
     //    // and search back from the given position to the entity, looking
@@ -213,8 +213,8 @@ pub const Level = struct {
     //            // If the lines overlap, check for FoV modifying entities.
     //            if (to_pos.eql(from_pos)) {
     //                for (level.entities.fov_block.ids.item) |entity_id| {
-    //                    const fov_block = level.entities.fov_block.get(entity_id).?;
-    //                    if (level.entities.pos.get(id).?.eql(to_pos)) {
+    //                    const fov_block = level.entities.fov_block.get(entity_id);
+    //                    if (level.entities.pos.get(id).eql(to_pos)) {
     //                        switch (fov_block) {
     //                            .block => {
     //                                // Blocking entities completely block LoS
@@ -254,7 +254,7 @@ pub const Level = struct {
             return false;
         }
 
-        const entity_pos = level.entities.pos.get(id).?;
+        const entity_pos = level.entities.pos.get(id);
 
         // Add in the result of magnification effects.
         // NOTE(implement) magnification
@@ -264,7 +264,7 @@ pub const Level = struct {
 
         // The player and the other entities have slightly different FoV checks.
         // The other entities have directional FoV which is layered on the base FoV algorithm.
-        if (level.entities.typ.get(id).? == Type.player) {
+        if (level.entities.typ.get(id) == Type.player) {
             is_in_fov = try fov.isInFov(level.map, entity_pos, check_pos, view_height);
             // NOTE(implement) lanterns
             // If we can't see the tile, check for a latern that illuminates it, allowing
@@ -272,7 +272,7 @@ pub const Level = struct {
             //if fov_result != FovResult::Inside and !level.map[check_pos].block_sight {
             //fov_result = level.check_illumination(id, fov_result, check_pos, ILLUMINATE_FOV_RADIUS, view_height);
         } else {
-            if (level.entities.facing.get(id)) |dir| {
+            if (level.entities.facing.getOrNull(id)) |dir| {
                 is_in_fov = try fov.isInFovDirection(level.map, entity_pos, check_pos, dir, view_height);
             } else {
                 std.debug.panic("tried to perform fov check on entity without facing", .{});
@@ -299,7 +299,7 @@ pub const Level = struct {
         //}
 
         // NOTE(implement) illumination
-        //if (level.entities.typ.get(id).? == Type.player) {
+        //if (level.entities.typ.get(id) == Type.player) {
         //    // If we can't see the tile, check for a latern that illuminates it, allowing
         //    // us to see it anyway. Ignore tiles that are blocked for sight anyway.
         //    if (fov_result != FovResult.inside and !level.map.get(check_pos).block_sight) {
@@ -313,7 +313,7 @@ pub const Level = struct {
         //                // If the lines overlap, check for FoV modifying entities.
         //                if (to_pos.eql(from_pos)) {
         //                    for (level.entities.fov_block.ids.item) |entity_id| {
-        //                        const fov_block = level.entities.fov_block.get(entity_id).?;
+        //                        const fov_block = level.entities.fov_block.get(entity_id);
         //                        if (fov_block == .opaqu or fov_block == .block) {
         //                            // We just return fov_result here as the remaining modifications
         //                            // only apply illumination which does not pierce the fog.
@@ -333,7 +333,7 @@ pub const Level = struct {
 
     //pub fn checkIllumination(level: *Level, id: Id, init_fov_result: FovResult, check_pos: Pos, reduction: i32, view_height: ViewHeight) FovError!FovResult {
     //    var fov_result = init_fov_result;
-    //    const entity_pos = level.entities.pos.get(id).?;
+    //    const entity_pos = level.entities.pos.get(id);
 
     //    if (reduction > ILLUMINATE_FOV_RADIUS) {
     //        return fov_result;
@@ -342,12 +342,12 @@ pub const Level = struct {
 
     //    // check for illumination that might make this tile visible.
     //    for (level.entities.illuminate.ids.items) |entity_id| {
-    //        const illuminate_radius = level.entities.illuminate.get(entity_id).?;
+    //        const illuminate_radius = level.entities.illuminate.get(entity_id);
 
-    //        const illuminator_on_map = level.map.isWithinBounds(level.entities.pos.get(entity_id).?);
+    //        const illuminator_on_map = level.map.isWithinBounds(level.entities.pos.get(entity_id));
 
-    //        if (illuminate_radius != 0 and illuminator_on_map and !level.entities.needs_removal.get(entity_id).?) {
-    //            const illuminate_pos = level.entities.pos.get(entity_id).?;
+    //        if (illuminate_radius != 0 and illuminator_on_map and !level.entities.needs_removal.get(entity_id)) {
+    //            const illuminate_pos = level.entities.pos.get(entity_id);
 
     //            const pos_near_illuminator = try fov.isInFov(level.map, illuminate_pos, check_pos, @intCast(i32, illuminate_radius), view_height);
     //            if (pos_near_illuminator) {
@@ -373,10 +373,10 @@ pub const Level = struct {
     //}
 
     pub fn fovRadius(level: *Level, id: Id) i32 {
-        if (level.entities.fov_radius.get(id) == null) {
-            std.log.debug("{} {} {}", .{ id, level.entities.name.get(id).?, level.entities.typ.get(id).? });
+        if (level.entities.fov_radius.getOrNull(id) == null) {
+            std.log.debug("{} {} {}", .{ id, level.entities.name.get(id), level.entities.typ.get(id) });
         }
-        var radius: i32 = level.entities.fov_radius.get(id).?;
+        var radius: i32 = level.entities.fov_radius.get(id);
 
         // NOTE(implement) extra fov radius when available
         //if (level.entities.status.get(id)) |status| {

@@ -174,7 +174,7 @@ pub const Entities = struct {
 
     pub fn idValid(entities: *Entities, id: Id) bool {
         if (utils.comp.binarySearchKeys(id, entities.ids.items) == .found) {
-            return entities.state.get(id).? == .play;
+            return entities.state.get(id) == .play;
         } else {
             return false;
         }

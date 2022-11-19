@@ -98,14 +98,12 @@ pub const Level = struct {
         var bit_iter = view_ptr.map.visible.iterator(.{});
         while (bit_iter.next()) |index| {
             const visible_pos = level.map.fromIndex(index);
-            if (view_ptr.map.isVisible(visible_pos)) {
-                if (try level.fovCheck(id, visible_pos, .high)) {
-                    view_ptr.high.markVisible(visible_pos);
-                }
+            if (try level.fovCheck(id, visible_pos, .high)) {
+                view_ptr.high.markVisible(visible_pos);
+            }
 
-                if (try level.fovCheck(id, visible_pos, .low)) {
-                    view_ptr.low.markVisible(visible_pos);
-                }
+            if (try level.fovCheck(id, visible_pos, .low)) {
+                view_ptr.low.markVisible(visible_pos);
             }
         }
         // Determine which Pov to use based on stance, and update 'explored' to include new tiles.

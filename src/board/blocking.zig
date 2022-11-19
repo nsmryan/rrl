@@ -35,7 +35,7 @@ pub const FovResult = enum {
         const dist = start_pos.distanceMaximum(end_pos);
         if (dist == radius + 1) {
             return FovResult.edge;
-        } else if (dist < radius) {
+        } else if (dist <= radius) {
             return FovResult.inside;
         } else {
             return FovResult.outside;

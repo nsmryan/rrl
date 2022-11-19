@@ -29,7 +29,7 @@ pub fn main() anyerror!void {
     var gui = try g.Gui.init(0, allocator);
     defer gui.deinit();
 
-    gui.game.level.map = try Map.fromDims(5, 5, allocator);
+    gui.game.level.map = try Map.fromDims(7, 7, allocator);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
 

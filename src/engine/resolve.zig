@@ -97,6 +97,7 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     const start_pos = game.level.entities.pos.get(id).?;
 
     game.level.entities.pos.set(id, pos);
+    try game.level.updateFov(id);
     const changed_pos = !std.meta.eql(start_pos, pos);
 
     if (move_mode == MoveMode.run) {

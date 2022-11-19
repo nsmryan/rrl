@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const RndGen = std.rand.DefaultPrng;
@@ -136,7 +137,7 @@ fn renderMapHigh(game: *Game, sprites: *const ArrayList(SpriteSheet), drawcmds: 
                 try drawcmds.append(DrawCmd.sprite(sprite, wall_color, pos));
             }
 
-            const fov_result = try game.level.posInFov(Entities.player_id, pos, game.allocator);
+            const fov_result = try game.level.posInFov(Entities.player_id, pos);
 
             // apply a FoW darkening to cells
             if (game.config.fog_of_war and fov_result != FovResult.inside) {

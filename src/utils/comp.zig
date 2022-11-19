@@ -21,6 +21,13 @@ pub fn Comp(comptime T: type) type {
 
         pub fn deinit(self: *Self) void {
             self.ids.deinit();
+
+            if ((@typeInfo(T) == .Struct or @typeInfo(T) == .Union) and @hasDecl(T, "deinit")) {
+                while (self.store.popOrNull()) |item| {
+                    var value = item;
+                    value.deinit();
+                }
+            }
             self.store.deinit();
         }
 

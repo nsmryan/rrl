@@ -186,6 +186,10 @@ pub const Map = struct {
     pub fn dims(map: *const Map) Dims {
         return Dims.init(@intCast(usize, map.width), @intCast(usize, map.height));
     }
+
+    pub fn fromIndex(map: *const Map, index: usize) Pos {
+        return Pos.init(@mod(@intCast(i32, index), map.width), @divFloor(@intCast(i32, index), map.width));
+    }
 };
 
 // NOTE add these back in if needed

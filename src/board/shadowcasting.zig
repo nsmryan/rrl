@@ -3,24 +3,71 @@ const testing = std.testing;
 const debug = std.debug;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
+const DynamicBitSet = std.DynamicBitSet;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
+const Dims = math.utils.Dims;
+
+const BlockedType = @import("blocking.zig").BlockedType;
+const Map = @import("map.zig").Map;
+const t = @import("tile.zig");
+const Tile = t.Tile;
+const Height = Tile.Height;
 
 pub const Error = error{Overflow} || Allocator.Error;
 
+pub const Pov = struct {
+    position: Pos,
+    dims: Dims,
+    visible: DynamicBitSet,
+
+    pub fn init(dims: Dims, allocator: Allocator) !Pov {
+        const numTiles = dims.numTiles();
+        return Pov{ .position = Pos.init(0, 0), .dims = dims, .visible = try DynamicBitSet.initEmpty(allocator, numTiles) };
+    }
+
+    pub fn deinit(pov: *Pov) void {
+        pov.visible.deinit();
+    }
+
+    pub fn isVisible(pov: *const Pov, position: Pos) bool {
+        return pov.visible.isSet(pov.dims.toIndex(position));
+    }
+
+    pub fn clear(pov: *Pov) void {
+        pov.visible.setRangeValue(std.bit_set.Range{ .start = 0, .end = pov.visible.capacity() }, false);
+    }
+
+    pub fn markVisible(pov: *Pov, position: Pos) void {
+        const index = pov.dims.toIndex(position);
+        pov.visible.set(index);
+    }
+
+    pub fn resize(pov: *Pov, dims: Dims) !void {
+        pov.dims = dims;
+        try pov.visible.resize(dims.numTiles(), false);
+    }
+};
+
+pub fn isBlocking(position: Pos, map: Map) bool {
+    if (map.isWithinBounds(position)) {}
+    return !map.isWithinBounds(position) or BlockedType.fov.tileBlocks(map.get(position)) != Height.empty;
+}
+
 /// Compute FOV information for a given position using the shadow mapping algorithm.
-///
-/// This uses the is_blocking function pointer, which checks whether a given position is
-/// blocked (such as by a wall), given the position and the 'map' argument.
-/// is_blocking: fn (Pos, @TypeOf(map)) bool;
-///
-/// This type cannot be used in some cases, such as a slice constructed from an array, so it is an anytype
-/// instead.
-///
-pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), comptime is_blocking: anytype) Error!void {
+pub fn computeFov(origin: Pos, map: Map, pov: *Pov) Error!void {
+    pov.clear();
+    pov.position = origin;
+    pov.dims = map.dims();
+
+    // Empty maps need no FoV.
+    if (map.width == 0 or map.height == 0) {
+        return;
+    }
+
     // Mark the origin as visible.
-    try mark_visible(origin, visible);
+    markVisible(origin, map, pov);
 
     var index: usize = 0;
     while (index < 4) : (index += 1) {
@@ -28,56 +75,52 @@ pub fn computeFov(origin: Pos, map: anytype, visible: *ArrayList(Pos), comptime 
 
         const first_row = Row.new(1, Rational.new(-1, 1), Rational.new(1, 1));
 
-        try Scan(@TypeOf(map), is_blocking).scan(first_row, quadrant, map, visible);
+        try scan(first_row, quadrant, map, pov);
     }
 }
 
-fn Scan(comptime MapType: type, comptime is_blocking: anytype) type {
-    return struct {
-        fn scan(input_row: Row, quadrant: Quadrant, map: MapType, visible: *ArrayList(Pos)) Error!void {
-            var prev_tile: ?Pos = null;
+fn scan(input_row: Row, quadrant: Quadrant, map: Map, pov: *Pov) Error!void {
+    var prev_tile: ?Pos = null;
 
-            var row = input_row;
+    var row = input_row;
 
-            var iter: RowIter = row.tiles();
-            while (iter.next()) |tile| {
-                const tile_is_wall = is_blocking(quadrant.transform(tile), map);
-                const tile_is_floor = !tile_is_wall;
+    var iter: RowIter = row.tiles();
+    while (iter.next()) |tile| {
+        const tile_is_wall = isBlocking(quadrant.transform(tile), map);
+        const tile_is_floor = !tile_is_wall;
 
-                var prev_is_wall = false;
-                var prev_is_floor = false;
-                if (prev_tile) |prev| {
-                    prev_is_wall = is_blocking(quadrant.transform(prev), map);
-                    prev_is_floor = !prev_is_wall;
-                }
-
-                if (tile_is_wall or try is_symmetric(row, tile)) {
-                    const pos = quadrant.transform(tile);
-
-                    try mark_visible(pos, visible);
-                }
-
-                if (prev_is_wall and tile_is_floor) {
-                    row.start_slope = slope(tile);
-                }
-
-                if (prev_is_floor and tile_is_wall) {
-                    var next_row = row.next();
-                    next_row.end_slope = slope(tile);
-
-                    try Scan(MapType, is_blocking).scan(next_row, quadrant, map, visible);
-                }
-
-                prev_tile = tile;
-            }
-
-            if (prev_tile) |tile| {
-                if (!is_blocking(quadrant.transform(tile), map)) {
-                    try Scan(MapType, is_blocking).scan(row.next(), quadrant, map, visible);
-                }
-            }
+        var prev_is_wall = false;
+        var prev_is_floor = false;
+        if (prev_tile) |prev| {
+            prev_is_wall = isBlocking(quadrant.transform(prev), map);
+            prev_is_floor = !prev_is_wall;
         }
-    };
+
+        if (tile_is_wall or try isSymmetric(row, tile)) {
+            const pos = quadrant.transform(tile);
+
+            markVisible(pos, map, pov);
+        }
+
+        if (prev_is_wall and tile_is_floor) {
+            row.start_slope = slope(tile);
+        }
+
+        if (prev_is_floor and tile_is_wall) {
+            var next_row = row.next();
+            next_row.end_slope = slope(tile);
+
+            try scan(next_row, quadrant, map, pov);
+        }
+
+        prev_tile = tile;
+    }
+
+    if (prev_tile) |tile| {
+        if (!isBlocking(quadrant.transform(tile), map)) {
+            try scan(row.next(), quadrant, map, pov);
+        }
+    }
 }
 
 const Cardinal = enum {
@@ -138,9 +181,9 @@ const Row = struct {
         const depth_times_start = Rational.new(self.depth, 1).mult(self.start_slope);
         const depth_times_end = Rational.new(self.depth, 1).mult(self.end_slope);
 
-        const min_col = round_ties_up(depth_times_start);
+        const min_col = roundTiesUp(depth_times_start);
 
-        const max_col = round_ties_down(depth_times_end);
+        const max_col = roundTiesDown(depth_times_end);
 
         const depth = self.depth;
 
@@ -179,7 +222,7 @@ fn slope(tile: Pos) Rational {
     return Rational.new(2 * col - 1, 2 * row_depth);
 }
 
-fn is_symmetric(row: Row, tile: Pos) error{Overflow}!bool {
+fn isSymmetric(row: Row, tile: Pos) error{Overflow}!bool {
     const col = tile.y;
 
     const depth_times_start = Rational.new(row.depth, 1).mult(row.start_slope);
@@ -192,11 +235,11 @@ fn is_symmetric(row: Row, tile: Pos) error{Overflow}!bool {
     return symmetric;
 }
 
-fn round_ties_up(n: Rational) i32 {
+fn roundTiesUp(n: Rational) i32 {
     return (n.add(Rational.new(1, 2))).floor();
 }
 
-fn round_ties_down(n: Rational) i32 {
+fn roundTiesDown(n: Rational) i32 {
     return (n.sub(Rational.new(1, 2))).ceil();
 }
 
@@ -279,85 +322,94 @@ test "Rational mult" {
     try std.testing.expect(Rational.new(4, 9).eq(Rational.new(2, 3).mult(Rational.new(2, 3))));
 }
 
-fn inside_map(pos: Pos, map: []const []const i32) bool {
-    const is_inside = pos.x >= 0 and pos.y >= 0 and @intCast(usize, pos.y) < map.len and @intCast(usize, pos.x) < map[0].len;
-    return is_inside;
-}
-
-fn matchingVisible(expected: []const []const i32, visible: *ArrayList(Pos)) !void {
+fn matchingVisible(expected: []const []const i32, pov: *Pov) !void {
     var y: usize = 0;
     while (y < expected.len) : (y += 1) {
         var x: usize = 0;
         while (x < expected[0].len) : (x += 1) {
-            try std.testing.expectEqual(expected[y][x] == 1, contains(visible, Pos.init(@intCast(i32, x), @intCast(i32, y))));
+            const pos = Pos.init(@intCast(i32, x), @intCast(i32, y));
+            try std.testing.expectEqual(expected[y][x] == 1, pov.isVisible(pos));
         }
     }
 }
 
-fn is_blocking_fn(pos: Pos, tiles: []const []const i32) bool {
-    return !inside_map(pos, tiles) or tiles[@intCast(usize, pos.y)][@intCast(usize, pos.x)] == 1;
+fn markVisible(pos: Pos, map: Map, pov: *Pov) void {
+    if (map.isWithinBounds(pos)) {
+        const index = pov.dims.toIndex(pos);
+        pov.visible.set(index);
+    }
 }
 
-fn contains(visible: *ArrayList(Pos), pos: Pos) bool {
-    for (visible.items[0..]) |item| {
-        if (std.meta.eql(pos, item)) {
-            return true;
+fn makeMap(tiles: []const []const i32, allocator: Allocator) !Map {
+    const width = @intCast(i32, tiles[0].len);
+    const height = @intCast(i32, tiles.len);
+    var map = try Map.fromDims(width, height, allocator);
+    for (tiles) |row, y| {
+        for (row) |cell, x| {
+            if (cell == 1) {
+                map.set(Pos.init(@intCast(i32, x), @intCast(i32, y)), Tile.tallWall());
+            }
         }
     }
-    return false;
-}
-
-//fn mark_visible(pos: Pos, tiles: []const []const i32, visible: *ArrayList(Pos)) !void {
-//    if (inside_map(pos, tiles) and !contains(visible, pos)) {
-//        try visible.append(pos);
-//    }
-//}
-fn mark_visible(pos: Pos, visible: *ArrayList(Pos)) !void {
-    if (!contains(visible, pos)) {
-        try visible.append(pos);
-    }
+    return map;
 }
 
 test "shadowcasting expansive walls" {
-    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    var visible = ArrayList(Pos).init(allocator.allocator());
-    defer visible.deinit();
+    var gp_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var allocator = gp_allocator.allocator();
 
     const origin = Pos.init(1, 2);
     const tiles = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 0, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
-    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+
+    var map = try makeMap(tiles[0..], allocator);
+    defer map.deinit();
+
+    var pov = try Pov.init(map.dims(), allocator);
+    defer pov.deinit();
+
+    try computeFov(origin, map, &pov);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 } };
-    try matchingVisible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &pov);
 }
 
 test "shadowcasting expanding shadows" {
+    var gp_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var allocator = gp_allocator.allocator();
+
     const origin = Pos.init(0, 0);
 
     const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 1, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 0, 0, 0, 0, 0, 0, 0 } };
 
-    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    var visible = ArrayList(Pos).init(allocator.allocator());
-    defer visible.deinit();
+    var map = try makeMap(tiles[0..], allocator);
+    defer map.deinit();
 
-    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+    var pov = try Pov.init(map.dims(), allocator);
+    defer pov.deinit();
+
+    try computeFov(origin, map, &pov);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 0, 0, 1, 1, 1 }, &.{ 1, 1, 0, 0, 0, 0, 1 }, &.{ 1, 1, 1, 0, 0, 0, 0 } };
-    try matchingVisible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &pov);
 }
 
 test "shadowcasting no blind corners" {
+    var gp_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    var allocator = gp_allocator.allocator();
+
     const origin = Pos.init(3, 0);
 
     const tiles = [_][]const i32{ &.{ 0, 0, 0, 0, 0, 0, 0 }, &.{ 1, 1, 1, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 }, &.{ 0, 0, 0, 1, 0, 0, 0 } };
 
-    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    var visible = ArrayList(Pos).init(allocator.allocator());
-    defer visible.deinit();
+    var map = try makeMap(tiles[0..], allocator);
+    defer map.deinit();
 
-    try computeFov(origin, tiles[0..], &visible, &is_blocking_fn);
+    var pov = try Pov.init(map.dims(), allocator);
+    defer pov.deinit();
+
+    try computeFov(origin, map, &pov);
 
     const expected = [_][]const i32{ &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 1, 1, 1, 1, 1, 1, 1 }, &.{ 0, 0, 0, 0, 1, 1, 1 }, &.{ 0, 0, 0, 0, 0, 1, 1 } };
 
-    try matchingVisible(expected[0..], &visible);
+    try matchingVisible(expected[0..], &pov);
 }

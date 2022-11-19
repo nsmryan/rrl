@@ -30,6 +30,17 @@ pub const FovResult = enum {
             return .outside;
         }
     }
+
+    pub fn fromPositions(start_pos: Pos, end_pos: Pos, radius: i32) FovResult {
+        const dist = start_pos.distanceMaximum(end_pos);
+        if (dist == radius + 1) {
+            return FovResult.edge;
+        } else if (dist < radius) {
+            return FovResult.inside;
+        } else {
+            return FovResult.outside;
+        }
+    }
 };
 
 pub const Blocked = struct {

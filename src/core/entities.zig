@@ -16,6 +16,8 @@ const MoveMode = movement.MoveMode;
 
 const board = @import("board");
 const FovBlock = board.fov.FovBlock;
+const ViewHeight = board.fov.ViewHeight;
+const View = board.fov.View;
 
 const items = @import("items.zig");
 const Item = items.Item;
@@ -37,6 +39,13 @@ pub const Stance = enum {
         if (stance == .standing and move_mode == .sneak) return .crouching;
         if (stance == .running) return .standing;
         return stance;
+    }
+
+    pub fn viewHeight(stance: Stance) ViewHeight {
+        return switch (stance) {
+            .crouching => .low,
+            .standing, .running => .high,
+        };
     }
 };
 
@@ -85,6 +94,7 @@ pub const Entities = struct {
     illuminate: Comp(usize),
     facing: Comp(Direction),
     fov_block: Comp(FovBlock),
+    view: Comp(View),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

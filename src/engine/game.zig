@@ -61,7 +61,7 @@ pub const Game = struct {
         var log = MsgLog.init(allocator);
 
         // Always spawn a player entity even if there is nothing else in the game.
-        try spawn.spawnPlayer(&level.entities, &log, &config);
+        try spawn.spawnPlayer(&level.entities, &log, &config, allocator);
         level.map = try Map.fromDims(3, 3, allocator);
 
         return Game{
@@ -321,14 +321,14 @@ test "basic level fov" {
     game.level.entities.pos.set(0, Pos.init(1, 0));
 
     // in fov
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 0), false, allocator));
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(1, 0), false, allocator));
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(2, 0), false, allocator));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(0, 0), .high));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(1, 0), .high));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(2, 0), .high));
 
     // out of fov
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 2), false, allocator));
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 3), false, allocator));
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(1, 4), false, allocator));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(1, 2), .high));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(1, 3), .high));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(1, 4), .high));
 }
 
 test "short wall level fov" {
@@ -343,16 +343,16 @@ test "short wall level fov" {
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
     // in fov
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 0), false, allocator));
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(1, 0), false, allocator));
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(2, 0), false, allocator));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(0, 0), .high));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(1, 0), .high));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(2, 0), .high));
 
     // In fov when standing
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 1), false, allocator));
-    try std.testing.expectEqual(FovResult.inside, try game.level.fovCheck(0, Pos.init(0, 2), false, allocator));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(0, 1), .high));
+    try std.testing.expect(try game.level.fovCheck(0, Pos.init(0, 2), .high));
 
     // out of fov when crouching
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 1), true, allocator));
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 2), true, allocator));
-    try std.testing.expectEqual(FovResult.outside, try game.level.fovCheck(0, Pos.init(0, 3), true, allocator));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(0, 1), .low));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(0, 2), .low));
+    try std.testing.expect(!try game.level.fovCheck(0, Pos.init(0, 3), .low));
 }

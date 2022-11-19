@@ -31,7 +31,9 @@ pub fn main() anyerror!void {
 
     gui.game.level.map = try Map.fromDims(5, 5, allocator);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
-    gui.game.level.map.set(Pos.init(3, 2), board.tile.Tile.tallWall());
+    gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
+
+    try gui.game.level.updateFov(core.entities.Entities.player_id);
 
     while (try gui.step()) {
         try gui.draw();

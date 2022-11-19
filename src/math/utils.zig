@@ -1,3 +1,5 @@
+const Pos = @import("pos.zig").Pos;
+
 pub const ASCII_START: usize = 32;
 pub const ASCII_END: usize = 127;
 
@@ -37,5 +39,17 @@ pub const Dims = struct {
 
     pub fn init(width: usize, height: usize) Dims {
         return Dims{ .width = width, .height = height };
+    }
+
+    pub fn numTiles(dims: *const Dims) usize {
+        return dims.width * dims.height;
+    }
+
+    pub fn isWithinBounds(dims: *const Dims, position: Pos) bool {
+        return position.x >= 0 and position.y >= 0 and position.x < dims.width and position.height < dims.height;
+    }
+
+    pub fn toIndex(dims: *const Dims, position: Pos) usize {
+        return @intCast(usize, position.x) + @intCast(usize, position.y) * dims.width;
     }
 };

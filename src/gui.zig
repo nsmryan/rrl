@@ -17,6 +17,9 @@ const gen = @import("gen");
 
 const rendering = @import("rendering.zig");
 
+const board = @import("board");
+const Map = board.map.Map;
+
 const engine = @import("engine");
 const Game = engine.game.Game;
 const Input = engine.input.Input;
@@ -37,12 +40,14 @@ pub const Gui = struct {
     display: display.Display,
     game: Game,
     animations: Comp(SpriteAnimation),
+    allocator: Allocator,
 
     pub fn init(seed: u64, allocator: Allocator) !Gui {
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
             .game = try Game.init(seed, allocator),
             .animations = Comp(SpriteAnimation).init(allocator),
+            .allocator = allocator,
         };
     }
 
@@ -64,6 +69,21 @@ pub const Gui = struct {
         try gui.draw();
 
         return gui.game.settings.state != GameState.exit;
+    }
+
+    pub fn startLevel(gui: *Gui, width: i32, height: i32) !void {
+        gui.game.level.map.deinit();
+        gui.game.level.map = try Map.fromDims(width, height, gui.allocator);
+
+        try gui.game.log.log(.newLevel, .{});
+
+        // NOTE(implement) carry over energy and health as per spreadsheet.
+        // NOTE(implement) carry over skills/talents/items as per spreadsheet.
+        try engine.spawn.spawnPlayer(&gui.game.level.entities, &gui.game.log, &gui.game.config, gui.allocator);
+
+        try gui.game.log.log(.startLevel, .{});
+
+        gui.resolveMessages();
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {

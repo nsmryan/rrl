@@ -17,6 +17,7 @@ const MsgLog = messaging.MsgLog;
 
 const core = @import("core");
 const MoveMode = core.movement.MoveMode;
+const MoveType = core.movement.MoveType;
 const Entities = core.entities.Entities;
 const Type = core.entities.Type;
 const Name = core.entities.Name;
@@ -40,4 +41,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
 
     try log.log(.spawn, .{ id, Name.player });
+    try log.log(.stance, .{ id, entities.stance.get(id) });
+    try log.log(.facing, .{ id, entities.facing.get(id) });
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
 }

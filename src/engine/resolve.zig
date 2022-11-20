@@ -43,6 +43,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .nextMoveMode => |args| resolveNextMoveMode(args.id, args.move_mode, game),
         .pass => |args| try resolvePassTurn(args, game),
         .stance => |args| resolveStance(args.id, args.stance, game),
+        .startLevel => try resolveStartLevel(game),
         else => {},
     }
 }
@@ -412,4 +413,8 @@ fn resolvePassTurn(id: Id, game: *Game) !void {
 
 fn resolveStance(id: Id, stance: Stance, game: *Game) void {
     game.level.entities.stance.set(id, stance);
+}
+
+fn resolveStartLevel(game: *Game) !void {
+    try game.level.updateAllFov();
 }

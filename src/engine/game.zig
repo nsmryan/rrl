@@ -62,10 +62,6 @@ pub const Game = struct {
         var level = Level.empty(allocator);
         var log = MsgLog.init(allocator);
 
-        // Always spawn a player entity even if there is nothing else in the game.
-        try spawn.spawnPlayer(&level.entities, &log, &config, allocator);
-        level.map = try Map.fromDims(3, 3, allocator);
-
         return Game{
             .level = level,
             .rng = rng,

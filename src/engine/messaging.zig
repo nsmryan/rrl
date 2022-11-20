@@ -30,6 +30,9 @@ pub const Msg = union(enum) {
     nextMoveMode: struct { id: Id, move_mode: MoveMode },
     pass: Id,
     spawn: struct { id: Id, name: Name },
+    newLevel: void,
+    startLevel: void,
+    facing: struct { id: Id, facing: Direction },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

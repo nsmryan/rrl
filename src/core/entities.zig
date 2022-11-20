@@ -100,7 +100,7 @@ pub const Entities = struct {
         var entities: Entities = undefined;
         entities.next_id = 1;
 
-        comptime var names = compNames();
+        comptime var names = compNames(Entities);
         inline for (names) |field_name| {
             @field(entities, field_name) = @TypeOf(@field(entities, field_name)).init(allocator);
         }
@@ -109,7 +109,7 @@ pub const Entities = struct {
     }
 
     pub fn deinit(self: *Entities) void {
-        comptime var names = compNames();
+        comptime var names = compNames(Entities);
         inline for (names) |field_name| {
             @field(self, field_name).deinit();
         }
@@ -118,7 +118,7 @@ pub const Entities = struct {
     }
 
     pub fn clear(self: *Entities) void {
-        comptime var names = compNames();
+        comptime var names = compNames(Entities);
         inline for (names) |field_name| {
             @field(self, field_name).clear();
         }
@@ -126,26 +126,8 @@ pub const Entities = struct {
         self.next_id = 0;
     }
 
-    fn compNames() [][]const u8 {
-        const fieldInfos = std.meta.fields(Entities);
-        comptime var names: [fieldInfos.len][]const u8 = undefined;
-
-        comptime var index: usize = 0;
-
-        comptime {
-            inline for (fieldInfos) |field| {
-                if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
-                    names[index] = field.name;
-                    index += 1;
-                }
-            }
-        }
-
-        return names[0..index];
-    }
-
     pub fn remove(self: *Entities, id: Id) void {
-        comptime var names = compNames();
+        comptime var names = compNames(Entities);
         inline for (names) |field_name| {
             @field(self, field_name).remove(id);
         }
@@ -325,3 +307,20 @@ pub const ExtraNames = enum {
 //    magnifier,
 //    other,
 //};
+pub fn compNames(comptime T: type) [][]const u8 {
+    const fieldInfos = std.meta.fields(T);
+    comptime var names: [fieldInfos.len][]const u8 = undefined;
+
+    comptime var index: usize = 0;
+
+    comptime {
+        inline for (fieldInfos) |field| {
+            if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
+                names[index] = field.name;
+                index += 1;
+            }
+        }
+    }
+
+    return names[0..index];
+}

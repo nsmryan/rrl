@@ -149,7 +149,7 @@ const pkgs = struct {
     const drawcmd = std.build.Pkg{
         .name = "drawcmd",
         .source = .{ .path = "src/drawcmd.zig" },
-        .dependencies = &[_]std.build.Pkg{math},
+        .dependencies = &[_]std.build.Pkg{ math, utils },
     };
 
     const board = std.build.Pkg{

@@ -1,5 +1,6 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
+const AutoHashMap = std.AutoHashMap;
 const assert = std.debug.assert;
 
 const sdl2 = @import("sdl2.zig");
@@ -14,6 +15,9 @@ const Panel = pnl.Panel;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Sprite = sprite.Sprite;
 const SpriteSheet = sprite.SpriteSheet;
+
+const utils = @import("utils");
+const Str = utils.intern.Str;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -88,15 +92,19 @@ pub const AsciiTexture = struct {
 
 pub const Sprites = struct {
     texture: *Texture,
-    sheets: ArrayList(SpriteSheet),
+    sheets: AutoHashMap(Str, SpriteSheet),
 
-    pub fn init(texture: *Texture, sheets: ArrayList(SpriteSheet)) Sprites {
+    pub fn init(texture: *Texture, sheets: AutoHashMap(Str, SpriteSheet)) Sprites {
         return Sprites{ .texture = texture, .sheets = sheets };
     }
 
     pub fn deinit(sprites: *Sprites) void {
         sdl2.SDL_DestroyTexture(sprites.texture);
         sprites.sheets.deinit();
+    }
+
+    pub fn fromKey(sprites: *const Sprites, str: Str) SpriteSheet {
+        return sprites.sheets.get(str).?;
     }
 };
 
@@ -230,7 +238,7 @@ pub fn processText(canvas: Canvas, params: drawcmd.drawcmd.DrawText) void {
 }
 
 pub fn processSpriteFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteFloat) void {
-    const sprite_sheet = &canvas.sprites.sheets.items[params.sprite.key];
+    const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
 
     const cell_dims = canvas.panel.cellDims();
 
@@ -265,7 +273,7 @@ pub fn processSpriteFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteFloa
 
 pub fn processSpriteScale(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteScaled) void {
     const cell_dims = canvas.panel.cellDims();
-    const sprite_sheet = &canvas.sprites.sheets.items[params.sprite.key];
+    const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
 
     const src_rect = sprite_sheet.spriteSrc(params.sprite.index);
 
@@ -431,7 +439,7 @@ pub fn processRectFloatCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawRectFloat
 }
 
 pub fn processSpriteCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawSprite) void {
-    const sprite_sheet = &canvas.sprites.sheets.items[params.sprite.key];
+    const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
     const cell_dims = canvas.panel.cellDims();
 
     const pos = Pos.init(params.pos.x * @intCast(i32, cell_dims.width), params.pos.y * @intCast(i32, cell_dims.height));

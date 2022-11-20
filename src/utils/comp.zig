@@ -103,7 +103,7 @@ pub fn Comp(comptime T: type) type {
         pub fn set(self: *Self, id: Id, t: T) void {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| self.store.items[loc] = t,
-                .not_found => return,
+                .not_found => std.debug.panic("Set {} for entity id {} to {}, which did not have this component!\n", .{ T, id, t }),
             }
         }
 

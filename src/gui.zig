@@ -83,7 +83,7 @@ pub const Gui = struct {
 
         try gui.game.log.log(.startLevel, .{});
 
-        gui.resolveMessages();
+        try engine.resolve.resolve(&gui.game);
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {

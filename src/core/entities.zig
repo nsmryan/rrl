@@ -228,6 +228,53 @@ pub const EntityState = enum {
     remove,
 };
 
+// NOTE(implement) combining Item with extra names to create Names segfaults zig10 and crashes zig11.
+// See https://github.com/ziglang/zig/issues/13606 for status.
+//pub const Name = blk: {
+//    const numFields = @typeInfo(Item).Enum.fields.len + @typeInfo(ExtraNames).Enum.fields.len;
+//    comptime var fields: [numFields]std.builtin.Type.EnumField = undefined;
+//
+//    comptime var index = 0;
+//    for (std.meta.fields(Item)) |field| {
+//        fields[index] = field;
+//        index += 1;
+//    }
+//
+//    for (std.meta.fields(ExtraNames)) |field| {
+//        fields[index] = field;
+//        index += 1;
+//    }
+//
+//    const enumInfo = std.builtin.Type.Enum{
+//        .layout = std.builtin.Type.ContainerLayout.Auto,
+//        .tag_type = u8,
+//        .fields = &fields,
+//        .decls = &[0]std.builtin.Type.Declaration{},
+//        .is_exhaustive = true,
+//    };
+//
+//    break :blk @Type(std.builtin.Type{ .Enum = enumInfo });
+//};
+//
+//pub const ExtraNames = enum {
+//    player,
+//    gol,
+//    pawn,
+//    rook,
+//    column,
+//    exit,
+//    spire,
+//    armil,
+//    gateTrigger,
+//    mouse,
+//    cursor,
+//    energy,
+//    grass,
+//    statue,
+//    smoke,
+//    other,
+//};
+
 pub const Name = enum {
     player,
     gol,

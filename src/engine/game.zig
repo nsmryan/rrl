@@ -92,6 +92,21 @@ pub const Game = struct {
     pub fn changeState(game: *Game, new_state: GameState) void {
         game.settings.state = new_state;
     }
+
+    pub fn startLevel(game: *Game, width: i32, height: i32) !void {
+        game.level.map.deinit();
+        game.level.map = try Map.fromDims(width, height, game.allocator);
+
+        try game.log.log(.newLevel, .{});
+
+        // NOTE(implement) carry over energy and health as per spreadsheet.
+        // NOTE(implement) carry over skills/talents/items as per spreadsheet.
+        try spawn.spawnPlayer(&game.level.entities, &game.log, &game.config, game.allocator);
+
+        try game.log.log(.startLevel, .{});
+
+        try resolve.resolve(game);
+    }
 };
 
 comptime {
@@ -111,8 +126,7 @@ test "walk around a bit" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
 
     try game.handleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(1, 0), game.level.entities.pos.get(0));
@@ -139,8 +153,7 @@ test "walk into full tile wall" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(1, 1), Tile.impassable());
 
     try game.handleInputAction(InputAction{ .move = .downRight });
@@ -161,9 +174,7 @@ test "run around" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
-
+    try game.startLevel(3, 3);
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
     try game.handleInputAction(InputAction.run);
@@ -179,12 +190,11 @@ test "run blocked" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
-    game.level.entities.pos.set(0, Pos.init(0, 0));
-
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
     game.level.map.set(Pos.init(0, 1), Tile.tallWall());
+
+    game.level.entities.pos.set(0, Pos.init(0, 0));
 
     try game.handleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
@@ -210,8 +220,7 @@ test "interact with intertile wall" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
 
     // Try to walk into wall- should fail.
@@ -265,11 +274,10 @@ test "interact with intertile corners" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.entities.pos.set(0, Pos.init(1, 1));
-
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(1, 1), Tile.shortLeftAndDownWall());
+
+    game.level.entities.pos.set(0, Pos.init(1, 1));
 
     // Try to walk into wall- should fail.
     try game.handleInputAction(InputAction{ .move = .down });
@@ -313,9 +321,9 @@ test "basic level fov" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(1, 1), Tile.tallWall());
+
     game.level.entities.pos.set(0, Pos.init(1, 0));
 
     // in fov
@@ -335,9 +343,9 @@ test "short wall level fov" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(3, 3, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
+
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
     // in fov
@@ -361,9 +369,9 @@ test "basic level fov" {
     var game = try Game.init(0, allocator);
     defer game.deinit();
 
-    game.level.map.deinit();
-    game.level.map = try Map.fromDims(7, 7, allocator);
+    try game.startLevel(3, 3);
     game.level.map.set(Pos.init(1, 1), Tile.tallWall());
+
     game.level.entities.pos.set(Entities.player_id, Pos.init(0, 0));
 
     try game.level.updateFov(Entities.player_id);

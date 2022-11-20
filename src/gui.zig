@@ -71,21 +71,6 @@ pub const Gui = struct {
         return gui.game.settings.state != GameState.exit;
     }
 
-    pub fn startLevel(gui: *Gui, width: i32, height: i32) !void {
-        gui.game.level.map.deinit();
-        gui.game.level.map = try Map.fromDims(width, height, gui.allocator);
-
-        try gui.game.log.log(.newLevel, .{});
-
-        // NOTE(implement) carry over energy and health as per spreadsheet.
-        // NOTE(implement) carry over skills/talents/items as per spreadsheet.
-        try engine.spawn.spawnPlayer(&gui.game.level.entities, &gui.game.log, &gui.game.config, gui.allocator);
-
-        try gui.game.log.log(.startLevel, .{});
-
-        try engine.resolve.resolve(&gui.game);
-    }
-
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
         try gui.game.step(input_event, ticks);
         gui.resolveMessages();

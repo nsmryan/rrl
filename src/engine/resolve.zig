@@ -416,6 +416,5 @@ fn resolveStance(id: Id, stance: Stance, game: *Game) void {
 }
 
 fn resolveStartLevel(game: *Game) !void {
-    std.debug.print("starting level\n", .{});
     try game.level.updateAllFov();
 }

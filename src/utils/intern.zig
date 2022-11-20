@@ -5,6 +5,8 @@ const Allocator = std.mem.Allocator;
 
 pub const Str = u64;
 
+/// Simple string intern system.
+/// Note that if the same string is inserted multiple times, it is given a new key.
 pub const Intern = struct {
     to_key: StringHashMap(Str),
     store: ArrayList([]u8),
@@ -40,6 +42,33 @@ pub const Intern = struct {
     }
 
     pub fn get(self: *const Intern, str: Str) []const u8 {
-        return self.store.items.get(str).?;
+        return self.store.items[str];
     }
 };
+
+test "intern init deinit" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var intern = Intern.init(allocator);
+    defer intern.deinit();
+}
+
+test "intern basics" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var intern = Intern.init(allocator);
+    defer intern.deinit();
+
+    const key = try intern.insert("test");
+    try std.testing.expectEqual(key, intern.toKey("test"));
+
+    const result: []const u8 = intern.get(key);
+    try std.testing.expectEqual(@as(u8, 't'), result[0]);
+    try std.testing.expectEqual(@as(u8, 'e'), result[1]);
+    try std.testing.expectEqual(@as(u8, 's'), result[2]);
+    try std.testing.expectEqual(@as(u8, 't'), result[3]);
+}

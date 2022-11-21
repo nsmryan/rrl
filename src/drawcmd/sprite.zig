@@ -53,19 +53,19 @@ pub const SpriteAnimation = struct {
 
     pub fn step(self: *SpriteAnimation, dt: f32) void {
         const index_range = self.max_index - self.start_index;
-        const new_index = self.sprite.index + (dt * self.speed);
+        const new_index = @intToFloat(f32, self.sprite.index) + (dt * self.speed);
 
-        self.looped = new_index > self.max_index;
+        self.looped = new_index > @intToFloat(f32, self.max_index);
         if (self.looped) {
-            self.sprite.index = self.start_index + (new_index % index_range);
+            self.sprite.index = self.start_index + (@floatToInt(u32, new_index) % index_range);
         } else {
-            self.sprite.index = new_index;
+            self.sprite.index = @floatToInt(u32, new_index);
         }
     }
 
-    pub fn sprite(self: *SpriteAnimation) Sprite {
-        var spr = Sprite.withFlip(self.index, self.sprite_key, self.flip_horiz, self.flip_vert);
-        spr.rotation = self.rotation;
+    pub fn current(self: *const SpriteAnimation) Sprite {
+        var spr = Sprite.withFlip(self.sprite.index, self.sprite.key, self.sprite.flip_horiz, self.sprite.flip_vert);
+        spr.rotation = self.sprite.rotation;
         return spr;
     }
 };

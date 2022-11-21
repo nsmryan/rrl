@@ -8,19 +8,25 @@ const engine = @import("engine");
 const Game = engine.game.Game;
 
 const core = @import("core");
-const Entities = core.entities.Entities;
+const entities = core.entities;
+const Entities = entities.Entities;
+const Stance = entities.Stance;
+const Name = entities.Name;
 
 const board = @import("board");
 const Tile = board.tile.Tile;
 const FovResult = board.blocking.FovResult;
 
-const intern = @import("utils").intern;
+const utils = @import("utils");
+const intern = utils.intern;
 const Str = intern.Str;
 const Intern = intern.Intern;
+const Comp = utils.comp.Comp;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Color = math.utils.Color;
+const Direction = math.direction.Direction;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
@@ -28,15 +34,41 @@ const Panel = drawcmd.panel.Panel;
 const Sprites = drawcmd.sprite.Sprites;
 const Sprite = drawcmd.sprite.Sprite;
 const SpriteSheet = drawcmd.sprite.SpriteSheet;
+const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
 
 pub const Painter = struct {
     sprites: *const AutoHashMap(Str, SpriteSheet),
     drawcmds: *ArrayList(DrawCmd),
     strings: *const Intern,
+    state: *DisplayState,
 
     pub fn sprite(painter: *Painter, name: []const u8) Sprite {
         const key = painter.strings.toKey(name);
         return painter.sprites.get(key).?.sprite();
+    }
+};
+
+pub const DisplayState = struct {
+    pos: Comp(Pos),
+    stance: Comp(Stance),
+    name: Comp(Name),
+    facing: Comp(Direction),
+    animation: Comp(SpriteAnimation),
+
+    pub fn init(allocator: Allocator) DisplayState {
+        var state: DisplayState = undefined;
+        comptime var names = entities.compNames(DisplayState);
+        inline for (names) |field_name| {
+            @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
+        }
+        return state;
+    }
+
+    pub fn deinit(state: *DisplayState) void {
+        comptime var names = entities.compNames(DisplayState);
+        inline for (names) |field_name| {
+            @field(state, field_name).deinit();
+        }
     }
 };
 
@@ -65,7 +97,8 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
 
 fn renderEntities(game: *Game, painter: *Painter) !void {
     const pos = game.level.entities.pos.get(Entities.player_id);
-    const player_sprite = painter.sprite("player_standing_right");
+    //const player_sprite = painter.sprite("player_standing_right");
+    const player_sprite = painter.state.animation.get(Entities.player_id).current();
     try painter.drawcmds.append(DrawCmd.sprite(player_sprite, Color.white(), pos));
 }
 

@@ -20,6 +20,7 @@ const gen = @import("gen");
 
 const rendering = @import("rendering.zig");
 const Painter = rendering.Painter;
+const DisplayState = rendering.DisplayState;
 
 const board = @import("board");
 const Map = board.map.Map;
@@ -46,6 +47,7 @@ pub const Gui = struct {
     game: Game,
     state: DisplayState,
     allocator: Allocator,
+    ticks: u64,
 
     pub fn init(seed: u64, allocator: Allocator) !Gui {
         return Gui{
@@ -53,6 +55,7 @@ pub const Gui = struct {
             .game = try Game.init(seed, allocator),
             .state = DisplayState.init(allocator),
             .allocator = allocator,
+            .ticks = 0,
         };
     }
 
@@ -62,8 +65,7 @@ pub const Gui = struct {
         gui.game.deinit();
     }
 
-    pub fn step(gui: *Gui) !bool {
-        const ticks = sdl2.SDL_GetTicks64();
+    pub fn step(gui: *Gui, ticks: u64) !bool {
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
@@ -71,8 +73,11 @@ pub const Gui = struct {
             }
         }
 
+        const delta_ticks = gui.ticks;
+        gui.ticks = ticks;
+
         // Draw whether or not there is an event to update animations, effects, etc.
-        try gui.draw();
+        try gui.draw(delta_ticks);
 
         return gui.game.settings.state != GameState.exit;
     }
@@ -106,12 +111,19 @@ pub const Gui = struct {
                     const name = gui.state.name.get(id);
 
                     const sheet_direction = sheetDirection(facing);
-                    var sheet_name_slice: [sprite.MAX_NAME_SIZE]u8 = undefined;
-                    var sheet_name = try std.fmt.bufPrint(&sheet_name_slice, "{}_{}_{}", .{ name, stance, sheet_direction });
+                    var name_str_buf: [128]u8 = undefined;
+                    var stance_str_buf: [128]u8 = undefined;
+                    var direction_str_buf: [128]u8 = undefined;
+                    var name_str = try std.fmt.bufPrint(&name_str_buf, "{}", .{name});
+                    var stance_str = try std.fmt.bufPrint(&stance_str_buf, "{}", .{stance});
+                    var direction_str = try std.fmt.bufPrint(&direction_str_buf, "{}", .{sheet_direction});
+
+                    var sheet_name_buf: [128]u8 = undefined;
+                    var sheet_name = try std.fmt.bufPrint(&sheet_name_buf, "{s}_{s}_{s}", .{ baseName(name_str), baseName(stance_str), baseName(direction_str) });
 
                     var anim = try gui.display.animation(sheet_name, gui.game.config.idle_speed);
                     anim.looped = true;
-                    try gui.state.animations.insert(id, anim);
+                    try gui.state.animation.insert(id, anim);
                     // NOTE(implement) likely this needs to be added back in
                     //anim.flip_horiz = needsFlipHoriz(direction);
                 },
@@ -121,51 +133,17 @@ pub const Gui = struct {
         }
     }
 
-    pub fn draw(gui: *Gui) !void {
-        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds };
+    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds, .state = &gui.state };
         try rendering.render(&gui.game, &painter);
         gui.display.present(gui.game.level.map.dims());
-    }
-};
 
-pub const DisplayState = struct {
-    pos: Comp(Pos),
-    stance: Comp(Stance),
-    name: Comp(Name),
-    facing: Comp(Direction),
-    animations: Comp(SpriteAnimation),
-
-    pub fn init(allocator: Allocator) DisplayState {
-        var state: DisplayState = undefined;
-        comptime var names = entities.compNames(DisplayState);
-        inline for (names) |field_name| {
-            @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
-        }
-        return state;
-    }
-
-    pub fn deinit(state: *DisplayState) void {
-        comptime var names = entities.compNames(DisplayState);
-        inline for (names) |field_name| {
-            @field(state, field_name).deinit();
+        const dt: f32 = @intToFloat(f32, delta_ticks) / 1000.0;
+        for (gui.state.animation.ids.items) |id| {
+            gui.state.animation.getPtr(id).step(dt);
         }
     }
 };
-
-comptime {
-    if (@import("builtin").is_test) {
-        @import("std").testing.refAllDecls(@This());
-    }
-}
-
-test "gui alloc dealloc" {
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    defer std.debug.assert(!general_purpose_allocator.deinit());
-    const allocator = general_purpose_allocator.allocator();
-
-    var gui = try Gui.init(0, allocator);
-    defer gui.deinit();
-}
 
 fn sheetDirection(direction: Direction) Direction {
     return switch (direction) {
@@ -199,4 +177,27 @@ fn getSheetStance(stance: Stance) Stance {
     } else {
         return stance;
     }
+}
+
+fn baseName(name: []const u8) []const u8 {
+    if (std.mem.lastIndexOf(u8, name, ".")) |last_index| {
+        return name[(last_index + 1)..];
+    } else {
+        return name;
+    }
+}
+
+comptime {
+    if (@import("builtin").is_test) {
+        @import("std").testing.refAllDecls(@This());
+    }
+}
+
+test "gui alloc dealloc" {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!general_purpose_allocator.deinit());
+    const allocator = general_purpose_allocator.allocator();
+
+    var gui = try Gui.init(0, allocator);
+    defer gui.deinit();
 }

@@ -469,6 +469,7 @@ pub fn processSpriteCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawSprite) void
 
 pub fn flipFlags(spr: *const Sprite) sdl2.SDL_RendererFlip {
     var flags: sdl2.SDL_RendererFlip = 0;
+
     if (spr.flip_horiz) {
         flags |= sdl2.SDL_FLIP_HORIZONTAL;
     }
@@ -476,6 +477,7 @@ pub fn flipFlags(spr: *const Sprite) sdl2.SDL_RendererFlip {
     if (spr.flip_vert) {
         flags |= sdl2.SDL_FLIP_VERTICAL;
     }
+
     return flags;
 }
 

@@ -130,11 +130,15 @@ pub const Gui = struct {
                     var sheet_name_buf: [128]u8 = undefined;
                     var sheet_name = try std.fmt.bufPrint(&sheet_name_buf, "{s}_{s}_{s}", .{ baseName(name_str), baseName(stance_str), baseName(direction_str) });
 
+                    var char_index: usize = 0;
+                    while (char_index < sheet_name.len) : (char_index += 1) {
+                        sheet_name[char_index] = std.ascii.toLower(sheet_name[char_index]);
+                    }
+
                     var anim = try gui.display.animation(sheet_name, gui.game.config.idle_speed);
                     anim.looped = true;
+                    anim.sprite.flip_horiz = needsFlipHoriz(facing);
                     try gui.state.animation.insert(id, anim);
-                    // NOTE(implement) likely this needs to be added back in
-                    //anim.flip_horiz = needsFlipHoriz(direction);
                 },
 
                 else => {},
@@ -179,6 +183,19 @@ fn needsFlipHoriz(direction: Direction) bool {
         Direction.downLeft => true,
     };
 }
+
+//fn needsFlipVert(direction: Direction) bool {
+//    return switch (direction) {
+//        Direction.up => true,
+//        Direction.down => true,
+//        Direction.left => false,
+//        Direction.right => true,
+//        Direction.upRight => true,
+//        Direction.upLeft => false,
+//        Direction.downRight => true,
+//        Direction.downLeft => false,
+//    };
+//}
 
 fn getSheetStance(stance: Stance) Stance {
     if (stance == .running) {

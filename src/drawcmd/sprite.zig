@@ -43,24 +43,28 @@ pub const SpriteAnimation = struct {
     sprite: Sprite,
     start_index: SpriteIndex,
     max_index: SpriteIndex,
+    index: f32,
     speed: f32,
     looped: bool,
 
     pub fn init(name: Str, index: SpriteIndex, max_index: SpriteIndex, speed: f32) SpriteAnimation {
         const spr = Sprite{ .index = index, .key = name, .flip_horiz = false, .flip_vert = false, .rotation = 0.0 };
-        return SpriteAnimation{ .name = name, .start_index = index, .sprite = spr, .max_index = max_index, .speed = speed, .looped = false };
+        return SpriteAnimation{ .name = name, .index = @intToFloat(f32, index), .start_index = index, .sprite = spr, .max_index = max_index, .speed = speed, .looped = false };
     }
 
     pub fn step(self: *SpriteAnimation, dt: f32) void {
         const index_range = self.max_index - self.start_index;
-        const new_index = @intToFloat(f32, self.sprite.index) + (dt * self.speed);
+        const new_index = self.index + (dt * self.speed);
 
         self.looped = new_index > @intToFloat(f32, self.max_index);
         if (self.looped) {
-            self.sprite.index = self.start_index + (@floatToInt(u32, new_index) % index_range);
+            const left: f32 = new_index - @floor(new_index);
+            self.index = @intToFloat(f32, self.start_index + (@floatToInt(u32, new_index) % index_range)) + left;
         } else {
-            self.sprite.index = @floatToInt(u32, new_index);
+            self.index = new_index;
         }
+
+        self.sprite.index = @floatToInt(u32, self.index);
     }
 
     pub fn current(self: *const SpriteAnimation) Sprite {

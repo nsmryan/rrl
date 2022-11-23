@@ -108,6 +108,10 @@ pub const Game = struct {
 
         try resolve.resolve(game);
     }
+
+    pub fn reloadConfig(game: *Game) void {
+        game.config = Config.fromFile(CONFIG_PATH[0..]) catch return;
+    }
 };
 
 comptime {

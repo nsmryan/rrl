@@ -4,6 +4,7 @@ const Color = math.utils.Color;
 
 pub const Config = struct {
     load_map_file_every_frame: bool,
+    reload_config_period: u64,
     tile_noise_scaler: f64,
     highlight_player_move: u8,
     highlight_alpha_attack: u8,
@@ -196,9 +197,9 @@ pub const Config = struct {
 
 fn parseInt(comptime IntType: type, str: []const u8) !IntType {
     if (str.len > 2 and str[0] == '0' and str[1] == 'x') {
-        return try std.fmt.parseInt(u8, str[2..], 16);
+        return try std.fmt.parseInt(IntType, str[2..], 16);
     } else {
-        return try std.fmt.parseInt(u8, str, 10);
+        return try std.fmt.parseInt(IntType, str, 10);
     }
 }
 

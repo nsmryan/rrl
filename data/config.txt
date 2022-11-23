@@ -1,5 +1,6 @@
 # reload map file 
 load_map_file_every_frame: false
+reload_config_period: 500
 
 tile_noise_scaler: 4.0
 # alpha for player move highlight
@@ -43,7 +44,7 @@ player_attack_speed: 2.0
 player_attack_hammer_speed: 1.0
 player_vault_sprite_speed: 2.0
 player_vault_move_speed: 2.0
-idle_speed: 5
+idle_speed: 6
 fire_speed: 7
 grass_idle_speed: 0.5
 item_throw_speed: 30.0

@@ -10,7 +10,9 @@ pub const Timer = struct {
 
     pub fn step(timer: *Timer, dt: u64) u64 {
         var rollovers: u64 = 0;
-        if (timer.time_left + dt >= timer.period) {
+        if (timer.period == 0) {
+            return rollovers;
+        } else if (timer.time_left + dt >= timer.period) {
             rollovers = (timer.time_left + dt) / timer.period;
         }
         timer.time_left = (timer.time_left + dt) % timer.period;

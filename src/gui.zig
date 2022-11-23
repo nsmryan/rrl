@@ -4,6 +4,7 @@ const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
+const Timer = utils.timer.Timer;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -48,14 +49,17 @@ pub const Gui = struct {
     state: DisplayState,
     allocator: Allocator,
     ticks: u64,
+    reload_config_timer: Timer,
 
     pub fn init(seed: u64, allocator: Allocator) !Gui {
+        const game = try Game.init(seed, allocator);
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
-            .game = try Game.init(seed, allocator),
+            .game = game,
             .state = DisplayState.init(allocator),
             .allocator = allocator,
             .ticks = 0,
+            .reload_config_timer = Timer.init(game.config.reload_config_period),
         };
     }
 
@@ -66,6 +70,12 @@ pub const Gui = struct {
     }
 
     pub fn step(gui: *Gui, ticks: u64) !bool {
+        const delta_ticks = ticks - gui.ticks;
+
+        if (gui.reload_config_timer.step(delta_ticks) > 0) {
+            gui.game.reloadConfig();
+        }
+
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
@@ -73,7 +83,6 @@ pub const Gui = struct {
             }
         }
 
-        const delta_ticks = gui.ticks;
         gui.ticks = ticks;
 
         // Draw whether or not there is an event to update animations, effects, etc.

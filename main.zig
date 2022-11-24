@@ -21,6 +21,8 @@ const Display = g.display.Display;
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 
+const sdl2 = g.sdl2;
+
 const rendering = @import("src/rendering.zig");
 
 pub fn main() anyerror!void {
@@ -33,9 +35,11 @@ pub fn main() anyerror!void {
     try gui.game.startLevel(7, 7);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
+    try gui.resolveMessages();
 
-    while (try gui.step()) {
-        try gui.draw();
-        std.time.sleep(100000000);
+    var ticks = sdl2.SDL_GetTicks64();
+    while (try gui.step(ticks)) {
+        std.time.sleep(1000000000 / gui.game.config.frame_rate);
+        ticks = sdl2.SDL_GetTicks64();
     }
 }

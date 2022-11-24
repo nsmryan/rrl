@@ -4,6 +4,7 @@ const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
+const Timer = utils.timer.Timer;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -12,10 +13,15 @@ const Direction = math.direction.Direction;
 const core = @import("core");
 const movement = core.movement;
 const Config = core.config.Config;
+const entities = core.entities;
+const Stance = entities.Stance;
+const Name = entities.Name;
 
 const gen = @import("gen");
 
 const rendering = @import("rendering.zig");
+const Painter = rendering.Painter;
+const DisplayState = rendering.DisplayState;
 
 const board = @import("board");
 const Map = board.map.Map;
@@ -29,7 +35,8 @@ const Settings = engine.actions.Settings;
 const GameState = engine.settings.GameState;
 
 const drawcmd = @import("drawcmd");
-const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
+const sprite = drawcmd.sprite;
+const SpriteAnimation = sprite.SpriteAnimation;
 
 const prof = @import("prof");
 
@@ -41,9 +48,11 @@ pub const sdl2 = @import("gui/sdl2.zig");
 pub const Gui = struct {
     display: display.Display,
     game: Game,
-    animations: Comp(SpriteAnimation),
+    state: DisplayState,
     allocator: Allocator,
     profiler: prof.Prof,
+    ticks: u64,
+    reload_config_timer: Timer,
 
     pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
         var game = try Game.init(seed, allocator);
@@ -55,23 +64,31 @@ pub const Gui = struct {
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
             .game = game,
-            .animations = Comp(SpriteAnimation).init(allocator),
+            .state = DisplayState.init(allocator),
             .allocator = allocator,
             .profiler = profiler,
+            .ticks = 0,
+            .reload_config_timer = Timer.init(game.config.reload_config_period),
         };
     }
 
     pub fn deinit(gui: *Gui) void {
         gui.display.deinit();
+        gui.state.deinit();
         gui.game.deinit();
         gui.profiler.end();
     }
 
-    pub fn step(gui: *Gui) !bool {
+    pub fn step(gui: *Gui, ticks: u64) !bool {
         prof.scope("step");
         defer prof.end();
 
-        const ticks = sdl2.SDL_GetTicks64();
+        const delta_ticks = ticks - gui.ticks;
+
+        if (gui.reload_config_timer.step(delta_ticks) > 0) {
+            gui.game.reloadConfig();
+        }
+
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
@@ -79,9 +96,11 @@ pub const Gui = struct {
             }
         }
 
+        gui.ticks = ticks;
+
         // Draw whether or not there is an event to update animations, effects, etc.
         prof.scope("draw");
-        try gui.draw();
+        try gui.draw(delta_ticks);
         defer prof.end();
 
         return gui.game.settings.state != GameState.exit;
@@ -89,15 +108,52 @@ pub const Gui = struct {
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
         try gui.game.step(input_event, ticks);
-        gui.resolveMessages();
+        try gui.resolveMessages();
     }
 
-    pub fn resolveMessages(gui: *Gui) void {
+    pub fn resolveMessages(gui: *Gui) !void {
         for (gui.game.log.all.items) |msg| {
             switch (msg) {
-                .spawn => |args| {
-                    _ = args;
-                    //gui.animations.set(args.id, animationFromName(gui.display.sprites, args.name));
+                .spawn => |args| try gui.state.name.insert(args.id, args.name),
+                .facing => |args| try gui.state.facing.insert(args.id, args.facing),
+                .stance => |args| try gui.state.stance.insert(args.id, args.stance),
+                .move => |args| try gui.state.pos.insert(args.id, args.pos),
+                .startLevel => try gui.assignAllIdleAnimations(),
+                .endTurn => try gui.assignAllIdleAnimations(),
+
+                else => {},
+            }
+        }
+    }
+
+    pub fn assignAllIdleAnimations(gui: *Gui) !void {
+        for (gui.state.name.ids.items) |id| {
+            switch (gui.state.name.get(id)) {
+                .player => {
+                    const stance = getSheetStance(gui.state.stance.get(id));
+                    const facing = gui.state.facing.get(id);
+                    const name = gui.state.name.get(id);
+
+                    const sheet_direction = sheetDirection(facing);
+                    var name_str_buf: [128]u8 = undefined;
+                    var stance_str_buf: [128]u8 = undefined;
+                    var direction_str_buf: [128]u8 = undefined;
+                    var name_str = try std.fmt.bufPrint(&name_str_buf, "{}", .{name});
+                    var stance_str = try std.fmt.bufPrint(&stance_str_buf, "{}", .{stance});
+                    var direction_str = try std.fmt.bufPrint(&direction_str_buf, "{}", .{sheet_direction});
+
+                    var sheet_name_buf: [128]u8 = undefined;
+                    var sheet_name = try std.fmt.bufPrint(&sheet_name_buf, "{s}_{s}_{s}", .{ baseName(name_str), baseName(stance_str), baseName(direction_str) });
+
+                    var char_index: usize = 0;
+                    while (char_index < sheet_name.len) : (char_index += 1) {
+                        sheet_name[char_index] = std.ascii.toLower(sheet_name[char_index]);
+                    }
+
+                    var anim = try gui.display.animation(sheet_name, gui.game.config.idle_speed);
+                    anim.looped = true;
+                    anim.sprite.flip_horiz = needsFlipHoriz(facing);
+                    try gui.state.animation.insert(id, anim);
                 },
 
                 else => {},
@@ -105,11 +161,72 @@ pub const Gui = struct {
         }
     }
 
-    pub fn draw(gui: *Gui) !void {
-        try rendering.render(&gui.game, &gui.display.sprites.sheets, &gui.display.drawcmds);
+    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds, .state = &gui.state };
+        try rendering.render(&gui.game, &painter);
         gui.display.present(gui.game.level.map.dims());
+
+        const dt: f32 = @intToFloat(f32, delta_ticks) / 1000.0;
+        for (gui.state.animation.ids.items) |id| {
+            gui.state.animation.getPtr(id).step(dt);
+        }
     }
 };
+
+fn sheetDirection(direction: Direction) Direction {
+    return switch (direction) {
+        Direction.up => .up,
+        Direction.down => .down,
+        Direction.left => .right,
+        Direction.right => .right,
+        Direction.upRight => .upRight,
+        Direction.upLeft => .upRight,
+        Direction.downRight => .downRight,
+        Direction.downLeft => .downRight,
+    };
+}
+
+fn needsFlipHoriz(direction: Direction) bool {
+    return switch (direction) {
+        Direction.up => false,
+        Direction.down => false,
+        Direction.left => true,
+        Direction.right => false,
+        Direction.upRight => false,
+        Direction.upLeft => true,
+        Direction.downRight => false,
+        Direction.downLeft => true,
+    };
+}
+
+//fn needsFlipVert(direction: Direction) bool {
+//    return switch (direction) {
+//        Direction.up => true,
+//        Direction.down => true,
+//        Direction.left => false,
+//        Direction.right => true,
+//        Direction.upRight => true,
+//        Direction.upLeft => false,
+//        Direction.downRight => true,
+//        Direction.downLeft => false,
+//    };
+//}
+
+fn getSheetStance(stance: Stance) Stance {
+    if (stance == .running) {
+        return .standing;
+    } else {
+        return stance;
+    }
+}
+
+fn baseName(name: []const u8) []const u8 {
+    if (std.mem.lastIndexOf(u8, name, ".")) |last_index| {
+        return name[(last_index + 1)..];
+    } else {
+        return name;
+    }
+}
 
 comptime {
     if (@import("builtin").is_test) {

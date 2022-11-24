@@ -16,12 +16,15 @@ const panel = drawcmd.panel;
 const area = drawcmd.area;
 const Justify = drawcmd.drawcmd.Justify;
 const sprite = drawcmd.sprite;
+const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
+const intern = utils.intern;
+const Str = utils.intern.Str;
 
 const drawing = @import("drawing.zig");
 const Sprites = drawing.Sprites;
@@ -39,6 +42,7 @@ pub const Display = struct {
     ascii_texture: drawing.AsciiTexture,
     screen_texture: *Texture,
     sprites: Sprites,
+    strings: intern.Intern,
 
     drawcmds: ArrayList(DrawCmd),
     allocator: Allocator,
@@ -84,7 +88,8 @@ pub const Display = struct {
         //    sdl2.SDL_Log("Unable to set render target: %s", sdl2.SDL_GetError());
         //    return error.SDLInitializationFailed; //}
 
-        var sprites = try loadSprites("data/spriteAtlas.txt", "data/spriteAtlas.png\x00", renderer, allocator);
+        var strings = intern.Intern.init(allocator);
+        var sprites = try loadSprites("data/spriteAtlas.txt", "data/spriteAtlas.png\x00", &strings, renderer, allocator);
 
         const font = sdl2.TTF_OpenFont("data/Inconsolata-Bold.ttf", 20) orelse {
             sdl2.SDL_Log("Unable to create font from tff: %s", sdl2.SDL_GetError());
@@ -100,6 +105,7 @@ pub const Display = struct {
             .ascii_texture = ascii_texture,
             .sprites = sprites,
             .screen_texture = screen_texture,
+            .strings = strings,
             .drawcmds = drawcmds,
             .allocator = allocator,
         };
@@ -152,6 +158,7 @@ pub const Display = struct {
         sdl2.SDL_DestroyWindow(self.window);
         sdl2.SDL_Quit();
         self.sprites.deinit();
+        self.strings.deinit();
     }
 
     pub fn wait_for_frame(self: *Display) void {
@@ -226,17 +233,23 @@ pub const Display = struct {
         return quit;
     }
 
-    pub fn lookupSpritekey(self: *Display, name: []const u8) !sprite.SpriteKey {
-        return sprite.lookupSpritekey(&self.sprites.sheets, name);
+    pub fn animation(self: *Display, name: []const u8, speed: f32) !sprite.SpriteAnimation {
+        const key = try self.lookupSpritekey(name);
+        const num_sprites = try self.numSprites(name);
+        return SpriteAnimation.init(key, 0, @intCast(u32, num_sprites), speed);
+    }
+
+    pub fn lookupSpritekey(self: *Display, name: []const u8) !Str {
+        return self.strings.toKey(name);
     }
 
     pub fn numSprites(self: *Display, name: []const u8) !usize {
-        const key = try sprite.lookupSpritekey(&self.sprites.sheets, name);
-        return self.sprites.sheets.items[key].num_sprites;
+        const key = try self.lookupSpritekey(name);
+        return self.sprites.sheets.get(key).?.num_sprites;
     }
 };
 
-fn loadSprites(atlas_text: []const u8, atlas_image: []const u8, renderer: *Renderer, allocator: Allocator) !Sprites {
+fn loadSprites(atlas_text: []const u8, atlas_image: []const u8, strings: *intern.Intern, renderer: *Renderer, allocator: Allocator) !Sprites {
     // NOTE technically this cast isn't valid- the string is not necessarily null terminated since it starts as a slice.
     const sprite_surface = sdl2.IMG_Load(@ptrCast([*c]const u8, atlas_image.ptr)) orelse {
         sdl2.SDL_Log("Unable to load sprite image: %s", sdl2.SDL_GetError());
@@ -249,7 +262,7 @@ fn loadSprites(atlas_text: []const u8, atlas_image: []const u8, renderer: *Rende
         return error.SDLInitializationFailed;
     };
 
-    var sheets = try sprite.parseAtlasFile(atlas_text, allocator);
+    var sheets = try sprite.parseAtlasFile(atlas_text, strings, allocator);
     var sprites = Sprites.init(sprite_texture, sheets);
     return sprites;
 }

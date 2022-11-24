@@ -33,6 +33,7 @@ pub const Msg = union(enum) {
     newLevel: void,
     startLevel: void,
     facing: struct { id: Id, facing: Direction },
+    endTurn: void,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

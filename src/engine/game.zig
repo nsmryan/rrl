@@ -87,6 +87,7 @@ pub const Game = struct {
     pub fn handleInputAction(game: *Game, input_action: InputAction) !void {
         try actions.resolveAction(game, input_action);
         try resolve.resolve(game);
+        try game.log.record(.endTurn, .{});
     }
 
     pub fn changeState(game: *Game, new_state: GameState) void {
@@ -106,6 +107,10 @@ pub const Game = struct {
         try game.log.log(.startLevel, .{});
 
         try resolve.resolve(game);
+    }
+
+    pub fn reloadConfig(game: *Game) void {
+        game.config = Config.fromFile(CONFIG_PATH[0..]) catch return;
     }
 };
 

@@ -195,9 +195,12 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     //        game.log.now(.faceTowards, .{ id, target_pos });
     //    }
     //} else {
-    //    const dir = Direction.fromPositions(pos, original_pos);
+    //    const dir = Direction.fromPositions(original_pos, pos);
     //    game.log.log_front(.setFacing, .{id, dir});
     //}
+    if (Direction.fromPositions(start_pos, pos)) |dir| {
+        try game.log.now(.facing, .{ id, dir });
+    }
 
     // NOTE(implement) player steps out of visiblilty. Uses the entity message system right now,
     // which may be better off replaced.

@@ -21,18 +21,20 @@ pub const LevelExitCondition = enum {
     keyAndGoal,
 };
 
+pub const Mode = union(enum) {
+    playing,
+    use: struct { pos: Pos, use_action: UseAction, dir: ?Direction },
+    cursor: struct { pos: Pos, use_action: ?UseAction },
+};
+
 pub const Settings = struct {
     turn_count: usize = 0,
     test_mode: bool = false,
     map_type: MapGenType = MapGenType.island,
     state: GameState = GameState.playing,
     overlay: bool = false,
-    level_num: usize = 0,
-    running: bool = true,
-    cursor: ?Pos = null,
-    use_action: UseAction = UseAction.interact,
-    cursor_action: ?UseAction = null,
-    use_dir: ?Direction = null,
+    mode: Mode = Mode.playing,
+
     debug_enabled: bool = false,
     map_load_config: MapLoadConfig = MapLoadConfig.empty,
     map_changed: bool = false,
@@ -40,10 +42,6 @@ pub const Settings = struct {
 
     pub fn init() Settings {
         return Settings{};
-    }
-
-    pub fn isCursorMode(self: *const Settings) bool {
-        return self.cursor != null;
     }
 };
 

@@ -28,6 +28,8 @@ const Entities = entities.Entities;
 const Type = entities.Type;
 const Stance = entities.Stance;
 
+const prof = @import("prof");
+
 const fov = @import("fov.zig");
 const ViewHeight = fov.ViewHeight;
 const FovBlock = fov.FovBlock;
@@ -85,6 +87,9 @@ pub const Level = struct {
     }
 
     pub fn updateFov(level: *Level, id: Id) !void {
+        prof.scope("fov");
+        defer prof.end();
+
         const start_pos = level.entities.pos.get(id);
 
         var view_ptr = level.entities.view.getPtr(id);

@@ -26,7 +26,8 @@ const rendering = @import("src/rendering.zig");
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;
 
-    var gui = try g.Gui.init(0, allocator);
+    const profiling = @import("build_options").remotery;
+    var gui = try g.Gui.init(0, profiling, allocator);
     defer gui.deinit();
 
     try gui.game.startLevel(7, 7);

@@ -5,17 +5,33 @@ pub fn build(b: *std.build.Builder) !void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
 
-    buildMain(b, target, mode);
-    buildTests(b, target, mode);
-    buildTclExtension(b, target, mode);
+    const step_options = b.addOptions();
+    step_options.addOption(bool, "remotery", false);
+
+    buildMain(b, target, mode, step_options);
+    buildTests(b, target, mode, step_options);
+    buildTclExtension(b, target, mode, step_options);
     try runAtlas(b, target, mode);
 }
 
 // Main Executable
-fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
+    _ = step_options;
     const exe = b.addExecutable("rustrl", "main.zig");
+
     exe.setTarget(target);
     exe.setBuildMode(mode);
+
+    const options = b.addOptions();
+    // TODO set to false when build options are working...
+    options.addOption(bool, "remotery", true);
+    exe.addOptions("build_options", options);
+
+    exe.addIncludePath("deps/remotery");
+    exe.addCSourceFile("deps/remotery/Remotery.c", &[_][]const u8{
+        "-DRMT_ENABLED=1",
+    });
+
     addPackages(exe);
     addCDeps(exe);
     exe.linkLibC();
@@ -35,10 +51,21 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
 }
 
 // Unit tests
-fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
+    _ = step_options;
     const exe_tests = b.addTest("main_test.zig");
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
+
+    const options = b.addOptions();
+    options.addOption(bool, "remotery", false);
+    exe_tests.addOptions("build_options", options);
+
+    exe_tests.addIncludePath("deps/remotery");
+    exe_tests.addCSourceFile("deps/remotery/Remotery.c", &[_][]const u8{
+        "-DRMT_ENABLED=1",
+    });
+
     addPackages(exe_tests);
     addCDeps(exe_tests);
     exe_tests.linkLibC();
@@ -48,11 +75,21 @@ fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.buil
 }
 
 // Shared Library TCL Extension
-fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
+    _ = step_options;
     const lib = b.addSharedLibrary("rrl", "tclrrl.zig", b.version(0, 1, 0));
     lib.setTarget(target);
     lib.setBuildMode(mode);
     lib.linkLibC();
+
+    const options = b.addOptions();
+    options.addOption(bool, "remotery", false);
+    lib.addOptions("build_options", options);
+
+    lib.addIncludePath("deps/remotery");
+    lib.addCSourceFile("deps/remotery/Remotery.c", &[_][]const u8{
+        "-DRMT_ENABLED=1",
+    });
 
     if (builtin.os.tag == .windows) {
         lib.addLibPath("c:/tcltk/bin");
@@ -143,7 +180,7 @@ const pkgs = struct {
     const core = std.build.Pkg{
         .name = "core",
         .source = .{ .path = "src/core.zig" },
-        .dependencies = &[_]std.build.Pkg{ utils, math, board },
+        .dependencies = &[_]std.build.Pkg{ utils, math, board, prof },
     };
 
     const drawcmd = std.build.Pkg{
@@ -161,19 +198,25 @@ const pkgs = struct {
     const engine = std.build.Pkg{
         .name = "engine",
         .source = .{ .path = "src/engine.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, gen },
+        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, gen, prof },
     };
 
     const gui = std.build.Pkg{
         .name = "gui",
         .source = .{ .path = "src/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, board, engine, gen },
+        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, board, engine, gen, prof },
     };
 
     const gen = std.build.Pkg{
         .name = "gen",
         .source = .{ .path = "src/gen.zig" },
         .dependencies = &[_]std.build.Pkg{ math, utils },
+    };
+
+    const prof = std.build.Pkg{
+        .name = "prof",
+        .source = .{ .path = "src/prof.zig" },
+        .dependencies = &[_]std.build.Pkg{},
     };
 };
 

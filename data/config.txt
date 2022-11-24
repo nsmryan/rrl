@@ -220,6 +220,9 @@ display_console_lines: 8
 # If true, center the map around the player.
 display_center_map_on_player: true
 
+# Enable profiling
+profiling: true
+
 # Color Palette
 color_dark_brown: 30 25 15 255
 color_medium_brown: 110 90 80 255

@@ -31,6 +31,8 @@ const GameState = engine.settings.GameState;
 const drawcmd = @import("drawcmd");
 const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
 
+const prof = @import("prof");
+
 pub const display = @import("gui/display.zig");
 pub const keyboard = @import("gui/keyboard.zig");
 pub const drawing = @import("gui/drawing.zig");
@@ -41,22 +43,34 @@ pub const Gui = struct {
     game: Game,
     animations: Comp(SpriteAnimation),
     allocator: Allocator,
+    profiler: prof.Prof,
 
-    pub fn init(seed: u64, allocator: Allocator) !Gui {
+    pub fn init(seed: u64, profiling: bool, allocator: Allocator) !Gui {
+        var game = try Game.init(seed, allocator);
+        var profiler: prof.Prof = prof.Prof{};
+        if (profiling) {
+            try profiler.start();
+        }
+
         return Gui{
             .display = try display.Display.init(800, 640, allocator),
-            .game = try Game.init(seed, allocator),
+            .game = game,
             .animations = Comp(SpriteAnimation).init(allocator),
             .allocator = allocator,
+            .profiler = profiler,
         };
     }
 
     pub fn deinit(gui: *Gui) void {
         gui.display.deinit();
         gui.game.deinit();
+        gui.profiler.end();
     }
 
     pub fn step(gui: *Gui) !bool {
+        prof.scope("step");
+        defer prof.end();
+
         const ticks = sdl2.SDL_GetTicks64();
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
@@ -66,7 +80,9 @@ pub const Gui = struct {
         }
 
         // Draw whether or not there is an event to update animations, effects, etc.
+        prof.scope("draw");
         try gui.draw();
+        defer prof.end();
 
         return gui.game.settings.state != GameState.exit;
     }

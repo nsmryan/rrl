@@ -338,7 +338,7 @@ pub const Input = struct {
                 action = InputAction.cursorToggle;
             } else if (InputDirection.fromChar(chr)) |input_dir| {
                 self.direction = input_dir;
-            } else if (!(settings.isCursorMode() and self.ctrl)) {
+            } else if (!(settings.mode == .cursor and self.ctrl)) {
                 if (getItemIndex(chr)) |index| {
                     const item_class = CLASSES[index];
 
@@ -424,7 +424,7 @@ pub const Input = struct {
             if (self.direction != null and std.meta.eql(self.direction.?, input_dir)) {
                 switch (input_dir) {
                     InputDirection.dir => |dir| {
-                        if (settings.isCursorMode()) {
+                        if (settings.mode == .cursor) {
                             action = InputAction{ .cursorMove = .{ .dir = dir, .is_relative = self.ctrl, .is_long = self.shift } };
                         } else {
                             action = InputAction{ .move = dir };
@@ -432,7 +432,7 @@ pub const Input = struct {
                     },
 
                     InputDirection.current => {
-                        if (settings.isCursorMode() and self.ctrl) {
+                        if (settings.mode == .cursor and self.ctrl) {
                             action = InputAction.cursorReturn;
                         } else {
                             action = InputAction.pass;
@@ -443,10 +443,10 @@ pub const Input = struct {
             // if releasing a key that is directional, but not the last directional key
             // pressed, then do nothing, waiting for the last key to be released instead.
         } else {
-            if (settings.isCursorMode()) {
+            if (settings.mode == .cursor) {
                 if (getItemIndex(chr)) |index| {
                     const item_class = CLASSES[index];
-                    const cursor_pos = settings.cursor.?;
+                    const cursor_pos = settings.mode.cursor.pos;
                     action = InputAction{ .throwItem = .{ .pos = cursor_pos, .item_class = item_class } };
                 }
             }

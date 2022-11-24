@@ -221,7 +221,7 @@ display_console_lines: 8
 display_center_map_on_player: true
 
 # Enable profiling
-profiling: true
+use_profiling: true
 
 # Color Palette
 color_dark_brown: 30 25 15 255

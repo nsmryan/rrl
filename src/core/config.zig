@@ -117,7 +117,7 @@ pub const Config = struct {
 
     display_center_map_on_player: bool,
 
-    profiling: bool,
+    use_profiling: bool,
 
     color_dark_brown: Color,
     color_medium_brown: Color,

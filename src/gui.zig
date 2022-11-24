@@ -45,10 +45,10 @@ pub const Gui = struct {
     allocator: Allocator,
     profiler: prof.Prof,
 
-    pub fn init(seed: u64, profiling: bool, allocator: Allocator) !Gui {
+    pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
         var game = try Game.init(seed, allocator);
         var profiler: prof.Prof = prof.Prof{};
-        if (profiling) {
+        if (use_profiling and game.config.use_profiling) {
             try profiler.start();
         }
 

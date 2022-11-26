@@ -187,6 +187,12 @@ pub const Map = struct {
     pub fn fromIndex(map: *const Map, index: usize) Pos {
         return Pos.init(@mod(@intCast(i32, index), map.width), @divFloor(@intCast(i32, index), map.width));
     }
+
+    pub fn clamp(map: *const Map, pos: Pos) Pos {
+        const new_x = std.math.min(map.width - 1, std.math.max(0, pos.x));
+        const new_y = std.math.min(map.height - 1, std.math.max(0, pos.y));
+        return Pos.init(new_x, new_y);
+    }
 };
 
 // NOTE add these back in if needed
@@ -284,9 +290,3 @@ pub const Map = struct {
 //                         .collect::<Vec<Pos>>();
 //    }
 //
-//    pub fn clamp(&self, pos: Pos) -> Pos {
-//        let (width, height) = self.size();
-//        let new_x = std::cmp::min(width - 1, std::cmp::max(0, pos.x));
-//        let new_y = std::cmp::min(height - 1, std::cmp::max(0, pos.y));
-//        return Pos::new(new_x, new_y);
-//    }

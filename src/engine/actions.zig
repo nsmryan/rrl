@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const math = @import("math");
 const Direction = math.direction.Direction;
@@ -100,6 +101,12 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
 
                 .pass => try game.log.log(.pass, Entities.player_id),
 
+                .cursorToggle => cursorToggle(game),
+
+                .cursorMove => |args| cursorMove(game, args.dir, args.is_relative, args.is_long),
+
+                .cursorReturn => cursorReturn(game),
+
                 // TODO for now esc exits, but when menus work only exit should exit the game.
                 .esc => game.changeState(.exit),
                 else => {},
@@ -115,4 +122,42 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
         .use => {},
         .exit => {},
     }
+}
+
+fn cursorToggle(game: *Game) void {
+    if (game.settings.mode == .cursor) {
+        game.settings.mode.playing;
+    } else {
+        const player_pos = game.level.entities.pos.get(Entities.player_id);
+        game.settings.mode = s.Mode{ .cursor = .{ .pos = player_pos, .use_action = null } };
+    }
+}
+
+fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) void {
+    std.debug.assert(game.settings.mode == .cursor);
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+    const cursor_pos = game.settings.mode.cursor.pos;
+
+    var dist: i32 = 1;
+    if (is_long) {
+        dist = game.config.cursor_fast_move_dist;
+    }
+
+    const dir_move: Pos = dir.intoMove().scale(dist);
+
+    var new_pos: Pos = undefined;
+    if (is_relative) {
+        new_pos = player_pos.add(dir_move);
+    } else {
+        new_pos = cursor_pos.add(dir_move);
+    }
+
+    new_pos = game.level.map.clamp(new_pos);
+
+    game.settings.mode.cursor.pos = new_pos;
+}
+
+fn cursorReturn(game: *Game) void {
+    std.debug.assert(game.settings.mode == .cursor);
+    game.settings.mode.cursor.pos = game.level.entities.pos.get(Entities.player_id);
 }

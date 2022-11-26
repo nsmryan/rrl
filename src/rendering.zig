@@ -77,6 +77,7 @@ pub fn render(game: *Game, painter: *Painter) !void {
     try renderMapMiddle(game, painter);
     try renderEntities(game, painter);
     try renderMapHigh(game, painter);
+    try renderOverlays(game, painter);
 }
 
 fn renderMapLow(game: *Game, painter: *Painter) !void {
@@ -286,4 +287,33 @@ fn renderWallShadow(pos: Pos, game: *Game, painter: *Painter) !void {
             try painter.drawcmds.append(DrawCmd.sprite(shadow_sprite, game.config.color_shadow, down_left_pos));
         }
     }
+}
+
+fn renderOverlays(game: *Game, painter: *Painter) !void {
+    // Render the cursor.
+    if (game.settings.mode == .cursor) {
+        try renderOverlayCursor(game, painter);
+    }
+}
+
+fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
+    _ = game;
+    _ = painter;
+    //const cursor_sprite = painter.sprite("targeting");
+
+    //const time_since_toggle = display_state.time - display_state.time_of_cursor_toggle;
+    //const time_since_toggle = clampf(time_since_toggle, 0.0, config.cursor_fade_seconds);
+
+    //var color = config.color_mint_green;
+    //const percent = time_since_toggle / config.cursor_fade_seconds;
+    //color.a = @floatToInt(u8, (@intToFloat(f32, config.cursor_alpha) * percent));
+
+    //const index = display_state.tileset_index(&"targeting").unwrap();
+    //const sprite = Sprite.init(@intCast(u32, index), tiles_key);
+    //panel.sprite_cmd(sprite, color, cursor_pos);
+
+    //// render player ghost
+    //if (display_state.player_ghost) |player_ghost_pos| {
+    //    render_entity_ghost(panel, player_id, player_ghost_pos, &config, display_state, sprites);
+    //}
 }

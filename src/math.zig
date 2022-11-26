@@ -5,6 +5,8 @@ pub const line = @import("math/line.zig");
 pub const direction = @import("math/direction.zig");
 pub const rand = @import("math/rand.zig");
 pub const utils = @import("math/utils.zig");
+pub const easing = @import("math/easing.zig");
+pub const tweening = @import("math/tweening.zig");
 
 fn lessDistance(start: pos.Pos, first: pos.Pos, second: pos.Pos) bool {
     return line.Line.distance(start, first, true) < line.Line.distance(start, second, true);

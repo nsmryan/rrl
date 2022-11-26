@@ -171,6 +171,12 @@ const pkgs = struct {
         .dependencies = &[_]std.build.Pkg{},
     };
 
+    const prof = std.build.Pkg{
+        .name = "prof",
+        .source = .{ .path = "src/prof.zig" },
+        .dependencies = &[_]std.build.Pkg{},
+    };
+
     const math = std.build.Pkg{
         .name = "math",
         .source = .{ .path = "src/math.zig" },
@@ -192,7 +198,7 @@ const pkgs = struct {
     const board = std.build.Pkg{
         .name = "board",
         .source = .{ .path = "src/board.zig" },
-        .dependencies = &[_]std.build.Pkg{math},
+        .dependencies = &[_]std.build.Pkg{ math, prof },
     };
 
     const engine = std.build.Pkg{
@@ -212,12 +218,6 @@ const pkgs = struct {
         .source = .{ .path = "src/gen.zig" },
         .dependencies = &[_]std.build.Pkg{ math, utils },
     };
-
-    const prof = std.build.Pkg{
-        .name = "prof",
-        .source = .{ .path = "src/prof.zig" },
-        .dependencies = &[_]std.build.Pkg{},
-    };
 };
 
 fn addPackages(step: *std.build.LibExeObjStep) void {
@@ -229,6 +229,7 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.gui);
     step.addPackage(pkgs.gen);
     step.addPackage(pkgs.engine);
+    step.addPackage(pkgs.prof);
 }
 
 fn addCDeps(step: *std.build.LibExeObjStep) void {

@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("math");
 const Color = math.utils.Color;
+const Easing = math.easing.Easing;
 
 pub const Config = struct {
     load_map_file_every_frame: bool,
@@ -68,7 +69,6 @@ pub const Config = struct {
     dampen_blocked_tile: i32,
     dampen_short_wall: i32,
     dampen_tall_wall: i32,
-    cursor_fast_move_dist: i32,
     repeat_delay: f32,
     write_map_distribution: bool,
     print_key_log: bool,
@@ -81,11 +81,13 @@ pub const Config = struct {
     particle_speed: f32,
     max_particles: usize,
     attack_animation_speed: f32,
+    cursor_fast_move_dist: i32,
     cursor_fade_seconds: f32,
     cursor_alpha: u8,
+    cursor_line: bool,
+    cursor_easing: Easing,
     save_load: bool,
     minimal_output: bool,
-    cursor_line: bool,
     blocking_positions: bool,
     smoke_bomb_fov_block: usize,
     smoke_turns: usize,
@@ -171,6 +173,12 @@ pub const Config = struct {
                         @field(config, field.name) = try std.fmt.parseFloat(field.field_type, field_value);
                     } else if (field_type_info == .Int) {
                         @field(config, field.name) = try parseInt(field.field_type, field_value);
+                    } else if (field_type_info == .Enum) {
+                        if (std.meta.stringToEnum(field.field_type, field_value)) |enum_value| {
+                            @field(config, field.name) = enum_value;
+                        } else {
+                            return ParseConfigError.ParseEnumError;
+                        }
                     } else if (field_type_info == .Struct) {
                         // The only struct right now is Color.
                         var color_parts = std.mem.split(u8, field_value, " ");
@@ -210,4 +218,5 @@ pub const ParseConfigError = error{
     ValueFormatError,
     ParseBoolError,
     ParseColorError,
+    ParseEnumError,
 };

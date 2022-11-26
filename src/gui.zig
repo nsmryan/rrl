@@ -250,6 +250,6 @@ test "gui alloc dealloc" {
     defer std.debug.assert(!general_purpose_allocator.deinit());
     const allocator = general_purpose_allocator.allocator();
 
-    var gui = try Gui.init(0, allocator);
+    var gui = try Gui.init(0, false, allocator);
     defer gui.deinit();
 }

@@ -173,7 +173,7 @@ pub const Gui = struct {
     }
 
     pub fn draw(gui: *Gui, delta_ticks: u64) !void {
-        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds, .state = &gui.state };
+        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds, .state = &gui.state, .dt = delta_ticks };
         try rendering.render(&gui.game, &painter);
         gui.display.present(gui.game.level.map.dims());
 

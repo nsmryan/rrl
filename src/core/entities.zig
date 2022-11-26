@@ -315,7 +315,7 @@ pub fn compNames(comptime T: type) [][]const u8 {
 
     comptime {
         inline for (fieldInfos) |field| {
-            if (!std.mem.eql(u8, "ids", field.name) and !std.mem.eql(u8, "next_id", field.name)) {
+            if (std.mem.indexOf(u8, @typeName(field.field_type), "Comp(") != null) {
                 names[index] = field.name;
                 index += 1;
             }

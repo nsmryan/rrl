@@ -27,6 +27,8 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const Color = math.utils.Color;
 const Direction = math.direction.Direction;
+const Easing = math.easing.Easing;
+const Tween = math.tweening.Tween;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
@@ -41,6 +43,7 @@ pub const Painter = struct {
     drawcmds: *ArrayList(DrawCmd),
     strings: *const Intern,
     state: *DisplayState,
+    dt: u64,
 
     pub fn sprite(painter: *Painter, name: []const u8) Sprite {
         const key = painter.strings.toKey(name);
@@ -54,6 +57,7 @@ pub const DisplayState = struct {
     name: Comp(Name),
     facing: Comp(Direction),
     animation: Comp(SpriteAnimation),
+    cursor_tween: Tween,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
@@ -61,6 +65,7 @@ pub const DisplayState = struct {
         inline for (names) |field_name| {
             @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
         }
+        state.cursor_tween = Tween.init(0.0, 255.0, 1.0, Easing.linearInterpolation);
         return state;
     }
 
@@ -297,22 +302,21 @@ fn renderOverlays(game: *Game, painter: *Painter) !void {
 }
 
 fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
-    _ = game;
-    _ = painter;
-    //const cursor_sprite = painter.sprite("targeting");
+    // Update cursor easing in case it was set in the config file.
+    painter.state.cursor_tween.ease = game.config.cursor_easing;
+    painter.state.cursor_tween.duration = game.config.cursor_fade_seconds;
 
-    //const time_since_toggle = display_state.time - display_state.time_of_cursor_toggle;
-    //const time_since_toggle = clampf(time_since_toggle, 0.0, config.cursor_fade_seconds);
+    painter.state.cursor_tween.deltaTimeMs(painter.dt);
 
-    //var color = config.color_mint_green;
-    //const percent = time_since_toggle / config.cursor_fade_seconds;
-    //color.a = @floatToInt(u8, (@intToFloat(f32, config.cursor_alpha) * percent));
+    var color = game.config.color_mint_green;
+    color.a = @floatToInt(u8, painter.state.cursor_tween.value());
 
-    //const index = display_state.tileset_index(&"targeting").unwrap();
-    //const sprite = Sprite.init(@intCast(u32, index), tiles_key);
-    //panel.sprite_cmd(sprite, color, cursor_pos);
+    const cursor_sprite = painter.sprite("targeting");
 
-    //// render player ghost
+    try painter.drawcmds.append(DrawCmd.sprite(cursor_sprite, color, game.settings.mode.cursor.pos));
+
+    // NOTE(implement)
+    // render player ghost
     //if (display_state.player_ghost) |player_ghost_pos| {
     //    render_entity_ghost(panel, player_id, player_ghost_pos, &config, display_state, sprites);
     //}

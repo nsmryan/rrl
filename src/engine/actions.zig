@@ -126,7 +126,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
 
 fn cursorToggle(game: *Game) void {
     if (game.settings.mode == .cursor) {
-        game.settings.mode.playing;
+        game.settings.mode = .playing;
     } else {
         const player_pos = game.level.entities.pos.get(Entities.player_id);
         game.settings.mode = s.Mode{ .cursor = .{ .pos = player_pos, .use_action = null } };

@@ -19,6 +19,7 @@ pub const Prof = struct {
             prof.err = err;
             return ProfilerError.RemoteryError;
         } else {
+            std.debug.print("running profiling\n", .{});
             prof.running = true;
         }
     }

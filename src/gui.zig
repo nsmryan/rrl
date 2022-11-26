@@ -59,6 +59,7 @@ pub const Gui = struct {
         var profiler: prof.Prof = prof.Prof{};
         if (use_profiling and game.config.use_profiling) {
             try profiler.start();
+            prof.log("Starting up");
         }
 
         return Gui{
@@ -86,15 +87,19 @@ pub const Gui = struct {
         const delta_ticks = ticks - gui.ticks;
 
         if (gui.reload_config_timer.step(delta_ticks) > 0) {
+            prof.scope("reload config");
             gui.game.reloadConfig();
+            prof.end();
         }
 
+        prof.scope("input");
         var event: sdl2.SDL_Event = undefined;
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
                 try gui.inputEvent(input_event, ticks);
             }
         }
+        prof.end();
 
         gui.ticks = ticks;
 

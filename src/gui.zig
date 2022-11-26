@@ -158,6 +158,12 @@ pub const Gui = struct {
                     var anim = try gui.display.animation(sheet_name, gui.game.config.idle_speed);
                     anim.looped = true;
                     anim.sprite.flip_horiz = needsFlipHoriz(facing);
+
+                    if (gui.state.animation.getOrNull(id)) |prev_anim| {
+                        if (prev_anim.name == anim.name)
+                            continue;
+                    }
+
                     try gui.state.animation.insert(id, anim);
                 },
 

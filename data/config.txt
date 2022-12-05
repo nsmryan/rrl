@@ -162,6 +162,9 @@ max_particles: 40
 attack_animation_speed: 40.0
 cursor_fade_seconds: 0.25
 
+# time to move cursor, or 0 to move immediately.
+cursor_move_seconds: 0.10
+
 # Whether or not to print messages
 minimal_output: false
 

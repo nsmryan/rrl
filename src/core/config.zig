@@ -83,6 +83,7 @@ pub const Config = struct {
     attack_animation_speed: f32,
     cursor_fast_move_dist: i32,
     cursor_fade_seconds: f32,
+    cursor_move_seconds: f32,
     cursor_alpha: u8,
     cursor_line: bool,
     cursor_easing: Easing,

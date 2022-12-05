@@ -151,6 +151,16 @@ pub const Gui = struct {
     }
 
     fn cursorMove(gui: *Gui, pos: Pos) void {
+        if (gui.game.config.cursor_move_seconds > 0) {
+            const current_pos = gui.state.cursor_animation.?.position;
+            const x = @intToFloat(f32, current_pos.x);
+            const y = @intToFloat(f32, current_pos.y);
+            const new_x = @intToFloat(f32, pos.x);
+            const new_y = @intToFloat(f32, pos.y);
+            gui.state.cursor_animation.?.x = Tween.init(x, new_x, gui.game.config.cursor_move_seconds, gui.game.config.cursor_easing);
+            gui.state.cursor_animation.?.y = Tween.init(y, new_y, gui.game.config.cursor_move_seconds, gui.game.config.cursor_easing);
+        }
+
         gui.state.cursor_animation.?.position = pos;
     }
 

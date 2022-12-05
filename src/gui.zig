@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const Allocator = std.mem.Allocator;
 
@@ -9,6 +10,8 @@ const Timer = utils.timer.Timer;
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
+const Tween = math.tweening.Tween;
+const Color = math.utils.Color;
 
 const core = @import("core");
 const movement = core.movement;
@@ -36,6 +39,7 @@ const GameState = engine.settings.GameState;
 
 const drawcmd = @import("drawcmd");
 const sprite = drawcmd.sprite;
+const Animation = drawcmd.animation.Animation;
 const SpriteAnimation = sprite.SpriteAnimation;
 
 const prof = @import("prof");
@@ -125,10 +129,29 @@ pub const Gui = struct {
                 .move => |args| try gui.state.pos.insert(args.id, args.pos),
                 .startLevel => try gui.assignAllIdleAnimations(),
                 .endTurn => try gui.assignAllIdleAnimations(),
+                .cursorStart => |args| try gui.cursorStart(args),
+                .cursorEnd => gui.cursorEnd(),
+                .cursorMove => |args| gui.cursorMove(args),
 
                 else => {},
             }
         }
+    }
+
+    fn cursorEnd(gui: *Gui) void {
+        gui.state.cursor_animation.?.alpha = Tween.init(255, 0, gui.game.config.cursor_fade_seconds, gui.game.config.cursor_easing);
+    }
+
+    fn cursorStart(gui: *Gui, pos: Pos) !void {
+        // Update cursor easing in case it was set in the config file.
+        const name = try gui.display.lookupSpritekey("targeting");
+        const sprite_anim = SpriteAnimation.singleFrame(name);
+        gui.state.cursor_animation = Animation.init(sprite_anim, Color.white(), pos);
+        gui.state.cursor_animation.?.alpha = Tween.init(0, 255, gui.game.config.cursor_fade_seconds, gui.game.config.cursor_easing);
+    }
+
+    fn cursorMove(gui: *Gui, pos: Pos) void {
+        gui.state.cursor_animation.?.position = pos;
     }
 
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
@@ -155,12 +178,13 @@ pub const Gui = struct {
                         sheet_name[char_index] = std.ascii.toLower(sheet_name[char_index]);
                     }
 
-                    var anim = try gui.display.animation(sheet_name, gui.game.config.idle_speed);
-                    anim.looped = true;
-                    anim.sprite.flip_horiz = needsFlipHoriz(facing);
+                    const pos = gui.game.level.entities.pos.get(id);
+                    var anim = try gui.display.animation(sheet_name, pos, gui.game.config.idle_speed);
+                    anim.repeat = true;
+                    anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
 
                     if (gui.state.animation.getOrNull(id)) |prev_anim| {
-                        if (prev_anim.name == anim.name)
+                        if (prev_anim.sprite_anim.name == anim.sprite_anim.name)
                             continue;
                     }
 
@@ -177,9 +201,8 @@ pub const Gui = struct {
         try rendering.render(&gui.game, &painter);
         gui.display.present(gui.game.level.map.dims());
 
-        const dt: f32 = @intToFloat(f32, delta_ticks) / 1000.0;
         for (gui.state.animation.ids.items) |id| {
-            gui.state.animation.getPtr(id).step(dt);
+            _ = gui.state.animation.getPtr(id).step(delta_ticks);
         }
     }
 };

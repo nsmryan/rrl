@@ -34,6 +34,9 @@ pub const Msg = union(enum) {
     startLevel: void,
     facing: struct { id: Id, facing: Direction },
     endTurn: void,
+    cursorStart: Pos,
+    cursorEnd,
+    cursorMove: Pos,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

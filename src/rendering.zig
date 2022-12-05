@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const AutoHashMap = std.AutoHashMap;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
@@ -37,6 +38,7 @@ const Sprites = drawcmd.sprite.Sprites;
 const Sprite = drawcmd.sprite.Sprite;
 const SpriteSheet = drawcmd.sprite.SpriteSheet;
 const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
+const Animation = drawcmd.animation.Animation;
 
 pub const Painter = struct {
     sprites: *const AutoHashMap(Str, SpriteSheet),
@@ -56,16 +58,16 @@ pub const DisplayState = struct {
     stance: Comp(Stance),
     name: Comp(Name),
     facing: Comp(Direction),
-    animation: Comp(SpriteAnimation),
-    cursor_tween: Tween,
+    animation: Comp(Animation),
+    cursor_animation: ?Animation = null,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
         comptime var names = entities.compNames(DisplayState);
+        state.cursor_animation = null;
         inline for (names) |field_name| {
             @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
         }
-        state.cursor_tween = Tween.init(0.0, 255.0, 1.0, Easing.linearInterpolation);
         return state;
     }
 
@@ -104,7 +106,7 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
 fn renderEntities(game: *Game, painter: *Painter) !void {
     const pos = game.level.entities.pos.get(Entities.player_id);
     //const player_sprite = painter.sprite("player_standing_right");
-    const player_sprite = painter.state.animation.get(Entities.player_id).current();
+    const player_sprite = painter.state.animation.get(Entities.player_id).sprite_anim.current();
     try painter.drawcmds.append(DrawCmd.sprite(player_sprite, Color.white(), pos));
 }
 
@@ -295,25 +297,26 @@ fn renderWallShadow(pos: Pos, game: *Game, painter: *Painter) !void {
 }
 
 fn renderOverlays(game: *Game, painter: *Painter) !void {
-    // Render the cursor.
-    if (game.settings.mode == .cursor) {
-        try renderOverlayCursor(game, painter);
-    }
+    try renderOverlayCursor(game, painter);
 }
 
 fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
-    // Update cursor easing in case it was set in the config file.
-    painter.state.cursor_tween.ease = game.config.cursor_easing;
-    painter.state.cursor_tween.duration = game.config.cursor_fade_seconds;
+    if (painter.state.cursor_animation) |*anim| {
+        if (game.settings.mode != .cursor and anim.doneTweening()) {
+            painter.state.cursor_animation = null;
+        } else {
+            try painter.drawcmds.append(anim.draw());
+        }
+        _ = anim.step(painter.dt);
+    }
 
-    painter.state.cursor_tween.deltaTimeMs(painter.dt);
+    // NOTE(remove) when new animation system is working well enough that the cursor is using it.
+    //var color = game.config.color_mint_green;
+    //color.a = @floatToInt(u8, painter.state.cursor_tween.value());
 
-    var color = game.config.color_mint_green;
-    color.a = @floatToInt(u8, painter.state.cursor_tween.value());
+    //const cursor_sprite = painter.sprite("targeting");
 
-    const cursor_sprite = painter.sprite("targeting");
-
-    try painter.drawcmds.append(DrawCmd.sprite(cursor_sprite, color, game.settings.mode.cursor.pos));
+    //try painter.drawcmds.append(DrawCmd.sprite(cursor_sprite, color, game.settings.mode.cursor.pos));
 
     // NOTE(implement)
     // render player ghost

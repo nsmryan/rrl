@@ -314,6 +314,7 @@ pub fn compNames(comptime T: type) [][]const u8 {
     comptime var index: usize = 0;
 
     comptime {
+        @setEvalBranchQuota(2001);
         inline for (fieldInfos) |field| {
             if (std.mem.indexOf(u8, @typeName(field.field_type), "Comp(") != null) {
                 names[index] = field.name;

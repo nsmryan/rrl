@@ -101,9 +101,9 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
 
                 .pass => try game.log.log(.pass, Entities.player_id),
 
-                .cursorToggle => cursorToggle(game),
+                .cursorToggle => try cursorToggle(game),
 
-                .cursorMove => |args| cursorMove(game, args.dir, args.is_relative, args.is_long),
+                .cursorMove => |args| try cursorMove(game, args.dir, args.is_relative, args.is_long),
 
                 .cursorReturn => cursorReturn(game),
 
@@ -124,16 +124,18 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
     }
 }
 
-fn cursorToggle(game: *Game) void {
+fn cursorToggle(game: *Game) !void {
     if (game.settings.mode == .cursor) {
         game.settings.mode = .playing;
+        try game.log.log(.cursorEnd, .{});
     } else {
         const player_pos = game.level.entities.pos.get(Entities.player_id);
         game.settings.mode = s.Mode{ .cursor = .{ .pos = player_pos, .use_action = null } };
+        try game.log.log(.cursorStart, player_pos);
     }
 }
 
-fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) void {
+fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) !void {
     std.debug.assert(game.settings.mode == .cursor);
     const player_pos = game.level.entities.pos.get(Entities.player_id);
     const cursor_pos = game.settings.mode.cursor.pos;
@@ -154,6 +156,7 @@ fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) voi
 
     new_pos = game.level.map.clamp(new_pos);
 
+    try game.log.log(.cursorMove, new_pos);
     game.settings.mode.cursor.pos = new_pos;
 }
 

@@ -8,6 +8,7 @@ const Str = utils.intern.Str;
 const Intern = utils.intern.Intern;
 
 const math = @import("math");
+const Tween = math.tweening.Tween;
 
 const Rect = math.utils.Rect;
 const Dims = math.utils.Dims;
@@ -50,6 +51,10 @@ pub const SpriteAnimation = struct {
     pub fn init(name: Str, index: SpriteIndex, max_index: SpriteIndex, speed: f32) SpriteAnimation {
         const spr = Sprite{ .index = index, .key = name, .flip_horiz = false, .flip_vert = false, .rotation = 0.0 };
         return SpriteAnimation{ .name = name, .index = @intToFloat(f32, index), .start_index = index, .sprite = spr, .max_index = max_index, .speed = speed, .looped = false };
+    }
+
+    pub fn singleFrame(name: Str) SpriteAnimation {
+        return SpriteAnimation.init(name, 0, 0, 0.0);
     }
 
     pub fn step(self: *SpriteAnimation, dt: f32) void {

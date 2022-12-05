@@ -20,6 +20,7 @@ const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 const Panel = panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
+const Animation = drawcmd.animation.Animation;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
@@ -233,10 +234,11 @@ pub const Display = struct {
         return quit;
     }
 
-    pub fn animation(self: *Display, name: []const u8, speed: f32) !sprite.SpriteAnimation {
+    pub fn animation(self: *Display, name: []const u8, position: Pos, speed: f32) !Animation {
         const key = try self.lookupSpritekey(name);
         const num_sprites = try self.numSprites(name);
-        return SpriteAnimation.init(key, 0, @intCast(u32, num_sprites), speed);
+        const sprite_anim = SpriteAnimation.init(key, 0, @intCast(u32, num_sprites), speed);
+        return Animation.init(sprite_anim, Color.white(), position);
     }
 
     pub fn lookupSpritekey(self: *Display, name: []const u8) !Str {

@@ -37,6 +37,10 @@ pub const Sprite = struct {
     pub fn withFlip(index: SpriteIndex, key: Str, flip_horiz: bool, flip_vert: bool) Sprite {
         return Sprite{ .index = index, .key = key, .flip_horiz = flip_horiz, .flip_vert = flip_vert };
     }
+
+    pub fn eql(sprite: Sprite, other: Sprite) bool {
+        return sprite.key == other.key and sprite.flip_horiz == other.flip_horiz and sprite.flip_vert == other.flip_vert and sprite.rotation == other.rotation;
+    }
 };
 
 pub const SpriteAnimation = struct {

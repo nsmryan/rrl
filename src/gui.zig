@@ -141,10 +141,12 @@ pub const Gui = struct {
 
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
         try gui.state.pos.insert(id, pos);
-        gui.state.animation.remove(id);
-        //if (gui.state.animation.getPtrOrNull(id)) |anim| {
-        //    anim.position = pos;
-        //}
+
+        // Remove the animation, so the idle will be replayed in the new location.
+        //gui.state.animation.remove(id);
+        if (gui.state.animation.getPtrOrNull(id)) |anim| {
+            anim.position = pos;
+        }
     }
 
     fn cursorEnd(gui: *Gui) void {
@@ -203,7 +205,7 @@ pub const Gui = struct {
                     anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
 
                     if (gui.state.animation.getOrNull(id)) |prev_anim| {
-                        if (prev_anim.sprite_anim.name == anim.sprite_anim.name)
+                        if (prev_anim.sprite_anim.sprite.eql(anim.sprite_anim.sprite))
                             continue;
                     }
 

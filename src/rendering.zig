@@ -104,10 +104,8 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
 }
 
 fn renderEntities(game: *Game, painter: *Painter) !void {
-    const pos = game.level.entities.pos.get(Entities.player_id);
-    //const player_sprite = painter.sprite("player_standing_right");
-    const player_sprite = painter.state.animation.get(Entities.player_id).sprite_anim.current();
-    try painter.drawcmds.append(DrawCmd.sprite(player_sprite, Color.white(), pos));
+    _ = game;
+    try painter.drawcmds.append(painter.state.animation.get(Entities.player_id).draw());
 }
 
 fn renderMapMiddle(game: *Game, painter: *Painter) !void {

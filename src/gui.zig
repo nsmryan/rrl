@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
+const Id = utils.comp.Id;
 const Timer = utils.timer.Timer;
 
 const math = @import("math");
@@ -126,7 +127,7 @@ pub const Gui = struct {
                 .spawn => |args| try gui.state.name.insert(args.id, args.name),
                 .facing => |args| try gui.state.facing.insert(args.id, args.facing),
                 .stance => |args| try gui.state.stance.insert(args.id, args.stance),
-                .move => |args| try gui.state.pos.insert(args.id, args.pos),
+                .move => |args| try gui.moveEntity(args.id, args.pos),
                 .startLevel => try gui.assignAllIdleAnimations(),
                 .endTurn => try gui.assignAllIdleAnimations(),
                 .cursorStart => |args| try gui.cursorStart(args),
@@ -135,6 +136,13 @@ pub const Gui = struct {
 
                 else => {},
             }
+        }
+    }
+
+    fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
+        try gui.state.pos.insert(id, pos);
+        if (gui.state.animation.getPtrOrNull(id)) |anim| {
+            anim.position = pos;
         }
     }
 

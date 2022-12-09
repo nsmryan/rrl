@@ -141,9 +141,10 @@ pub const Gui = struct {
 
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
         try gui.state.pos.insert(id, pos);
-        if (gui.state.animation.getPtrOrNull(id)) |anim| {
-            anim.position = pos;
-        }
+        gui.state.animation.remove(id);
+        //if (gui.state.animation.getPtrOrNull(id)) |anim| {
+        //    anim.position = pos;
+        //}
     }
 
     fn cursorEnd(gui: *Gui) void {

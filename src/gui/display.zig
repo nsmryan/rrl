@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const assert = std.debug.assert;
 const mem = std.mem;
@@ -12,15 +13,14 @@ const Font = sdl2.TTF_Font;
 const Window = sdl2.SDL_Window;
 
 const drawcmd = @import("drawcmd");
-const panel = drawcmd.panel;
-const area = drawcmd.area;
 const Justify = drawcmd.drawcmd.Justify;
 const sprite = drawcmd.sprite;
 const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
-const Panel = panel.Panel;
+const Panel = drawcmd.panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
 const Animation = drawcmd.animation.Animation;
+const Area = drawcmd.area.Area;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
@@ -36,12 +36,53 @@ const MoveDirection = math.direction.MoveDirection;
 const Color = math.utils.Color;
 const Dims = math.utils.Dims;
 
+pub const MAX_MAP_WIDTH: usize = 80;
+pub const MAX_MAP_HEIGHT: usize = 80;
+
+pub const TexturePanel = struct {
+    texture: *Texture,
+    drawcmds: ArrayList(DrawCmd),
+    panel: Panel,
+    area: Area,
+
+    pub fn init(renderer: *Renderer, panel: Panel, area: Area, allocator: Allocator) !TexturePanel {
+        var drawcmds = ArrayList(DrawCmd).init(allocator);
+
+        const texture = sdl2.SDL_CreateTexture(renderer, sdl2.SDL_PIXELFORMAT_RGBA8888, sdl2.SDL_TEXTUREACCESS_TARGET, @intCast(c_int, panel.num_pixels.width), @intCast(c_int, panel.num_pixels.height)) orelse {
+            sdl2.SDL_Log("Unable to create screen texture: %s", sdl2.SDL_GetError());
+            return error.SDLInitializationFailed;
+        };
+
+        return TexturePanel{ .texture = texture, .panel = panel, .drawcmds = drawcmds, .area = area };
+    }
+};
+
+pub const Panels = struct {
+    screen: TexturePanel,
+    level: TexturePanel,
+
+    pub fn init(width: usize, height: usize, renderer: *Renderer, allocator: Allocator) !Panels {
+        const screen_num_pixels = Dims.init(width, height);
+        const screen_panel = Panel.init(screen_num_pixels, Dims.init(MAX_MAP_WIDTH, MAX_MAP_HEIGHT));
+        const screen_area = Area.init(screen_num_pixels.width, screen_num_pixels.height);
+        const screen_texture_panel = try TexturePanel.init(renderer, screen_panel, screen_area, allocator);
+
+        const level_texture_panel = try TexturePanel.init(renderer, screen_panel, screen_area, allocator);
+
+        return Panels{ .screen = screen_texture_panel, .level = level_texture_panel };
+    }
+
+    pub fn deinit(panels: *Panels) void {
+        sdl2.SDL_DestroyTexture(panels.screen.texture);
+    }
+};
+
 pub const Display = struct {
     window: *Window,
     renderer: *Renderer,
     font: *Font,
     ascii_texture: drawing.AsciiTexture,
-    screen_texture: *Texture,
+    panels: Panels,
     sprites: Sprites,
     strings: intern.Intern,
 
@@ -78,10 +119,10 @@ pub const Display = struct {
             return error.SDLInitializationFailed;
         };
 
-        const screen_texture = sdl2.SDL_CreateTexture(renderer, sdl2.SDL_PIXELFORMAT_RGBA8888, sdl2.SDL_TEXTUREACCESS_TARGET, window_width, window_height) orelse {
-            sdl2.SDL_Log("Unable to create screen texture: %s", sdl2.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
+        var width: c_int = 0;
+        var height: c_int = 0;
+        sdl2.SDL_GetWindowSize(window, &width, &height);
+        const panels = try Panels.init(@intCast(usize, width), @intCast(usize, height), renderer, allocator);
 
         // NOTE default to rendering to the screen. If we move to multiple targets, we may use this as a final
         // back buffer so we can save/restore/etc the screen buffer.
@@ -105,7 +146,7 @@ pub const Display = struct {
             .font = font,
             .ascii_texture = ascii_texture,
             .sprites = sprites,
-            .screen_texture = screen_texture,
+            .panels = panels,
             .strings = strings,
             .drawcmds = drawcmds,
             .allocator = allocator,
@@ -118,18 +159,32 @@ pub const Display = struct {
     }
 
     pub fn present(display: *Display, dims: Dims) void {
-        _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
-        _ = sdl2.SDL_RenderClear(display.renderer);
-
         var width: c_int = 0;
         var height: c_int = 0;
         sdl2.SDL_GetWindowSize(display.window, &width, &height);
         const num_pixels = Dims.init(@intCast(usize, width), @intCast(usize, height));
         var screen_panel = Panel.init(num_pixels, dims);
 
+        _ = sdl2.SDL_SetRenderTarget(display.renderer, display.panels.level.texture);
+        _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
+        _ = sdl2.SDL_RenderClear(display.renderer);
+
         for (display.drawcmds.items) |cmd| {
-            drawing.processDrawCmd(&screen_panel, display.renderer, display.screen_texture, &display.sprites, display.ascii_texture, &cmd);
+            drawing.processDrawCmd(&screen_panel, display.renderer, display.panels.level.texture, &display.sprites, display.ascii_texture, &cmd);
         }
+
+        // Copy textures onto the screen texture
+        _ = sdl2.SDL_SetTextureBlendMode(display.panels.screen.texture, sdl2.SDL_BLENDMODE_NONE);
+        _ = sdl2.SDL_SetRenderTarget(display.renderer, display.panels.screen.texture);
+        _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
+        _ = sdl2.SDL_RenderClear(display.renderer);
+
+        _ = sdl2.SDL_RenderCopy(display.renderer, display.panels.level.texture, null, null);
+
+        // Move the screen texture to the default renderer so it will be displayed.
+        // This step may not be technically necessary, but it keeps things simple and consistent.
+        _ = sdl2.SDL_SetRenderTarget(display.renderer, null);
+        _ = sdl2.SDL_RenderCopy(display.renderer, display.panels.screen.texture, null, null);
 
         sdl2.SDL_RenderPresent(display.renderer);
 
@@ -153,7 +208,7 @@ pub const Display = struct {
 
     pub fn deinit(self: *Display) void {
         self.ascii_texture.deinit();
-        sdl2.SDL_DestroyTexture(self.screen_texture);
+        self.panels.deinit();
         sdl2.TTF_CloseFont(self.font);
         sdl2.SDL_DestroyRenderer(self.renderer);
         sdl2.SDL_DestroyWindow(self.window);

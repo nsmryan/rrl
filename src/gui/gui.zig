@@ -54,7 +54,6 @@ pub const canvas = @import("canvas.zig");
 pub const sdl2 = @import("sdl2.zig");
 pub const rendering = @import("rendering.zig");
 const Painter = rendering.Painter;
-const DisplayState = rendering.DisplayState;
 
 const Texture = sdl2.SDL_Texture;
 
@@ -297,6 +296,32 @@ pub const Panels = struct {
     pub fn deinit(panels: *Panels) void {
         panels.screen.deinit();
         panels.level.deinit();
+    }
+};
+
+pub const DisplayState = struct {
+    pos: Comp(Pos),
+    stance: Comp(Stance),
+    name: Comp(Name),
+    facing: Comp(Direction),
+    animation: Comp(Animation),
+    cursor_animation: ?Animation = null,
+
+    pub fn init(allocator: Allocator) DisplayState {
+        var state: DisplayState = undefined;
+        comptime var names = entities.compNames(DisplayState);
+        state.cursor_animation = null;
+        inline for (names) |field_name| {
+            @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
+        }
+        return state;
+    }
+
+    pub fn deinit(state: *DisplayState) void {
+        comptime var names = entities.compNames(DisplayState);
+        inline for (names) |field_name| {
+            @field(state, field_name).deinit();
+        }
     }
 };
 

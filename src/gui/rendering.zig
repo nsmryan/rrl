@@ -18,6 +18,8 @@ const board = @import("board");
 const Tile = board.tile.Tile;
 const FovResult = board.blocking.FovResult;
 
+const DisplayState = @import("gui.zig").DisplayState;
+
 const utils = @import("utils");
 const intern = utils.intern;
 const Str = intern.Str;
@@ -50,32 +52,6 @@ pub const Painter = struct {
     pub fn sprite(painter: *Painter, name: []const u8) Sprite {
         const key = painter.strings.toKey(name);
         return painter.sprites.get(key).?.sprite();
-    }
-};
-
-pub const DisplayState = struct {
-    pos: Comp(Pos),
-    stance: Comp(Stance),
-    name: Comp(Name),
-    facing: Comp(Direction),
-    animation: Comp(Animation),
-    cursor_animation: ?Animation = null,
-
-    pub fn init(allocator: Allocator) DisplayState {
-        var state: DisplayState = undefined;
-        comptime var names = entities.compNames(DisplayState);
-        state.cursor_animation = null;
-        inline for (names) |field_name| {
-            @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
-        }
-        return state;
-    }
-
-    pub fn deinit(state: *DisplayState) void {
-        comptime var names = entities.compNames(DisplayState);
-        inline for (names) |field_name| {
-            @field(state, field_name).deinit();
-        }
     }
 };
 

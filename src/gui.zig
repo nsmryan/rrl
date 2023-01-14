@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const ArrayList = std.ArrayList;
 
 const Allocator = std.mem.Allocator;
 
@@ -12,6 +13,7 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Tween = math.tweening.Tween;
+const Dims = math.utils.Dims;
 const Color = math.utils.Color;
 
 const core = @import("core");
@@ -42,13 +44,28 @@ const drawcmd = @import("drawcmd");
 const sprite = drawcmd.sprite;
 const Animation = drawcmd.animation.Animation;
 const SpriteAnimation = sprite.SpriteAnimation;
+const Panel = drawcmd.panel.Panel;
+const Area = drawcmd.area.Area;
+const DrawCmd = drawcmd.drawcmd.DrawCmd;
 
 const prof = @import("prof");
 
 pub const display = @import("gui/display.zig");
+pub const Display = display.Display;
+pub const TexturePanel = display.TexturePanel;
 pub const keyboard = @import("gui/keyboard.zig");
 pub const drawing = @import("gui/drawing.zig");
 pub const sdl2 = @import("gui/sdl2.zig");
+const Texture = sdl2.SDL_Texture;
+
+pub const MAX_MAP_WIDTH: usize = 80;
+pub const MAX_MAP_HEIGHT: usize = 80;
+
+pub const SCREEN_CELLS_WIDTH: usize = 50;
+pub const SCREEN_CELLS_HEIGHT: usize = 40;
+
+pub const WINDOW_WIDTH: usize = 800;
+pub const WINDOW_HEIGHT: usize = 640;
 
 pub const Gui = struct {
     display: display.Display,
@@ -58,6 +75,7 @@ pub const Gui = struct {
     profiler: prof.Prof,
     ticks: u64,
     reload_config_timer: Timer,
+    panels: Panels,
 
     pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
         var game = try Game.init(seed, allocator);
@@ -67,14 +85,22 @@ pub const Gui = struct {
             prof.log("Starting up");
         }
 
+        var disp = try display.Display.init(WINDOW_WIDTH, WINDOW_HEIGHT, allocator);
+
+        var width: c_int = 0;
+        var height: c_int = 0;
+        sdl2.SDL_GetWindowSize(disp.window, &width, &height);
+        const panels = try Panels.init(@intCast(usize, width), @intCast(usize, height), &disp, allocator);
+
         return Gui{
-            .display = try display.Display.init(800, 640, allocator),
+            .display = disp,
             .game = game,
             .state = DisplayState.init(allocator),
             .allocator = allocator,
             .profiler = profiler,
             .ticks = 0,
             .reload_config_timer = Timer.init(game.config.reload_config_period),
+            .panels = panels,
         };
     }
 
@@ -82,6 +108,7 @@ pub const Gui = struct {
         gui.display.deinit();
         gui.state.deinit();
         gui.game.deinit();
+        gui.panels.deinit();
         gui.profiler.end();
     }
 
@@ -218,13 +245,57 @@ pub const Gui = struct {
     }
 
     pub fn draw(gui: *Gui, delta_ticks: u64) !void {
-        var painter = Painter{ .sprites = &gui.display.sprites.sheets, .strings = &gui.display.strings, .drawcmds = &gui.display.drawcmds, .state = &gui.state, .dt = delta_ticks };
+        var painter = Painter{
+            .sprites = &gui.display.sprites.sheets,
+            .strings = &gui.display.strings,
+            .drawcmds = &gui.panels.level.drawcmds,
+            .state = &gui.state,
+            .dt = delta_ticks,
+        };
         try rendering.render(&gui.game, &painter);
-        gui.display.present(gui.game.level.map.dims());
+
+        gui.display.draw(&gui.panels.level);
+
+        const screen_area = Area.init(gui.panels.screen.panel.cells.width, gui.panels.screen.panel.cells.height);
+        const map_area = Area.init(@intCast(usize, gui.game.level.map.width), @intCast(usize, gui.game.level.map.height));
+        gui.display.stretchTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
+        gui.display.present(&gui.panels.screen);
 
         for (gui.state.animation.ids.items) |id| {
             _ = gui.state.animation.getPtr(id).step(delta_ticks);
         }
+    }
+};
+
+pub const Panels = struct {
+    screen: TexturePanel,
+    level: TexturePanel,
+
+    pub fn init(width: usize, height: usize, disp: *Display, allocator: Allocator) !Panels {
+        const screen_num_pixels = Dims.init(width, height);
+        const screen_panel = Panel.init(screen_num_pixels, Dims.init(SCREEN_CELLS_WIDTH, SCREEN_CELLS_HEIGHT));
+        //const screen_area = Area.init(screen_num_pixels.width, screen_num_pixels.height);
+        const screen_texture_panel = try disp.texturePanel(screen_panel, allocator);
+
+        // NOTE(implement) lay out screen areas.
+        //let (top_area, bottom_area) = screen_area.split_top(canvas_panel.cells.1 as usize - UI_CELLS_BOTTOM as usize);
+        //let (pip_area, map_area) = top_area.split_top(UI_CELLS_TOP as usize);
+        //let (player_area, right_area) = bottom_area.split_left(canvas_panel.cells.0 as usize / 6);
+        //let (inventory_area, right_area) = right_area.split_left(canvas_panel.cells.0 as usize / 2);
+        //let info_area = right_area;
+        //let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
+        //let help_area = screen_area.centered((screen_area.width as f32 * 0.8) as usize, (screen_area.height as f32 * 0.9) as usize);
+
+        const level_num_pixels = Dims.init(MAX_MAP_WIDTH * sprite.FONT_WIDTH, MAX_MAP_HEIGHT * sprite.FONT_HEIGHT);
+        const level_panel = Panel.init(level_num_pixels, Dims.init(MAX_MAP_WIDTH, MAX_MAP_HEIGHT));
+        const level_texture_panel = try disp.texturePanel(level_panel, allocator);
+
+        return Panels{ .screen = screen_texture_panel, .level = level_texture_panel };
+    }
+
+    pub fn deinit(panels: *Panels) void {
+        panels.screen.deinit();
+        panels.level.deinit();
     }
 };
 

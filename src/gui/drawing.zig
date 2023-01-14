@@ -442,7 +442,9 @@ pub fn processSpriteCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawSprite) void
     const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
     const cell_dims = canvas.panel.cellDims();
 
-    const pos = Pos.init(params.pos.x * @intCast(i32, cell_dims.width), params.pos.y * @intCast(i32, cell_dims.height));
+    const x = params.pos.x * @intCast(i32, cell_dims.width);
+    const y = params.pos.y * @intCast(i32, cell_dims.height);
+    const pos = Pos.init(x, y);
 
     const dst_rect = Rect.init(@intCast(i32, pos.x), @intCast(i32, pos.y), @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
 

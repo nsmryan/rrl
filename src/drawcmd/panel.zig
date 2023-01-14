@@ -57,17 +57,17 @@ pub const Panel = struct {
     pub fn getRectFromArea(self: *const Panel, input_area: Area) Rect {
         const cell_dims = self.cellDims();
 
-        const x_offset = @as(f32, input_area.x_offset) * @as(f32, cell_dims.width);
-        const y_offset = @as(f32, input_area.y_offset) * @as(f32, cell_dims.height);
+        const x_offset = @intToFloat(f32, input_area.x_offset) * @intToFloat(f32, cell_dims.width);
+        const y_offset = @intToFloat(f32, input_area.y_offset) * @intToFloat(f32, cell_dims.height);
 
-        const width = @as(u32, @as(f32, input_area.width) * @as(f32, cell_dims.width));
-        const height = @as(u32, @as(f32, input_area.height) * @as(f32, cell_dims.height));
+        const width = @floatToInt(u32, @intToFloat(f32, input_area.width) * @intToFloat(f32, cell_dims.width));
+        const height = @floatToInt(u32, @intToFloat(f32, input_area.height) * @intToFloat(f32, cell_dims.height));
 
         // don't draw off the screen
-        assert(@intCast(u32, x_offset) + width <= self.num_pixels.width);
-        assert(@intCast(u32, y_offset) + height <= self.num_pixels.height);
+        assert(@floatToInt(u32, x_offset) + width <= self.num_pixels.width);
+        assert(@floatToInt(u32, y_offset) + height <= self.num_pixels.height);
 
-        return Rect{ .x = @intCast(i32, x_offset), .y = @intCast(i32, y_offset), .w = width, .h = height };
+        return Rect{ .x = @floatToInt(i32, x_offset), .y = @floatToInt(i32, y_offset), .w = width, .h = height };
     }
 
     pub fn getRectWithin(self: *const Panel, input_area: Area, target_dims: Dims) Rect {

@@ -152,7 +152,7 @@ pub const Display = struct {
     }
 
     /// Draw a texture panel onto the screen and present it to the user. The entire texture is drawn on the
-    /// screen, so it should usually be the same size as the render's window.
+    /// screen, so it should usually be the same size as the renderer's window.
     ///
     /// Note that this requires a separate back buffer texture, even if only using one texture for drawing.
     pub fn present(display: *Display, texture_panel: *TexturePanel) void {

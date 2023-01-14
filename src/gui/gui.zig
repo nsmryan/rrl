@@ -25,10 +25,6 @@ const Name = entities.Name;
 
 const gen = @import("gen");
 
-const rendering = @import("rendering.zig");
-const Painter = rendering.Painter;
-const DisplayState = rendering.DisplayState;
-
 const board = @import("board");
 const Map = board.map.Map;
 
@@ -40,22 +36,26 @@ const UseAction = engine.actions.UseAction;
 const Settings = engine.actions.Settings;
 const GameState = engine.settings.GameState;
 
-const drawcmd = @import("drawcmd");
-const sprite = drawcmd.sprite;
-const Animation = drawcmd.animation.Animation;
+const drawing = @import("drawing");
+const sprite = drawing.sprite;
+const Animation = drawing.animation.Animation;
 const SpriteAnimation = sprite.SpriteAnimation;
-const Panel = drawcmd.panel.Panel;
-const Area = drawcmd.area.Area;
-const DrawCmd = drawcmd.drawcmd.DrawCmd;
+const Panel = drawing.panel.Panel;
+const Area = drawing.area.Area;
+const DrawCmd = drawing.drawcmd.DrawCmd;
 
 const prof = @import("prof");
 
-pub const display = @import("gui/display.zig");
+pub const display = @import("display.zig");
 pub const Display = display.Display;
 pub const TexturePanel = display.TexturePanel;
-pub const keyboard = @import("gui/keyboard.zig");
-pub const drawing = @import("gui/drawing.zig");
-pub const sdl2 = @import("gui/sdl2.zig");
+pub const keyboard = @import("keyboard.zig");
+pub const canvas = @import("canvas.zig");
+pub const sdl2 = @import("sdl2.zig");
+pub const rendering = @import("rendering.zig");
+const Painter = rendering.Painter;
+const DisplayState = rendering.DisplayState;
+
 const Texture = sdl2.SDL_Texture;
 
 pub const MAX_MAP_WIDTH: usize = 80;

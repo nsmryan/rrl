@@ -8,11 +8,11 @@ const Texture = sdl2.SDL_Texture;
 const Renderer = sdl2.SDL_Renderer;
 const Font = sdl2.TTF_Font;
 
-const drawcmd = @import("drawcmd");
-const sprite = drawcmd.sprite;
-const pnl = drawcmd.panel;
+const drawing = @import("drawing");
+const sprite = drawing.sprite;
+const pnl = drawing.panel;
 const Panel = pnl.Panel;
-const DrawCmd = drawcmd.drawcmd.DrawCmd;
+const DrawCmd = drawing.drawcmd.DrawCmd;
 const Sprite = sprite.Sprite;
 const SpriteSheet = sprite.SpriteSheet;
 
@@ -33,6 +33,10 @@ pub const Canvas = struct {
 
     pub fn init(panel: *Panel, renderer: *Renderer, target: *Texture, sprites: *Sprites, ascii_texture: AsciiTexture) Canvas {
         return Canvas{ .panel = panel, .renderer = renderer, .target = target, .sprites = sprites, .ascii_texture = ascii_texture };
+    }
+
+    pub fn draw(canvas: *Canvas, draw_cmd: *const DrawCmd) void {
+        processDrawCmd(canvas.panel, canvas.renderer, canvas.target, canvas.sprites, canvas.ascii_texture, draw_cmd);
     }
 };
 
@@ -176,7 +180,7 @@ pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color
     }
 }
 
-pub fn processTextJustify(canvas: Canvas, params: drawcmd.drawcmd.DrawTextJustify) void {
+pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustify) void {
     const cell_dims = canvas.panel.cellDims();
 
     const char_width_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
@@ -216,7 +220,7 @@ pub fn processTextJustify(canvas: Canvas, params: drawcmd.drawcmd.DrawTextJustif
     processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
 }
 
-pub fn processTextFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawTextFloat) void {
+pub fn processTextFloat(canvas: Canvas, params: drawing.drawcmd.DrawTextFloat) void {
     const cell_dims = canvas.panel.cellDims();
 
     const char_width_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
@@ -228,7 +232,7 @@ pub fn processTextFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawTextFloat) v
     processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
 }
 
-pub fn processText(canvas: Canvas, params: drawcmd.drawcmd.DrawText) void {
+pub fn processText(canvas: Canvas, params: drawing.drawcmd.DrawText) void {
     const cell_dims = canvas.panel.cellDims();
 
     const x_offset = params.pos.x * @intCast(i32, cell_dims.width);
@@ -237,7 +241,7 @@ pub fn processText(canvas: Canvas, params: drawcmd.drawcmd.DrawText) void {
     processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
 }
 
-pub fn processSpriteFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteFloat) void {
+pub fn processSpriteFloat(canvas: Canvas, params: drawing.drawcmd.DrawSpriteFloat) void {
     const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
 
     const cell_dims = canvas.panel.cellDims();
@@ -271,7 +275,7 @@ pub fn processSpriteFloat(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteFloa
     );
 }
 
-pub fn processSpriteScale(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteScaled) void {
+pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScaled) void {
     const cell_dims = canvas.panel.cellDims();
     const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
 
@@ -348,7 +352,7 @@ pub fn processSpriteScale(canvas: Canvas, params: drawcmd.drawcmd.DrawSpriteScal
     );
 }
 
-pub fn processHighlightTile(canvas: Canvas, params: drawcmd.drawcmd.DrawHighlightTile) void {
+pub fn processHighlightTile(canvas: Canvas, params: drawing.drawcmd.DrawHighlightTile) void {
     const cell_dims = canvas.panel.cellDims();
 
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
@@ -364,7 +368,7 @@ pub fn processHighlightTile(canvas: Canvas, params: drawcmd.drawcmd.DrawHighligh
     _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(rect));
 }
 
-pub fn processOutlineTile(canvas: Canvas, params: drawcmd.drawcmd.DrawOutlineTile) void {
+pub fn processOutlineTile(canvas: Canvas, params: drawing.drawcmd.DrawOutlineTile) void {
     const cell_dims = canvas.panel.cellDims();
 
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
@@ -380,7 +384,7 @@ pub fn processOutlineTile(canvas: Canvas, params: drawcmd.drawcmd.DrawOutlineTil
     _ = sdl2.SDL_RenderDrawRect(canvas.renderer, &Sdl2Rect(rect));
 }
 
-pub fn processFillCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawFill) void {
+pub fn processFillCmd(canvas: Canvas, params: drawing.drawcmd.DrawFill) void {
     const cell_dims = canvas.panel.cellDims();
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
     var src_rect = Rect{ .x = params.pos.x * @intCast(i32, cell_dims.width), .y = params.pos.y * @intCast(i32, cell_dims.height), .w = @intCast(u32, cell_dims.width), .h = @intCast(u32, cell_dims.height) };
@@ -388,7 +392,7 @@ pub fn processFillCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawFill) void {
     _ = sdl2.SDL_RenderFillRect(canvas.renderer, &sdl2_rect);
 }
 
-pub fn processRectCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawRect) void {
+pub fn processRectCmd(canvas: Canvas, params: drawing.drawcmd.DrawRect) void {
     assert(params.offset_percent < 1.0);
 
     const cell_dims = canvas.panel.cellDims();
@@ -416,7 +420,7 @@ pub fn processRectCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawRect) void {
     }
 }
 
-pub fn processRectFloatCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawRectFloat) void {
+pub fn processRectFloatCmd(canvas: Canvas, params: drawing.drawcmd.DrawRectFloat) void {
     const cell_dims = canvas.panel.cellDims();
 
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
@@ -438,7 +442,7 @@ pub fn processRectFloatCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawRectFloat
     }
 }
 
-pub fn processSpriteCmd(canvas: Canvas, params: drawcmd.drawcmd.DrawSprite) void {
+pub fn processSpriteCmd(canvas: Canvas, params: drawing.drawcmd.DrawSprite) void {
     const sprite_sheet = &canvas.sprites.sheets.get(params.sprite.key).?;
     const cell_dims = canvas.panel.cellDims();
 

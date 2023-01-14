@@ -17,13 +17,12 @@ const core = @import("core");
 
 const g = @import("gui");
 const Display = g.display.Display;
+const rendering = g.rendering;
 
 const drawcmd = @import("drawcmd");
 const DrawCmd = drawcmd.drawcmd.DrawCmd;
 
 const sdl2 = g.sdl2;
-
-const rendering = @import("src/rendering.zig");
 
 pub fn main() anyerror!void {
     var allocator = std.heap.page_allocator;

@@ -16,7 +16,7 @@ const board = @import("board");
 const math = @import("math");
 const Pos = math.pos.Pos;
 
-const drawcmd = @import("drawcmd");
+const drawing = @import("drawing");
 const gui = @import("gui");
 const display = gui.display;
 
@@ -53,9 +53,9 @@ export fn Rrl_Init(interp: zt.Interp) c_int {
 
     // Display
     _ = zt.RegisterStruct(display.Display, "Display", namespace, interp);
-    _ = zt.RegisterStruct(drawcmd.sprite.Sprite, "Sprite", namespace, interp);
+    _ = zt.RegisterStruct(drawing.sprite.Sprite, "Sprite", namespace, interp);
     _ = zt.RegisterStruct(math.utils.Color, "Color", namespace, interp);
-    _ = zt.RegisterUnion(drawcmd.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
+    _ = zt.RegisterUnion(drawing.drawcmd.DrawCmd, "DrawCmd", namespace, interp);
 
     // Game
     _ = zt.RegisterStruct(Game, "Game", namespace, interp);

@@ -167,7 +167,7 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
 const pkgs = struct {
     const utils = std.build.Pkg{
         .name = "utils",
-        .source = .{ .path = "src/utils.zig" },
+        .source = .{ .path = "src/utils/utils.zig" },
         .dependencies = &[_]std.build.Pkg{},
     };
 
@@ -179,43 +179,43 @@ const pkgs = struct {
 
     const math = std.build.Pkg{
         .name = "math",
-        .source = .{ .path = "src/math.zig" },
+        .source = .{ .path = "src/math/math.zig" },
         .dependencies = &[_]std.build.Pkg{},
     };
 
     const core = std.build.Pkg{
         .name = "core",
-        .source = .{ .path = "src/core.zig" },
+        .source = .{ .path = "src/core/core.zig" },
         .dependencies = &[_]std.build.Pkg{ utils, math, board, prof },
     };
 
-    const drawcmd = std.build.Pkg{
-        .name = "drawcmd",
-        .source = .{ .path = "src/drawcmd.zig" },
+    const drawing = std.build.Pkg{
+        .name = "drawing",
+        .source = .{ .path = "src/drawing/drawing.zig" },
         .dependencies = &[_]std.build.Pkg{ math, utils },
     };
 
     const board = std.build.Pkg{
         .name = "board",
-        .source = .{ .path = "src/board.zig" },
+        .source = .{ .path = "src/board/board.zig" },
         .dependencies = &[_]std.build.Pkg{ math, prof },
     };
 
     const engine = std.build.Pkg{
         .name = "engine",
-        .source = .{ .path = "src/engine.zig" },
+        .source = .{ .path = "src/engine/engine.zig" },
         .dependencies = &[_]std.build.Pkg{ core, math, utils, board, gen, prof },
     };
 
     const gui = std.build.Pkg{
         .name = "gui",
-        .source = .{ .path = "src/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, drawcmd, utils, board, engine, gen, prof },
+        .source = .{ .path = "src/gui/gui.zig" },
+        .dependencies = &[_]std.build.Pkg{ core, math, drawing, utils, board, engine, gen, prof },
     };
 
     const gen = std.build.Pkg{
         .name = "gen",
-        .source = .{ .path = "src/gen.zig" },
+        .source = .{ .path = "src/gen/gen.zig" },
         .dependencies = &[_]std.build.Pkg{ math, utils },
     };
 };
@@ -224,7 +224,7 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.board);
     step.addPackage(pkgs.utils);
     step.addPackage(pkgs.core);
-    step.addPackage(pkgs.drawcmd);
+    step.addPackage(pkgs.drawing);
     step.addPackage(pkgs.math);
     step.addPackage(pkgs.gui);
     step.addPackage(pkgs.gen);

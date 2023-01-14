@@ -31,14 +31,14 @@ const Direction = math.direction.Direction;
 const Easing = math.easing.Easing;
 const Tween = math.tweening.Tween;
 
-const drawcmd = @import("drawcmd");
-const DrawCmd = drawcmd.drawcmd.DrawCmd;
-const Panel = drawcmd.panel.Panel;
-const Sprites = drawcmd.sprite.Sprites;
-const Sprite = drawcmd.sprite.Sprite;
-const SpriteSheet = drawcmd.sprite.SpriteSheet;
-const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
-const Animation = drawcmd.animation.Animation;
+const drawing = @import("drawing");
+const DrawCmd = drawing.drawcmd.DrawCmd;
+const Panel = drawing.panel.Panel;
+const Sprites = drawing.sprite.Sprites;
+const Sprite = drawing.sprite.Sprite;
+const SpriteSheet = drawing.sprite.SpriteSheet;
+const SpriteAnimation = drawing.sprite.SpriteAnimation;
+const Animation = drawing.animation.Animation;
 
 pub const Painter = struct {
     sprites: *const AutoHashMap(Str, SpriteSheet),

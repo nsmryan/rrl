@@ -12,23 +12,23 @@ const Renderer = sdl2.SDL_Renderer;
 const Font = sdl2.TTF_Font;
 const Window = sdl2.SDL_Window;
 
-const drawcmd = @import("drawcmd");
-const Justify = drawcmd.drawcmd.Justify;
-const sprite = drawcmd.sprite;
-const SpriteAnimation = drawcmd.sprite.SpriteAnimation;
-const DrawCmd = drawcmd.drawcmd.DrawCmd;
-const Panel = drawcmd.panel.Panel;
+const drawing = @import("drawing");
+const Justify = drawing.drawcmd.Justify;
+const sprite = drawing.sprite;
+const SpriteAnimation = drawing.sprite.SpriteAnimation;
+const DrawCmd = drawing.drawcmd.DrawCmd;
+const Panel = drawing.panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
-const Animation = drawcmd.animation.Animation;
-const Area = drawcmd.area.Area;
+const Animation = drawing.animation.Animation;
+const Area = drawing.area.Area;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
 const intern = utils.intern;
 const Str = utils.intern.Str;
 
-const drawing = @import("drawing.zig");
-const Sprites = drawing.Sprites;
+const canvas = @import("canvas.zig");
+const Sprites = canvas.Sprites;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -44,7 +44,7 @@ pub const Display = struct {
     window: *Window,
     renderer: *Renderer,
     font: *Font,
-    ascii_texture: drawing.AsciiTexture,
+    ascii_texture: canvas.AsciiTexture,
     sprites: Sprites,
     strings: intern.Intern,
 
@@ -92,7 +92,7 @@ pub const Display = struct {
             return error.SDLInitializationFailed;
         };
 
-        const ascii_texture = try drawing.AsciiTexture.renderAsciiCharacters(renderer, font);
+        const ascii_texture = try canvas.AsciiTexture.renderAsciiCharacters(renderer, font);
 
         var game: Display = Display{
             .window = window,
@@ -112,8 +112,9 @@ pub const Display = struct {
         _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
         _ = sdl2.SDL_RenderClear(display.renderer);
 
+        var texture_canvas = canvas.Canvas.init(&texture_panel.panel, display.renderer, texture_panel.texture, &display.sprites, display.ascii_texture);
         for (texture_panel.drawcmds.items) |cmd| {
-            drawing.processDrawCmd(&texture_panel.panel, display.renderer, texture_panel.texture, &display.sprites, display.ascii_texture, &cmd);
+            texture_canvas.draw(&cmd);
         }
         texture_panel.drawcmds.clearRetainingCapacity();
     }
@@ -125,6 +126,7 @@ pub const Display = struct {
         _ = sdl2.SDL_RenderClear(display.renderer);
     }
 
+    /// Paste an area of one texture onto an area of another texture, stretching or squishing the source texture to fit into the destination.
     pub fn stretchTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
         display.useTexturePanel(target);
         const src_rect = sdl2Rect(source.panel.getRectFromArea(source_area));
@@ -132,6 +134,8 @@ pub const Display = struct {
         _ = sdl2.SDL_RenderCopy(display.renderer, source.texture, &src_rect, &dst_rect);
     }
 
+    /// Paste an area of one texture onto an area of another texture, while maintaining the aspect ratio of the original texture,
+    /// centering the source texture within the remaining area of the destination texture.
     pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
         display.useTexturePanel(target);
 

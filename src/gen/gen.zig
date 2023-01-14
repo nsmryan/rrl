@@ -1,4 +1,4 @@
-pub const make_map = @import("gen/make_map.zig");
+pub const make_map = @import("make_map.zig");
 
 comptime {
     if (@import("builtin").is_test) {

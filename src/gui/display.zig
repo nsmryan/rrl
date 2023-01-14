@@ -132,30 +132,24 @@ pub const Display = struct {
         _ = sdl2.SDL_RenderCopy(display.renderer, source.texture, &src_rect, &dst_rect);
     }
 
-    //pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
-    //   display.useTexturePanel(target);
+    pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
+        display.useTexturePanel(target);
 
-    //    const src_rect = source.panel.getRectFromArea(source_area);
+        const src_rect = sdl2Rect(source.panel.getRectFromArea(source_area));
+        const dst_rect = sdl2Rect(target.panel.getRectFromArea(target_area));
 
-    // NOTE(implement) center map within available area.
-    //// Handle maps that are smaller then the maximum size by trying to center them.
-    //if map_width < MAP_WIDTH || map_height < MAP_HEIGHT {
-    //    let map_width_pixels = map_width as u32 * MAP_CELLS_TO_PIXELS;
-    //    let map_height_pixels = map_height as u32 * MAP_CELLS_TO_PIXELS;
-    //    // Source map is from 0, 0 to the extents currently used.
-    //    map_src = Some(Rect::new(0, 0, map_width_pixels, map_height_pixels));
-    //
-    //    // Destination is centered and the same size as the smaller map area above.
-    //    let x_offset = ((MAP_WIDTH / 2) - (map_width / 2)) * MAP_CELLS_TO_PIXELS as i32;
-    //    let y_offset = ((MAP_HEIGHT / 2) - (map_height / 2)) * MAP_CELLS_TO_PIXELS as i32;
-    //    map_rect.x += x_offset;
-    //    map_rect.y += y_offset;
-    //    map_rect.w = map_width_pixels as i32;
-    //    map_rect.h = map_height_pixels as i32;
-    //}
+        const x_scale = @intToFloat(f32, dst_rect.w) / @intToFloat(f32, src_rect.w);
+        const y_scale = @intToFloat(f32, dst_rect.h) / @intToFloat(f32, src_rect.h);
+        const scale = std.math.min(x_scale, y_scale);
 
-    //_ = sdl2.SDL_RenderCopy(display.renderer, source, src_rect, dst_rect);
-    //}
+        const width = @floatToInt(i32, @intToFloat(f32, src_rect.w) * scale);
+        const height = @floatToInt(i32, @intToFloat(f32, src_rect.h) * scale);
+        const x = dst_rect.x + @divFloor((dst_rect.w - width), @as(c_int, 2));
+        const y = dst_rect.y + @divFloor((dst_rect.h - height), @as(c_int, 2));
+        const final_dst_rect = sdl2.SDL_Rect{ .x = x, .y = y, .w = width, .h = height };
+
+        _ = sdl2.SDL_RenderCopy(display.renderer, source.texture, &src_rect, &final_dst_rect);
+    }
 
     /// Draw a texture panel onto the screen and present it to the user. The entire texture is drawn on the
     /// screen, so it should usually be the same size as the render's window.

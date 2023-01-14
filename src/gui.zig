@@ -258,7 +258,8 @@ pub const Gui = struct {
 
         const screen_area = Area.init(gui.panels.screen.panel.cells.width, gui.panels.screen.panel.cells.height);
         const map_area = Area.init(@intCast(usize, gui.game.level.map.width), @intCast(usize, gui.game.level.map.height));
-        gui.display.stretchTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
+        //gui.display.stretchTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
+        gui.display.fitTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
         gui.display.present(&gui.panels.screen);
 
         for (gui.state.animation.ids.items) |id| {

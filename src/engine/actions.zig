@@ -154,7 +154,7 @@ fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) !vo
         new_pos = cursor_pos.add(dir_move);
     }
 
-    new_pos = game.level.map.clamp(new_pos);
+    new_pos = game.level.map.dims().clamp(new_pos);
 
     try game.log.log(.cursorMove, new_pos);
     game.settings.mode.cursor.pos = new_pos;

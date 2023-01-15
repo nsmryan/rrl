@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const Pos = @import("pos.zig").Pos;
 
 pub const ASCII_START: usize = 32;
@@ -51,5 +53,11 @@ pub const Dims = struct {
 
     pub fn toIndex(dims: *const Dims, position: Pos) usize {
         return @intCast(usize, position.x) + @intCast(usize, position.y) * dims.width;
+    }
+
+    pub fn clamp(dims: *const Dims, pos: Pos) Pos {
+        const new_x = std.math.min(@intCast(i32, dims.width) - 1, std.math.max(0, pos.x));
+        const new_y = std.math.min(@intCast(i32, dims.height) - 1, std.math.max(0, pos.y));
+        return Pos.init(new_x, new_y);
     }
 };

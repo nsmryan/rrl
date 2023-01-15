@@ -1,9 +1,9 @@
 test {
-    _ = @import("src/math.zig");
-    _ = @import("src/utils.zig");
-    _ = @import("src/board.zig");
-    _ = @import("src/core.zig");
-    _ = @import("src/drawcmd.zig");
-    _ = @import("src/engine.zig");
-    _ = @import("src/gui.zig");
+    _ = @import("src/math/math.zig");
+    _ = @import("src/utils/utils.zig");
+    _ = @import("src/board/board.zig");
+    _ = @import("src/core/core.zig");
+    _ = @import("src/drawing/drawing.zig");
+    _ = @import("src/engine/engine.zig");
+    _ = @import("src/gui/gui.zig");
 }

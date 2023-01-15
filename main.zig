@@ -31,7 +31,7 @@ pub fn main() anyerror!void {
     var gui = try g.Gui.init(0, has_profiling, allocator);
     defer gui.deinit();
 
-    try gui.game.startLevel(7, 7);
+    try gui.game.startLevel(21, 21);
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
     try gui.resolveMessages();

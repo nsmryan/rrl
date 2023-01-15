@@ -123,6 +123,9 @@ pub const Config = struct {
 
     use_profiling: bool,
 
+    map_window_edge: i32,
+    map_window_dist: i32,
+
     color_dark_brown: Color,
     color_medium_brown: Color,
     color_light_green: Color,

@@ -91,10 +91,12 @@ pub const Gui = struct {
         sdl2.SDL_GetWindowSize(disp.window, &width, &height);
         const panels = try Panels.init(@intCast(usize, width), @intCast(usize, height), &disp, allocator);
 
+        var state = DisplayState.init(allocator);
+
         return Gui{
             .display = disp,
+            .state = state,
             .game = game,
-            .state = DisplayState.init(allocator),
             .allocator = allocator,
             .profiler = profiler,
             .ticks = 0,
@@ -154,7 +156,7 @@ pub const Gui = struct {
                 .facing => |args| try gui.state.facing.insert(args.id, args.facing),
                 .stance => |args| try gui.state.stance.insert(args.id, args.stance),
                 .move => |args| try gui.moveEntity(args.id, args.pos),
-                .startLevel => try gui.assignAllIdleAnimations(),
+                .startLevel => try gui.startLevel(),
                 .endTurn => try gui.assignAllIdleAnimations(),
                 .cursorStart => |args| try gui.cursorStart(args),
                 .cursorEnd => gui.cursorEnd(),
@@ -165,6 +167,11 @@ pub const Gui = struct {
         }
     }
 
+    fn startLevel(gui: *Gui) !void {
+        try gui.assignAllIdleAnimations();
+        gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
+    }
+
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
         try gui.state.pos.insert(id, pos);
 
@@ -172,6 +179,19 @@ pub const Gui = struct {
         //gui.state.animation.remove(id);
         if (gui.state.animation.getPtrOrNull(id)) |anim| {
             anim.position = pos;
+        }
+
+        // When moving the player, update the map window with the currently configured parameters.
+        if (id == entities.Entities.player_id) {
+            std.debug.print("center before {}, pos {}\n", .{ gui.state.map_window_center, pos });
+            gui.state.map_window_center = try map_window_update(
+                gui.state.map_window_center,
+                pos,
+                gui.game.config.map_window_edge,
+                gui.game.config.map_window_dist,
+                gui.game.level.map.dims(),
+            );
+            std.debug.print("center after {}\n", .{gui.state.map_window_center});
         }
     }
 
@@ -256,7 +276,10 @@ pub const Gui = struct {
         gui.display.draw(&gui.panels.level);
 
         const screen_area = Area.init(gui.panels.screen.panel.cells.width, gui.panels.screen.panel.cells.height);
-        const map_area = Area.init(@intCast(usize, gui.game.level.map.width), @intCast(usize, gui.game.level.map.height));
+        //const map_area = Area.init(@intCast(usize, gui.game.level.map.width), @intCast(usize, gui.game.level.map.height));
+        const map_area = map_window_area(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
+        //std.debug.print("map window area {}\n", .{map_area});
+
         //gui.display.stretchTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
         gui.display.fitTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
         gui.display.present(&gui.panels.screen);
@@ -299,6 +322,115 @@ pub const Panels = struct {
     }
 };
 
+fn map_window_area(dims: Dims, center: Pos, dist: i32) Area {
+    const up_left_edge = dims.clamp(Pos.init(center.x - dist, center.y - dist));
+    const width = std.math.min(2 * dist + 1, dims.width);
+    const height = std.math.min(2 * dist + 1, dims.height);
+    return Area.initAt(@intCast(usize, up_left_edge.x), @intCast(usize, up_left_edge.y), width, height);
+}
+
+/// A map window controls the part of the map around the player that is visible
+/// during a turn. This can follow the player, it can show a map that always gives
+/// a little buffer around the player, or it can just display the entire map (effectively
+/// disabling the map window concept).
+/// If edge_dist or dist are negative the following behavior is disabled. If dist is
+/// negative the whole map will be displayed.
+fn map_window_update(pos: Pos, new_pos: Pos, edge_dist: i32, dist: i32, map_dims: Dims) !Pos {
+    var center = pos;
+    if (dist < 0 or edge_dist < 0) {
+        center = new_pos;
+    } else {
+        // Move the map window in x and y.
+        // However, only move the map window if the position is not next to the edge of the map.
+        const needs_move_dist = dist - edge_dist;
+
+        const x_dist = new_pos.x - center.x;
+        const x_abs_dist = try std.math.absInt(x_dist);
+        if (x_abs_dist > needs_move_dist) {
+            const x_map_edge_dist = std.math.min(new_pos.x, @intCast(i32, map_dims.width) - new_pos.x);
+            if (x_map_edge_dist >= edge_dist) {
+                center.x = center.x + ((x_abs_dist - needs_move_dist) * std.math.sign(x_dist));
+            }
+        }
+
+        const y_dist = new_pos.y - center.y;
+        const y_abs_dist = try std.math.absInt(y_dist);
+        if (y_abs_dist > needs_move_dist) {
+            const y_map_edge_dist = std.math.min(new_pos.y, @intCast(i32, map_dims.height) - new_pos.y);
+            if (y_map_edge_dist >= edge_dist) {
+                center.y = center.y + ((y_abs_dist - needs_move_dist) * std.math.sign(y_dist));
+            }
+        }
+    }
+
+    return center;
+}
+
+test "map window centered" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(3, 3);
+    const center = try map_window_update(start_center, Pos.init(4, 3), 1, 1, map_dims);
+    try std.testing.expectEqual(Pos.init(4, 3), center);
+}
+
+test "map window not centered" {
+    const map_dims = Dims.init(10, 10);
+    // Edge distance of 0 means the player can move within the extra tile without recentering.
+    const start_center = Pos.init(3, 3);
+    const center = try map_window_update(start_center, Pos.init(4, 3), 0, 1, map_dims);
+    try std.testing.expectEqual(Pos.init(3, 3), center);
+}
+
+test "map window follow no window" {
+    const map_dims = Dims.init(10, 10);
+    {
+        const start_center = Pos.init(3, 3);
+        const center = try map_window_update(start_center, Pos.init(4, 3), 1, -1, map_dims);
+        try std.testing.expectEqual(Pos.init(4, 3), center);
+    }
+
+    {
+        const start_center = Pos.init(3, 3);
+        const center = try map_window_update(start_center, Pos.init(4, 3), -1, 1, map_dims);
+        try std.testing.expectEqual(Pos.init(4, 3), center);
+    }
+}
+
+test "map window follow with window" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(3, 3);
+    const center = try map_window_update(start_center, Pos.init(4, 3), 0, 0, map_dims);
+    try std.testing.expectEqual(Pos.init(4, 3), center);
+}
+
+test "map window no follow x left edge" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(3, 3);
+    const center = try map_window_update(start_center, Pos.init(1, 3), 2, 3, map_dims);
+    try std.testing.expectEqual(Pos.init(3, 3), center);
+}
+
+test "map window no follow x right edge" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(8, 3);
+    const center = try map_window_update(start_center, Pos.init(9, 3), 2, 3, map_dims);
+    try std.testing.expectEqual(Pos.init(8, 3), center);
+}
+
+test "map window no follow y top edge" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(3, 8);
+    const center = try map_window_update(start_center, Pos.init(3, 9), 2, 3, map_dims);
+    try std.testing.expectEqual(Pos.init(3, 8), center);
+}
+
+test "map window no follow y bottom edge" {
+    const map_dims = Dims.init(10, 10);
+    const start_center = Pos.init(3, 3);
+    const center = try map_window_update(start_center, Pos.init(3, 2), 2, 3, map_dims);
+    try std.testing.expectEqual(Pos.init(3, 3), center);
+}
+
 pub const DisplayState = struct {
     pos: Comp(Pos),
     stance: Comp(Stance),
@@ -306,11 +438,13 @@ pub const DisplayState = struct {
     facing: Comp(Direction),
     animation: Comp(Animation),
     cursor_animation: ?Animation = null,
+    map_window_center: Pos,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
         comptime var names = entities.compNames(DisplayState);
         state.cursor_animation = null;
+        state.map_window_center = Pos.init(0, 0);
         inline for (names) |field_name| {
             @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
         }

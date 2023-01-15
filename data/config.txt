@@ -227,6 +227,14 @@ display_center_map_on_player: true
 # Enable profiling
 use_profiling: false
 
+# Edge of map before the window follows the player.
+# For example a value of 2 means that the map window will move when the player
+# tries to move within 2 cells of the edge.
+map_window_edge: 2
+# Distance from the player to the edge of the map window.
+# For example, a value of 4 results in a 9x9 box, 4 cells to each size of the player.
+map_window_dist: 4
+
 # Color Palette
 color_dark_brown: 30 25 15 255
 color_medium_brown: 110 90 80 255

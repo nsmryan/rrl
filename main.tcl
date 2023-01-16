@@ -4,6 +4,11 @@ package require rrl
 namespace import rrl::*
 
 
+# Currently to get the player X position.
+#Pos create pos
+#pos bytes [Comp(Pos) with [Entities with [Level with [Game with [gui ptr game] ptr level] ptr entities] ptr pos] call get 0]
+#pos get x
+
 proc pos { x y } {
     return [Pos call init $x $y]
 }
@@ -47,6 +52,24 @@ proc ticks { } {
     global startupTicks
     return [expr [clock milliseconds] - $startupTicks]
 }
+
+# Translates
+#pos bytes [Comp(Pos) with [Entities with [Level with [Game with [gui ptr game] ptr level] ptr entities] ptr pos] call get 0]
+#pos get x
+# into 
+#pos bytes [Comp(Pos) with [ptr [gui ptr] Gui game Game level Level entities Entities pos] call get 0]
+proc ptr { ptr args } { 
+    foreach { type field } $args {
+        set ptr [$type with $ptr ptr $field]
+    }
+    return $ptr
+}
+
+# Get a component from a particular entity by name.
+proc component { id name } {
+    return [$name with [ptr [gui ptr] Gui game Game level Level entities Entities pos] call get $id]
+}
+
 
 proc mkKey { name value } { proc $name { } "key $value" }
 mkKey up 8

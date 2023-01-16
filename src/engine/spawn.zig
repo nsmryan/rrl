@@ -39,6 +39,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.fov_radius.insert(id, config.fov_radius_player);
     try entities.facing.insert(id, Direction.right);
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
+    try entities.hp.insert(id, @intCast(usize, config.player_health));
 
     try log.log(.spawn, .{ id, Name.player });
     try log.log(.stance, .{ id, entities.stance.get(id) });

@@ -123,7 +123,7 @@ pub const Display = struct {
         _ = sdl2.SDL_SetTextureBlendMode(texture_panel.texture, sdl2.SDL_BLENDMODE_NONE);
         _ = sdl2.SDL_SetRenderTarget(display.renderer, texture_panel.texture);
         _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
-        _ = sdl2.SDL_RenderClear(display.renderer);
+        //_ = sdl2.SDL_RenderClear(display.renderer);
     }
 
     /// Paste an area of one texture onto an area of another texture, stretching or squishing the source texture to fit into the destination.

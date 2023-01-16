@@ -95,6 +95,7 @@ pub const Entities = struct {
     facing: Comp(Direction),
     fov_block: Comp(FovBlock),
     view: Comp(View),
+    hp: Comp(usize),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

@@ -60,11 +60,17 @@ const Texture = sdl2.SDL_Texture;
 pub const MAX_MAP_WIDTH: usize = 80;
 pub const MAX_MAP_HEIGHT: usize = 80;
 
-pub const SCREEN_CELLS_WIDTH: usize = 50;
-pub const SCREEN_CELLS_HEIGHT: usize = 40;
+pub const MAP_AREA_CELLS_WIDTH: usize = 44;
+pub const MAP_AREA_CELLS_HEIGHT: usize = 15;
+
+pub const SCREEN_CELLS_WIDTH: usize = MAP_AREA_CELLS_WIDTH;
+pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI_CELLS_BOTTOM;
 
 pub const WINDOW_WIDTH: usize = 800;
 pub const WINDOW_HEIGHT: usize = 640;
+
+pub const UI_CELLS_TOP: u32 = 3;
+pub const UI_CELLS_BOTTOM: u32 = 12;
 
 pub const Gui = struct {
     display: display.Display,
@@ -183,8 +189,7 @@ pub const Gui = struct {
 
         // When moving the player, update the map window with the currently configured parameters.
         if (id == entities.Entities.player_id) {
-            std.debug.print("center before {}, pos {}\n", .{ gui.state.map_window_center, pos });
-            gui.state.map_window_center = try map_window_update(
+            gui.state.map_window_center = try mapWindowUpdate(
                 gui.state.map_window_center,
                 pos,
                 gui.game.config.map_window_edge,
@@ -268,20 +273,25 @@ pub const Gui = struct {
             .sprites = &gui.display.sprites.sheets,
             .strings = &gui.display.strings,
             .drawcmds = &gui.panels.level.drawcmds,
+            .area = gui.panels.level.panel.getArea(),
             .state = &gui.state,
             .dt = delta_ticks,
         };
-        try rendering.render(&gui.game, &painter);
-
+        try rendering.renderLevel(&gui.game, &painter);
         gui.display.draw(&gui.panels.level);
 
-        const screen_area = Area.init(gui.panels.screen.panel.cells.width, gui.panels.screen.panel.cells.height);
-        //const map_area = Area.init(@intCast(usize, gui.game.level.map.width), @intCast(usize, gui.game.level.map.height));
-        const map_area = map_window_area(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
-        //std.debug.print("map window area {}\n", .{map_area});
+        painter.drawcmds = &gui.panels.pip.drawcmds;
+        try rendering.renderPips(&gui.game, &painter);
+        gui.display.draw(&gui.panels.pip);
 
-        //gui.display.stretchTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
-        gui.display.fitTexture(&gui.panels.screen, screen_area, &gui.panels.level, map_area);
+        const map_area = mapWindowArea(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
+
+        gui.display.fitTexture(&gui.panels.screen, gui.panels.level_area, &gui.panels.level, map_area);
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.pip_area, &gui.panels.pip, gui.panels.pip.panel.getArea());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getArea());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getArea());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getArea());
+
         gui.display.present(&gui.panels.screen);
 
         for (gui.state.animation.ids.items) |id| {
@@ -292,28 +302,93 @@ pub const Gui = struct {
 
 pub const Panels = struct {
     screen: TexturePanel,
+
     level: TexturePanel,
+    level_area: Area,
+
+    player: TexturePanel,
+    player_area: Area,
+
+    pip: TexturePanel,
+    pip_area: Area,
+
+    info: TexturePanel,
+    info_area: Area,
+
+    menu: TexturePanel,
+    menu_area: Area,
+
+    help: TexturePanel,
+    help_area: Area,
+
+    inventory: TexturePanel,
+    inventory_area: Area,
 
     pub fn init(width: usize, height: usize, disp: *Display, allocator: Allocator) !Panels {
+        // Set up screen and its area.
         const screen_num_pixels = Dims.init(width, height);
-        const screen_panel = Panel.init(screen_num_pixels, Dims.init(SCREEN_CELLS_WIDTH, SCREEN_CELLS_HEIGHT));
-        //const screen_area = Area.init(screen_num_pixels.width, screen_num_pixels.height);
+        const screen_dims = Dims.init(SCREEN_CELLS_WIDTH, SCREEN_CELLS_HEIGHT);
+        const screen_panel = Panel.init(screen_num_pixels, screen_dims);
         const screen_texture_panel = try disp.texturePanel(screen_panel, allocator);
 
-        // NOTE(implement) lay out screen areas.
-        //let (top_area, bottom_area) = screen_area.split_top(canvas_panel.cells.1 as usize - UI_CELLS_BOTTOM as usize);
-        //let (pip_area, map_area) = top_area.split_top(UI_CELLS_TOP as usize);
-        //let (player_area, right_area) = bottom_area.split_left(canvas_panel.cells.0 as usize / 6);
-        //let (inventory_area, right_area) = right_area.split_left(canvas_panel.cells.0 as usize / 2);
-        //let info_area = right_area;
-        //let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
-        //let help_area = screen_area.centered((screen_area.width as f32 * 0.8) as usize, (screen_area.height as f32 * 0.9) as usize);
+        // Lay out panels within the screen.
+        const screen_area = Area.init(screen_dims.width, screen_dims.height);
+        const top_bottom_split = screen_area.splitBottom(@intCast(usize, UI_CELLS_BOTTOM));
 
+        const pip_map_area = top_bottom_split.first.splitTop(@intCast(usize, UI_CELLS_TOP));
+        const pip_area = pip_map_area.first;
+        const map_area = pip_map_area.second;
+
+        const player_right_area = top_bottom_split.second.splitLeft(screen_area.width / 6);
+        const player_area = player_right_area.first;
+        const inventory_info_area = player_right_area.second.splitLeft(screen_area.width / 2);
+        const inventory_area = inventory_info_area.first;
+        const info_area = inventory_info_area.second;
+
+        const menu_area = screen_area.centered(@floatToInt(usize, @intToFloat(f32, info_area.width) * 1.2), @floatToInt(usize, @intToFloat(f32, info_area.height) * 1.2));
+        const help_area = screen_area.centered(@floatToInt(usize, @intToFloat(f32, screen_area.width) * 0.8), @floatToInt(usize, @intToFloat(f32, screen_area.height) * 0.9));
+
+        // Create the misc panels.
+        const menu_panel = screen_panel.subpanel(menu_area);
+        const menu_texture_panel = try disp.texturePanel(menu_panel, allocator);
+
+        const pip_panel = screen_panel.subpanel(pip_area);
+        const pip_texture_panel = try disp.texturePanel(pip_panel, allocator);
+
+        const info_panel = screen_panel.subpanel(info_area);
+        const info_texture_panel = try disp.texturePanel(info_panel, allocator);
+
+        const help_panel = screen_panel.subpanel(help_area);
+        const help_texture_panel = try disp.texturePanel(help_panel, allocator);
+
+        const player_panel = screen_panel.subpanel(player_area);
+        const player_texture_panel = try disp.texturePanel(player_panel, allocator);
+
+        const inventory_panel = screen_panel.subpanel(inventory_area);
+        const inventory_texture_panel = try disp.texturePanel(inventory_panel, allocator);
+
+        // Create the map panel.
         const level_num_pixels = Dims.init(MAX_MAP_WIDTH * sprite.FONT_WIDTH, MAX_MAP_HEIGHT * sprite.FONT_HEIGHT);
         const level_panel = Panel.init(level_num_pixels, Dims.init(MAX_MAP_WIDTH, MAX_MAP_HEIGHT));
         const level_texture_panel = try disp.texturePanel(level_panel, allocator);
 
-        return Panels{ .screen = screen_texture_panel, .level = level_texture_panel };
+        return Panels{
+            .screen = screen_texture_panel,
+            .level = level_texture_panel,
+            .level_area = map_area,
+            .player = player_texture_panel,
+            .player_area = player_area,
+            .info = info_texture_panel,
+            .info_area = info_area,
+            .inventory = inventory_texture_panel,
+            .inventory_area = inventory_area,
+            .help = help_texture_panel,
+            .help_area = help_area,
+            .pip = pip_texture_panel,
+            .pip_area = pip_area,
+            .menu = menu_texture_panel,
+            .menu_area = menu_area,
+        };
     }
 
     pub fn deinit(panels: *Panels) void {
@@ -322,7 +397,7 @@ pub const Panels = struct {
     }
 };
 
-fn map_window_area(dims: Dims, center: Pos, dist: i32) Area {
+fn mapWindowArea(dims: Dims, center: Pos, dist: i32) Area {
     const up_left_edge = dims.clamp(Pos.init(center.x - dist, center.y - dist));
     const width = std.math.min(2 * dist + 1, dims.width);
     const height = std.math.min(2 * dist + 1, dims.height);
@@ -335,7 +410,7 @@ fn map_window_area(dims: Dims, center: Pos, dist: i32) Area {
 /// disabling the map window concept).
 /// If edge_dist or dist are negative the following behavior is disabled. If dist is
 /// negative the whole map will be displayed.
-fn map_window_update(pos: Pos, new_pos: Pos, edge_dist: i32, dist: i32, map_dims: Dims) !Pos {
+fn mapWindowUpdate(pos: Pos, new_pos: Pos, edge_dist: i32, dist: i32, map_dims: Dims) !Pos {
     var center = pos;
     if (dist < 0 or edge_dist < 0) {
         center = new_pos;
@@ -369,7 +444,7 @@ fn map_window_update(pos: Pos, new_pos: Pos, edge_dist: i32, dist: i32, map_dims
 test "map window centered" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(3, 3);
-    const center = try map_window_update(start_center, Pos.init(4, 3), 1, 1, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(4, 3), 1, 1, map_dims);
     try std.testing.expectEqual(Pos.init(4, 3), center);
 }
 
@@ -377,7 +452,7 @@ test "map window not centered" {
     const map_dims = Dims.init(10, 10);
     // Edge distance of 0 means the player can move within the extra tile without recentering.
     const start_center = Pos.init(3, 3);
-    const center = try map_window_update(start_center, Pos.init(4, 3), 0, 1, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(4, 3), 0, 1, map_dims);
     try std.testing.expectEqual(Pos.init(3, 3), center);
 }
 
@@ -385,13 +460,13 @@ test "map window follow no window" {
     const map_dims = Dims.init(10, 10);
     {
         const start_center = Pos.init(3, 3);
-        const center = try map_window_update(start_center, Pos.init(4, 3), 1, -1, map_dims);
+        const center = try mapWindowUpdate(start_center, Pos.init(4, 3), 1, -1, map_dims);
         try std.testing.expectEqual(Pos.init(4, 3), center);
     }
 
     {
         const start_center = Pos.init(3, 3);
-        const center = try map_window_update(start_center, Pos.init(4, 3), -1, 1, map_dims);
+        const center = try mapWindowUpdate(start_center, Pos.init(4, 3), -1, 1, map_dims);
         try std.testing.expectEqual(Pos.init(4, 3), center);
     }
 }
@@ -399,35 +474,35 @@ test "map window follow no window" {
 test "map window follow with window" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(3, 3);
-    const center = try map_window_update(start_center, Pos.init(4, 3), 0, 0, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(4, 3), 0, 0, map_dims);
     try std.testing.expectEqual(Pos.init(4, 3), center);
 }
 
 test "map window no follow x left edge" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(3, 3);
-    const center = try map_window_update(start_center, Pos.init(1, 3), 2, 3, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(1, 3), 2, 3, map_dims);
     try std.testing.expectEqual(Pos.init(3, 3), center);
 }
 
 test "map window no follow x right edge" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(8, 3);
-    const center = try map_window_update(start_center, Pos.init(9, 3), 2, 3, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(9, 3), 2, 3, map_dims);
     try std.testing.expectEqual(Pos.init(8, 3), center);
 }
 
 test "map window no follow y top edge" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(3, 8);
-    const center = try map_window_update(start_center, Pos.init(3, 9), 2, 3, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(3, 9), 2, 3, map_dims);
     try std.testing.expectEqual(Pos.init(3, 8), center);
 }
 
 test "map window no follow y bottom edge" {
     const map_dims = Dims.init(10, 10);
     const start_center = Pos.init(3, 3);
-    const center = try map_window_update(start_center, Pos.init(3, 2), 2, 3, map_dims);
+    const center = try mapWindowUpdate(start_center, Pos.init(3, 2), 2, 3, map_dims);
     try std.testing.expectEqual(Pos.init(3, 3), center);
 }
 

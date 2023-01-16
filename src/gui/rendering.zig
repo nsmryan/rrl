@@ -35,6 +35,7 @@ const Tween = math.tweening.Tween;
 
 const drawing = @import("drawing");
 const DrawCmd = drawing.drawcmd.DrawCmd;
+const Area = drawing.area.Area;
 const Panel = drawing.panel.Panel;
 const Sprites = drawing.sprite.Sprites;
 const Sprite = drawing.sprite.Sprite;
@@ -48,6 +49,7 @@ pub const Painter = struct {
     strings: *const Intern,
     state: *DisplayState,
     dt: u64,
+    area: Area,
 
     pub fn sprite(painter: *Painter, name: []const u8) Sprite {
         const key = painter.strings.toKey(name);
@@ -55,7 +57,7 @@ pub const Painter = struct {
     }
 };
 
-pub fn render(game: *Game, painter: *Painter) !void {
+pub fn renderLevel(game: *Game, painter: *Painter) !void {
     try renderMapLow(game, painter);
     try renderMapMiddle(game, painter);
     try renderEntities(game, painter);
@@ -297,4 +299,37 @@ fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
     //if (display_state.player_ghost) |player_ghost_pos| {
     //    render_entity_ghost(panel, player_id, player_ghost_pos, &config, display_state, sprites);
     //}
+}
+
+pub fn renderPips(game: *Game, painter: *Painter) !void {
+    const hp = game.level.entities.hp.get(Entities.player_id);
+    const health_color = Color.init(0x96, 0x54, 0x56, 255);
+
+    const hp_bar_width = @intToFloat(f32, painter.area.width) / @intToFloat(f32, game.config.player_health_max);
+
+    const current_hp = std.math.max(hp, 0);
+
+    var hp_index: usize = 0;
+    while (hp_index < current_hp) : (hp_index += 1) {
+        const offset = 0.15;
+        const bar_x = @intToFloat(f32, hp_index) * hp_bar_width + offset;
+        const bar_y = offset;
+        const filled = hp_index <= current_hp;
+        try painter.drawcmds.append(DrawCmd.rectFloat(bar_x, bar_y, hp_bar_width - offset * 2.0, 1.0 - offset * 2.0, filled, health_color));
+    }
+
+    const energy = game.level.entities.energy.get(Entities.player_id);
+    const energy_color = Color.init(176, 132, 87, 255);
+
+    const energy_bar_width = @intToFloat(f32, painter.area.width) / @intToFloat(f32, game.config.player_energy_max);
+
+    var energy_index: usize = 0;
+    while (energy_index < energy) : (energy_index += 1) {
+        const x_offset = 0.3;
+        const y_offset = 0.2;
+        const bar_x = @intToFloat(f32, energy_index) * energy_bar_width + x_offset;
+        const bar_y = 1.0 + y_offset;
+        const filled = energy_index <= energy;
+        try painter.drawcmds.append(DrawCmd.rectFloat(bar_x, bar_y, energy_bar_width - x_offset * 2.0, 1.0 - y_offset * 2.0, filled, energy_color));
+    }
 }

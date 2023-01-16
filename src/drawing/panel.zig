@@ -10,14 +10,22 @@ const Pos = math.pos.Pos;
 const Dims = math.utils.Dims;
 
 pub const Panel = struct {
-    cells: Dims,
     num_pixels: Dims,
+    cells: Dims,
 
     pub fn init(num_pixels: Dims, cells: Dims) Panel {
         return Panel{
             .cells = cells,
             .num_pixels = num_pixels,
         };
+    }
+
+    pub fn subpanel(panel: *const Panel, subarea: Area) Panel {
+        assert(subarea.x_offset + subarea.width <= panel.cells.width);
+        assert(subarea.y_offset + subarea.height <= panel.cells.height);
+
+        const cell_dims = panel.cellDims();
+        return Panel.init(cell_dims.scale(subarea.width, subarea.height), Dims.init(subarea.width, subarea.height));
     }
 
     pub fn cellDims(self: *const Panel) Dims {

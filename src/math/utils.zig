@@ -60,4 +60,8 @@ pub const Dims = struct {
         const new_y = std.math.min(@intCast(i32, dims.height) - 1, std.math.max(0, pos.y));
         return Pos.init(new_x, new_y);
     }
+
+    pub fn scale(dims: Dims, x_scaler: usize, y_scaler: usize) Dims {
+        return Dims.init(dims.width * x_scaler, dims.height * y_scaler);
+    }
 };

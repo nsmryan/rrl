@@ -11,7 +11,9 @@ proc pos { x y } {
 set playerId 0
 
 Gui create gui
-gui setBytes [Gui call init 0 $zigtcl::tclAllocator]
+gui setBytes [Gui call init 0 0 $zigtcl::tclAllocator]
+Game with [gui ptr game] call startLevel 9 9
+gui call resolveMessages
 
 InputEvent create event
 proc keyDown { chr } {
@@ -38,6 +40,12 @@ proc space { } {
 proc esc { } {
     keyUp 27
     keyDown 27
+}
+
+set startupTicks [clock milliseconds]
+proc ticks { } {
+    global startupTicks
+    return [expr [clock milliseconds] - $startupTicks]
 }
 
 proc mkKey { name value } { proc $name { } "key $value" }
@@ -67,9 +75,8 @@ proc sneak { dir } {
 }
 
 proc renderPeriodically { } {
-    set result [gui call step]
+    set result [gui call step [ticks]]
     if { $result == 1 } {
-        gui call draw
         after 100 renderPeriodically
     } else {
         gui call deinit

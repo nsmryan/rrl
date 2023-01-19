@@ -1,15 +1,9 @@
+== Rust Roguelike, Zig Version ==
+
+This repository contains an incomplete re-write of the [Rust Roguelike](https://github.com/nsmryan/RustRoguelike) project in Zig.
+
+
 == Notes ==
-
-This repository is part of an exploration of Zig that I am doing, along with a number of my other repositories.
-
-Eventually there might be something here, if things go well.
-
-
-=== Utilties ===
-
-Ran into some compiler bugs when testing. Also the fact that numeric literals have a comptime_int type
-results in some verbosity, although its not such a big deal.
-
 
 Iterator is much simpler and smaller. There is weirdness to it, like the whole generics-are-functions thing,
 but its not nearly as baroque as Rust as it does not use lifetime parameters.
@@ -35,25 +29,9 @@ Also I believe I will be able to use Zig's random numebr generation, which I cou
 due to orphan rule serde support.
 
 
-=== Progress ===
+=== Next Steps ===
 
-roguelike_utils and roguelike_map are ported.
-
-Some very basic entity concepts are ported.
-
-Zig and TCL can draw using draw commands.
-
-Next steps:
-
-  * TCL draw map based on tile contents.
-  * Add enough to entities to create the player and some golems.
-  * TCL draw these entities.
-  * Start to build up basics of each game architecture concept
-    * Game structure
-    * Messaging
-    * Configuration
-    * Input processing
-    * Actions for state transitions
-    * Game step
-    * Message resolution
-  * Once the vertical structure is in place, build outwards by adding features.
+  * Render the UI
+    * Player info
+    * Log messages
+    * Buttons

@@ -64,7 +64,7 @@ pub const Turn = struct {
     }
 
     pub fn any(turn: Turn) bool {
-        for (std.meta.fields()) |field| {
+        inline for (std.meta.fields(Turn)) |field| {
             if (@field(turn, field.name)) {
                 return true;
             }

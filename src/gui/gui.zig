@@ -18,6 +18,7 @@ const Color = math.utils.Color;
 
 const core = @import("core");
 const movement = core.movement;
+const MoveMode = core.movement.MoveMode;
 const Config = core.config.Config;
 const entities = core.entities;
 const Stance = entities.Stance;
@@ -162,8 +163,9 @@ pub const Gui = struct {
                 .facing => |args| try gui.state.facing.insert(args.id, args.facing),
                 .stance => |args| try gui.state.stance.insert(args.id, args.stance),
                 .move => |args| try gui.moveEntity(args.id, args.pos),
+                .nextMoveMode => |args| try gui.nextMoveMode(args.id, args.move_mode),
                 .startLevel => try gui.startLevel(),
-                .endTurn => try gui.assignAllIdleAnimations(),
+                .endTurn => try gui.endTurn(),
                 .cursorStart => |args| try gui.cursorStart(args),
                 .cursorEnd => gui.cursorEnd(),
                 .cursorMove => |args| gui.cursorMove(args),
@@ -176,6 +178,16 @@ pub const Gui = struct {
     fn startLevel(gui: *Gui) !void {
         try gui.assignAllIdleAnimations();
         gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
+        try gui.state.move_mode.insert(entities.Entities.player_id, MoveMode.walk);
+    }
+
+    fn endTurn(gui: *Gui) !void {
+        try gui.assignAllIdleAnimations();
+        gui.state.turn_count += 1;
+    }
+
+    fn nextMoveMode(gui: *Gui, id: Id, move_mode: MoveMode) !void {
+        try gui.state.move_mode.insert(id, move_mode);
     }
 
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
@@ -196,7 +208,6 @@ pub const Gui = struct {
                 gui.game.config.map_window_dist,
                 gui.game.level.map.dims(),
             );
-            std.debug.print("center after {}\n", .{gui.state.map_window_center});
         }
     }
 
@@ -280,9 +291,13 @@ pub const Gui = struct {
         try rendering.renderLevel(&gui.game, &painter);
         gui.display.draw(&gui.panels.level);
 
-        painter.drawcmds = &gui.panels.pip.drawcmds;
+        painter.retarget(&gui.panels.pip.drawcmds, gui.panels.pip.panel.getArea());
         try rendering.renderPips(&gui.game, &painter);
         gui.display.draw(&gui.panels.pip);
+
+        painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getArea());
+        try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
+        gui.display.draw(&gui.panels.player);
 
         const map_area = mapWindowArea(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
 
@@ -339,7 +354,7 @@ pub const Panels = struct {
         const pip_area = pip_map_area.first;
         const map_area = pip_map_area.second;
 
-        const player_right_area = top_bottom_split.second.splitLeft(screen_area.width / 6);
+        const player_right_area = top_bottom_split.second.splitLeft(screen_area.width / 4);
         const player_area = player_right_area.first;
         const inventory_info_area = player_right_area.second.splitLeft(screen_area.width / 2);
         const inventory_area = inventory_info_area.first;
@@ -511,15 +526,18 @@ pub const DisplayState = struct {
     stance: Comp(Stance),
     name: Comp(Name),
     facing: Comp(Direction),
+    move_mode: Comp(MoveMode),
     animation: Comp(Animation),
     cursor_animation: ?Animation = null,
     map_window_center: Pos,
+    turn_count: usize,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
         comptime var names = entities.compNames(DisplayState);
         state.cursor_animation = null;
         state.map_window_center = Pos.init(0, 0);
+        state.turn_count = 0;
         inline for (names) |field_name| {
             @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
         }

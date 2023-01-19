@@ -44,6 +44,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .pass => |args| try resolvePassTurn(args, game),
         .stance => |args| resolveStance(args.id, args.stance, game),
         .startLevel => try resolveStartLevel(game),
+        .endTurn => try resolveEndTurn(game),
         else => {},
     }
 }
@@ -420,4 +421,10 @@ fn resolveStance(id: Id, stance: Stance, game: *Game) void {
 
 fn resolveStartLevel(game: *Game) !void {
     try game.level.updateAllFov();
+    game.level.entities.turn.getPtr(core.entities.Entities.player_id).* = core.entities.Turn.init();
+}
+
+fn resolveEndTurn(game: *Game) !void {
+    std.debug.print("end turn {}\n", .{game.level.entities.turn.get(core.entities.Entities.player_id)});
+    game.level.entities.turn.getPtr(core.entities.Entities.player_id).* = core.entities.Turn.init();
 }

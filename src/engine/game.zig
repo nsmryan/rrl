@@ -86,8 +86,15 @@ pub const Game = struct {
 
     pub fn handleInputAction(game: *Game, input_action: InputAction) !void {
         try actions.resolveAction(game, input_action);
+
+        const already_took_turn = game.level.entities.turn.get(Entities.player_id).any();
         try resolve.resolve(game);
-        try game.log.record(.endTurn, .{});
+
+        const player_took_turn = game.level.entities.turn.get(Entities.player_id).any();
+        if (!already_took_turn and player_took_turn) {
+            try game.log.log(.endTurn, .{});
+            try resolve.resolve(game);
+        }
     }
 
     pub fn changeState(game: *Game, new_state: GameState) void {

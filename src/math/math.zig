@@ -69,8 +69,11 @@ pub fn randPosInRadius(position: pos.Pos, radius: i32, rng: std.rand.Random) pos
     return position.add(offset);
 }
 
-comptime {
-    if (@import("builtin").is_test) {
-        @import("std").testing.refAllDecls(@This());
-    }
+test {
+    @import("std").testing.refAllDecls(@This());
 }
+//comptime {
+//    if (@import("builtin").is_test) {
+//        @import("std").testing.refAllDecls(@This());
+//    }
+//}

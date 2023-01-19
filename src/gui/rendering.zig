@@ -55,6 +55,11 @@ pub const Painter = struct {
         const key = painter.strings.toKey(name);
         return painter.sprites.get(key).?.sprite();
     }
+
+    pub fn retarget(painter: *Painter, drawcmds: *ArrayList(DrawCmd), area: Area) void {
+        painter.drawcmds = drawcmds;
+        painter.area = area;
+    }
 };
 
 pub fn renderLevel(game: *Game, painter: *Painter) !void {
@@ -333,3 +338,226 @@ pub fn renderPips(game: *Game, painter: *Painter) !void {
         try painter.drawcmds.append(DrawCmd.rectFloat(bar_x, bar_y, energy_bar_width - x_offset * 2.0, 1.0 - y_offset * 2.0, filled, energy_color));
     }
 }
+
+// NOTE(memory) provide a frame allocator for display stuff.
+pub fn renderPlayer(game: *Game, painter: *Painter, allocator: Allocator) !void {
+    _ = game;
+
+    var list: ArrayList([]u8) = ArrayList([]u8).init(allocator);
+
+    const x_offset: usize = 1;
+
+    const stance = painter.state.stance.get(Entities.player_id);
+    try list.append(try allocator.dupe(u8, @tagName(stance)));
+
+    const move_mode = painter.state.move_mode.get(Entities.player_id);
+    const next_move_msg = try std.fmt.allocPrint(allocator, "next move {s}", .{@tagName(move_mode)});
+    try list.append(next_move_msg);
+
+    try list.append(try std.fmt.allocPrint(allocator, "turn {}", .{painter.state.turn_count}));
+
+    const text_pos = Pos.init(x_offset, 1);
+
+    const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
+    try renderTextList(painter, list, ui_color, text_pos, 1.0);
+}
+
+fn renderTextList(painter: *Painter, text_list: ArrayList([]u8), color: Color, cell: Pos, scale: f32) !void {
+    for (text_list.items) |str, index| {
+        const text_cell = Pos.init(cell.x, cell.y + @intCast(i32, index));
+        try painter.drawcmds.append(DrawCmd.text(str, text_cell, color, scale));
+    }
+}
+
+//pub fn renderInventory(game: *Game, painter: *Painter) !void {
+//    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+//    let highlight_ui_color = Color::new(0, 0, 0, 255);
+//
+//    let mut x_offset = config.x_offset_buttons;
+//    let mut y_offset = config.y_offset_buttons;
+//
+//    /* Talents */
+//    // TODO replace with qwe when available.
+//    render_inventory_talent('Q', 0, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_talent('W', 1, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_talent('E', 2, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_talent('R', 3, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    /* Skills */
+//    y_offset += config.y_spacing_buttons;
+//    x_offset = config.x_offset_buttons;
+//    render_inventory_skill('A', 0, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_skill('S', 1, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_skill('D', 2, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_skill('F', 3, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    /* Items */
+//    y_offset += config.y_spacing_buttons;
+//    x_offset = config.x_offset_buttons;
+//    render_inventory_item('Z', ItemClass::Primary, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    render_inventory_item('X', ItemClass::Consumable, x_offset, y_offset, panel, display_state, sprites, config);
+//
+//    x_offset += config.x_spacing_buttons;
+//    let text_color;
+//    let button_name;
+//    if should_highlight_item(display_state, UseAction::Item(ItemClass::Misc)) {
+//        button_name = &"C_Button_Highlight";
+//        text_color = highlight_ui_color;
+//    } else {
+//        button_name = &"C_Button_Base";
+//        text_color = ui_color;
+//    }
+//    render_button(button_name, x_offset, y_offset, panel, sprites, config);
+//
+//    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+//    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+//    let mut num_stones = 0;
+//    for (item, _item_class) in display_state.inventory.iter() {
+//        if *item == Item::Stone {
+//            num_stones += 1;
+//        }
+//    }
+//    if num_stones > 0 {
+//        let item_text = format!("Stone x{}", num_stones);
+//        panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+//    }
+//
+//    // TODO need another item class to use for this location.
+//    //x_offset += config.x_spacing_buttons;
+//    //render_inventory_item('V', ItemClass::Consumable, x_offset, y_offset, panel, display_state, sprites, config);
+//}
+//
+//pub fn renderInfo(game: *Game, painter: *Painter) !void {
+//    let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
+//
+//    if let Some(info_pos) = display_state.cursor_pos {
+//        let x_offset = 1;
+//
+//        let object_ids = display_state.entities_at_cursor.clone();
+//
+//        let mut y_pos = 1;
+//
+//        let mut text_list = Vec::new();
+//
+//        text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
+//
+//        let text_pos = Pos::new(x_offset, y_pos);
+//
+//        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
+//
+//        text_list.clear();
+//
+//        y_pos += 1;
+//
+//        let mut drawn_info = false;
+//
+//        // only display first object
+//        //if let Some(obj_id) = object_ids.first() {
+//        for obj_id in object_ids {
+//            let entity_in_fov = display_state.entity_is_in_fov(obj_id) == FovResult::Inside;
+//
+//            // only display things in the player's FOV
+//            if entity_in_fov {
+//                drawn_info = true;
+//
+//                text_list.push(format!("* {:?}", display_state.name[&obj_id]));
+//                if let Some(hp) = display_state.hp.get(&obj_id) {
+//                    text_list.push(format!(" hp {:?}", hp));
+//                } else {
+//                    text_list.push("".to_string());
+//                }
+//
+//                // show facing direction for player and monsters
+//                if display_state.typ[&obj_id] == EntityType::Player ||
+//                   display_state.typ[&obj_id] == EntityType::Enemy {
+//                    if let Some(direction) = display_state.direction.get(&obj_id) {
+//                        text_list.push(format!(" facing {}", direction));
+//                    }
+//                }
+//
+//                if matches!(display_state.hp.get(&obj_id), Some(0)) {
+//                    text_list.push(format!("  {}", "dead"));
+//                } else if let Some(behave) = display_state.behavior.get(&obj_id) {
+//                    text_list.push(format!(" currently {}", behave.description()));
+//                }
+//            }
+//        }
+//
+//        // if there was nothing else to draw, check for an impression
+//        if !drawn_info {
+//            for impr in display_state.impressions.iter() {
+//                if impr.pos == info_pos {
+//                    text_list.push("* Golem".to_string());
+//                    break;
+//                }
+//            }
+//        }
+//
+//        let text_pos = Pos::new(x_offset, y_pos);
+//        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
+//
+//        if display_state.fov.get(&info_pos) == Some(&FovResult::Inside) {
+//            if display_state.map[info_pos].tile_type == TileType::Water {
+//                text_list.push("Tile is water".to_string());
+//            } else {
+//                text_list.push(format!("Tile is {:?}",  display_state.map[info_pos].surface));
+//            }
+//
+//            if display_state.map[info_pos].bottom_wall != Wall::Empty {
+//                text_list.push("Lower wall".to_string());
+//            }
+//
+//            if display_state.map.is_within_bounds(move_x(info_pos, 1)) &&
+//               display_state.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+//                text_list.push("Right wall".to_string());
+//            }
+//
+//            if display_state.map.is_within_bounds(move_y(info_pos, -1)) &&
+//               display_state.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+//                text_list.push("Top wall".to_string());
+//            }
+//
+//            if display_state.map[info_pos].left_wall != Wall::Empty {
+//                text_list.push("Left wall".to_string());
+//            }
+//
+//            if display_state.map.tile_is_blocking(info_pos) {
+//                text_list.push(format!("blocked"));
+//            }
+//        }
+//
+//        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
+//    } else {
+//        // otherwise show console log messages
+//        let mut text_list = Vec::new();
+//        for index in 0..display_state.msg_lines.len() {
+//            let (turn, msg) = display_state.msg_lines[index].clone();
+//
+//            let color = if (turn + 1) == display_state.turn_count {
+//                text_color
+//            } else {
+//                let mut color = text_color;
+//                color.a = 200;
+//                color
+//            };
+//
+//            text_list.push((color, msg));
+//        }
+//        let text_pos = Pos::new(1, 1);
+//        panel.colored_text_list_cmd(&text_list, text_pos, 1.0);
+//    }
+//}

@@ -60,6 +60,17 @@ pub const Msg = union(enum) {
 
         return @unionInit(Msg, @tagName(msg_type), value);
     }
+
+    pub fn consoleMessage(msg: Msg, buf: []u8) std.fmt.BufPrintError![]u8 {
+        switch (msg) {
+            .pass => {
+                return try std.fmt.bufPrint(buf, "Player passed their turn", .{});
+            },
+
+            else => {},
+        }
+        return &.{};
+    }
 };
 
 pub const MsgType = std.meta.Tag(Msg);

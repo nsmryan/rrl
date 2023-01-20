@@ -425,6 +425,5 @@ fn resolveStartLevel(game: *Game) !void {
 }
 
 fn resolveEndTurn(game: *Game) !void {
-    std.debug.print("end turn {}\n", .{game.level.entities.turn.get(core.entities.Entities.player_id)});
     game.level.entities.turn.getPtr(core.entities.Entities.player_id).* = core.entities.Turn.init();
 }

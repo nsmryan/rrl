@@ -60,29 +60,29 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
-        pub fn len(self: *Self) usize {
+        pub fn len(self: *const Self) usize {
             return self.ids.items.len;
         }
 
-        pub fn lookup(self: *Self, id: Id) ?usize {
+        pub fn lookup(self: *const Self, id: Id) ?usize {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| return loc,
                 .not_found => return null,
             }
         }
 
-        pub fn get(self: *Self, id: Id) T {
+        pub fn get(self: *const Self, id: Id) T {
             return self.getOrNull(id).?;
         }
 
-        pub fn getOrNull(self: *Self, id: Id) ?T {
+        pub fn getOrNull(self: *const Self, id: Id) ?T {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => |loc| return self.store.items[loc],
                 .not_found => return null,
             }
         }
 
-        pub fn has(self: *Self, id: Id) bool {
+        pub fn has(self: *const Self, id: Id) bool {
             switch (binarySearchKeys(id, self.ids.items)) {
                 .found => return true,
                 .not_found => return false,
@@ -107,7 +107,7 @@ pub fn Comp(comptime T: type) type {
             }
         }
 
-        pub fn contains_key(self: *Self, id: Id) bool {
+        pub fn containsKey(self: *const Self, id: Id) bool {
             return self.lookup(id) != null;
         }
 

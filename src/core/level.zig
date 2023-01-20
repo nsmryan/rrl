@@ -134,6 +134,16 @@ pub const Level = struct {
         return try level.isInFov(id, other_pos, view_height);
     }
 
+    pub fn entitiesAtPos(level: *const Level, pos: Pos, ids: *ArrayList(Id)) !void {
+        for (level.entities.ids.items) |id| {
+            if (level.entities.pos.getOrNull(id)) |entity_pos| {
+                if (entity_pos.eql(pos)) {
+                    try ids.append(id);
+                }
+            }
+        }
+    }
+
     pub fn posInFov(level: *Level, id: Id, other_pos: Pos) FovError!FovResult {
         return try level.isInFov(id, other_pos, level.entities.stance.get(id).viewHeight());
     }

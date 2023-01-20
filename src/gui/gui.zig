@@ -36,6 +36,7 @@ const InputEvent = engine.input.InputEvent;
 const UseAction = engine.actions.UseAction;
 const Settings = engine.actions.Settings;
 const GameState = engine.settings.GameState;
+const Msg = engine.messaging.Msg;
 
 const drawing = @import("drawing");
 const sprite = drawing.sprite;
@@ -172,6 +173,7 @@ pub const Gui = struct {
 
                 else => {},
             }
+            try gui.state.console_log.queue(msg, gui.state.turn_count);
         }
     }
 
@@ -298,6 +300,10 @@ pub const Gui = struct {
         painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getArea());
         try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
         gui.display.draw(&gui.panels.player);
+
+        painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getArea());
+        try rendering.renderInfo(&gui.game, &painter);
+        gui.display.draw(&gui.panels.info);
 
         const map_area = mapWindowArea(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
 
@@ -521,6 +527,41 @@ test "map window no follow y bottom edge" {
     try std.testing.expectEqual(Pos.init(3, 3), center);
 }
 
+pub const ConsoleLog = struct {
+    pub const num_msgs: usize = 16;
+    pub const msg_len: usize = 32;
+
+    log: [num_msgs * msg_len]u8 = [_]u8{0} ** (num_msgs * msg_len),
+    slices: [num_msgs][]u8,
+    turns: [num_msgs]usize,
+    index: usize = 0,
+
+    pub fn init() ConsoleLog {
+        var console_log = ConsoleLog{ .slices = undefined, .turns = undefined };
+
+        var index: usize = 0;
+        while (index < num_msgs) : (index += 1) {
+            console_log.slices[index] = &.{};
+            console_log.turns[index] = 0;
+        }
+
+        return console_log;
+    }
+
+    pub fn queue(console_log: *ConsoleLog, msg: Msg, turn: usize) !void {
+        const start = console_log.index * msg_len;
+        const end = start + msg_len;
+
+        const str = try msg.consoleMessage(console_log.log[start..end]);
+
+        if (str.len > 0) {
+            console_log.slices[console_log.index] = str;
+            console_log.turns[console_log.index] = turn;
+            console_log.index = (console_log.index + 1) % num_msgs;
+        }
+    }
+};
+
 pub const DisplayState = struct {
     pos: Comp(Pos),
     stance: Comp(Stance),
@@ -531,16 +572,21 @@ pub const DisplayState = struct {
     cursor_animation: ?Animation = null,
     map_window_center: Pos,
     turn_count: usize,
+    console_log: ConsoleLog,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
-        comptime var names = entities.compNames(DisplayState);
+
         state.cursor_animation = null;
         state.map_window_center = Pos.init(0, 0);
         state.turn_count = 0;
+        state.console_log = ConsoleLog.init();
+
+        comptime var names = entities.compNames(DisplayState);
         inline for (names) |field_name| {
             @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
         }
+
         return state;
     }
 

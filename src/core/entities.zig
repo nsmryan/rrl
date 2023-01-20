@@ -22,6 +22,9 @@ const View = fov.View;
 const items = @import("items.zig");
 const Item = items.Item;
 
+const ai = @import("ai.zig");
+const Behavior = ai.Behavior;
+
 pub const SkillClass = enum {
     body,
     grass,
@@ -96,6 +99,7 @@ pub const Entities = struct {
     fov_block: Comp(FovBlock),
     view: Comp(View),
     hp: Comp(usize),
+    behavior: Comp(Behavior),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

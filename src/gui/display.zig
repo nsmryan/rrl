@@ -106,13 +106,14 @@ pub const Display = struct {
         return game;
     }
 
-    pub fn draw(display: *Display, texture_panel: *TexturePanel) void {
+    pub fn clear(display: *Display, texture_panel: *TexturePanel) void {
         _ = sdl2.SDL_SetRenderTarget(display.renderer, texture_panel.texture);
         _ = sdl2.SDL_SetRenderDrawBlendMode(display.renderer, sdl2.SDL_BLENDMODE_BLEND);
-
         _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
         _ = sdl2.SDL_RenderClear(display.renderer);
+    }
 
+    pub fn draw(display: *Display, texture_panel: *TexturePanel) void {
         var texture_canvas = canvas.Canvas.init(&texture_panel.panel, display.renderer, texture_panel.texture, &display.sprites, display.ascii_texture);
         for (texture_panel.drawcmds.items) |cmd| {
             texture_canvas.draw(&cmd);

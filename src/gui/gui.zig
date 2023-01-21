@@ -281,7 +281,7 @@ pub const Gui = struct {
         }
     }
 
-    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+    pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {
         var painter = Painter{
             .sprites = &gui.display.sprites.sheets,
             .strings = &gui.display.strings,
@@ -291,27 +291,61 @@ pub const Gui = struct {
             .dt = delta_ticks,
         };
         try rendering.renderLevel(&gui.game, &painter);
+        gui.display.clear(&gui.panels.level);
         gui.display.draw(&gui.panels.level);
 
         painter.retarget(&gui.panels.pip.drawcmds, gui.panels.pip.panel.getArea());
         try rendering.renderPips(&gui.game, &painter);
+        gui.display.clear(&gui.panels.pip);
         gui.display.draw(&gui.panels.pip);
 
         painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getArea());
         try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
+        gui.display.clear(&gui.panels.player);
         gui.display.draw(&gui.panels.player);
 
         painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getArea());
         try rendering.renderInfo(&gui.game, &painter);
+        gui.display.clear(&gui.panels.info);
         gui.display.draw(&gui.panels.info);
+    }
 
+    pub fn placePanels(gui: *Gui) void {
         const map_area = mapWindowArea(gui.game.level.map.dims(), gui.state.map_window_center, gui.game.config.map_window_dist);
 
+        gui.display.clear(&gui.panels.screen);
         gui.display.fitTexture(&gui.panels.screen, gui.panels.level_area, &gui.panels.level, map_area);
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.pip_area, &gui.panels.pip, gui.panels.pip.panel.getArea());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getArea());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getArea());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getArea());
+    }
+
+    pub fn drawOverlay(gui: *Gui) !void {
+        const color = Color.init(0xcd, 0xb4, 0x96, 255);
+
+        const offset: f32 = 0.5;
+        const player_panel_pos = gui.panels.player_area.position();
+        const player_panel_width = @intCast(u32, gui.panels.player_area.width);
+        const player_panel_height = @intCast(u32, gui.panels.player_area.height);
+        try gui.panels.screen.drawcmds.append(DrawCmd.rect(player_panel_pos, player_panel_width, player_panel_height, offset, false, color));
+
+        const screen_panel_width = @intCast(u32, gui.panels.screen.panel.getArea().width);
+        const screen_panel_height = @intCast(u32, gui.panels.player.panel.getArea().height);
+        try gui.panels.screen.drawcmds.append(DrawCmd.rect(player_panel_pos, screen_panel_width, screen_panel_height, offset, false, color));
+
+        const info_panel_pos = gui.panels.info_area.position();
+        const info_panel_width = @intCast(u32, gui.panels.info_area.width);
+        const info_panel_height = @intCast(u32, gui.panels.info_area.height);
+        try gui.panels.screen.drawcmds.append(DrawCmd.rect(info_panel_pos, info_panel_width, info_panel_height, offset, false, color));
+
+        gui.display.draw(&gui.panels.screen);
+    }
+
+    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+        try gui.drawPanels(delta_ticks);
+        gui.placePanels();
+        try gui.drawOverlay();
 
         gui.display.present(&gui.panels.screen);
 

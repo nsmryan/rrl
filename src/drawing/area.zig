@@ -2,7 +2,7 @@ const assert = @import("std").debug.assert;
 
 const math = @import("math");
 const utils = math.utils;
-const Pos = math.Pos;
+const Pos = math.pos.Pos;
 const Dims = utils.Dims;
 
 pub const AreaSplit = struct {
@@ -26,6 +26,10 @@ pub const Area = struct {
 
     pub fn initAt(x_offset: usize, y_offset: usize, width: usize, height: usize) Area {
         return Area{ .x_offset = x_offset, .y_offset = y_offset, .width = width, .height = height };
+    }
+
+    pub fn position(area: Area) Pos {
+        return Pos.init(@intCast(i32, area.x_offset), @intCast(i32, area.y_offset));
     }
 
     pub fn dims(self: *const Area) Dims {

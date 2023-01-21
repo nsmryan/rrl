@@ -152,8 +152,12 @@ pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color
     const char_width = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * scale);
 
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
-    _ = sdl2.SDL_SetTextureColorMod(canvas.sprites.texture, color.r, color.g, color.b);
-    _ = sdl2.SDL_SetTextureAlphaMod(canvas.sprites.texture, color.a);
+
+    //_ = sdl2.SDL_SetTextureColorMod(canvas.sprites.texture, color.r, color.g, color.b);
+    //_ = sdl2.SDL_SetTextureAlphaMod(canvas.sprites.texture, color.a);
+
+    _ = sdl2.SDL_SetTextureColorMod(canvas.ascii_texture.texture, color.r, color.g, color.b);
+    _ = sdl2.SDL_SetTextureAlphaMod(canvas.ascii_texture.texture, color.a);
 
     const y_offset = pixel_pos.y;
     var x_offset = pixel_pos.x;

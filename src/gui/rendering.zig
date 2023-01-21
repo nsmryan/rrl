@@ -724,6 +724,10 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
         while (offset < ConsoleLog.num_msgs) : (offset += 1) {
             const index = (offset + painter.state.console_log.index) % ConsoleLog.num_msgs;
 
+            if (painter.state.console_log.slices[index].len == 0) {
+                continue;
+            }
+
             var color: Color = text_color;
             if ((painter.state.console_log.turns[index] + 1) != painter.state.turn_count) {
                 color.a = 200;

@@ -108,6 +108,7 @@ pub const Display = struct {
 
     pub fn draw(display: *Display, texture_panel: *TexturePanel) void {
         _ = sdl2.SDL_SetRenderTarget(display.renderer, texture_panel.texture);
+        _ = sdl2.SDL_SetRenderDrawBlendMode(display.renderer, sdl2.SDL_BLENDMODE_BLEND);
 
         _ = sdl2.SDL_SetRenderDrawColor(display.renderer, 0, 0, 0, sdl2.SDL_ALPHA_OPAQUE);
         _ = sdl2.SDL_RenderClear(display.renderer);

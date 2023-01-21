@@ -362,7 +362,7 @@ pub const Panels = struct {
 
         const player_right_area = top_bottom_split.second.splitLeft(screen_area.width / 4);
         const player_area = player_right_area.first;
-        const inventory_info_area = player_right_area.second.splitLeft(screen_area.width / 2);
+        const inventory_info_area = player_right_area.second.splitLeft(player_right_area.second.width / 2);
         const inventory_area = inventory_info_area.first;
         const info_area = inventory_info_area.second;
 
@@ -528,7 +528,7 @@ test "map window no follow y bottom edge" {
 }
 
 pub const ConsoleLog = struct {
-    pub const num_msgs: usize = 16;
+    pub const num_msgs: usize = 8;
     pub const msg_len: usize = 32;
 
     log: [num_msgs * msg_len]u8 = [_]u8{0} ** (num_msgs * msg_len),

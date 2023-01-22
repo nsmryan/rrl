@@ -89,29 +89,7 @@ pub const InputAction = union(enum) {
 
 pub fn resolveAction(game: *Game, input_action: InputAction) !void {
     switch (game.settings.state) {
-        .playing => {
-            switch (input_action) {
-                .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).moveAmount() }),
-
-                .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
-
-                .sneak => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.sneak }),
-
-                .walk => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.walk }),
-
-                .pass => try game.log.log(.pass, Entities.player_id),
-
-                .cursorToggle => try cursorToggle(game),
-
-                .cursorMove => |args| try cursorMove(game, args.dir, args.is_relative, args.is_long),
-
-                .cursorReturn => cursorReturn(game),
-
-                // TODO for now esc exits, but when menus work only exit should exit the game.
-                .esc => game.changeState(.exit),
-                else => {},
-            }
-        },
+        .playing => try resolveActionPlaying(game, input_action),
         .win => {},
         .lose => {},
         .inventory => {},
@@ -119,8 +97,40 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
         .classMenu => {},
         .helpMenu => {},
         .confirmQuit => {},
+        .splash => resolveActionSplash(game, input_action),
         .use => {},
         .exit => {},
+    }
+}
+
+pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
+    switch (input_action) {
+        .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).moveAmount() }),
+
+        .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
+
+        .sneak => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.sneak }),
+
+        .walk => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.walk }),
+
+        .pass => try game.log.log(.pass, Entities.player_id),
+
+        .cursorToggle => try cursorToggle(game),
+
+        .cursorMove => |args| try cursorMove(game, args.dir, args.is_relative, args.is_long),
+
+        .cursorReturn => cursorReturn(game),
+
+        // TODO for now esc exits, but when menus work only exit should exit the game.
+        .esc => game.changeState(.exit),
+        else => {},
+    }
+}
+
+pub fn resolveActionSplash(game: *Game, input_action: InputAction) !void {
+    switch (input_action) {
+        .esc => game.changeState(.exit),
+        else => game.changeState(.playing),
     }
 }
 

@@ -66,8 +66,12 @@ proc ptr { ptr args } {
 }
 
 # Get a component from a particular entity by name.
-proc component { id name } {
-    return [$name with [ptr [gui ptr] Gui game Game level Level entities Entities pos] call get $id]
+proc getValue { typ name id } {
+    return [Comp($typ) with [ptr [gui ptr] Gui game Game level Level entities Entities $name] call get $id]
+}
+
+proc setValue { typ name id value } {
+    return [Comp($typ) with [ptr [gui ptr] Gui game Game level Level entities Entities $name] call set $id $value]
 }
 
 

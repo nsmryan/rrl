@@ -648,7 +648,7 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
             if (entity_in_fov) {
                 drawn_info = true;
 
-                try text_list.append(try std.fmt.allocPrint(game.allocator, "* {}", .{game.level.entities.name.get(obj_id)}));
+                try text_list.append(try std.fmt.allocPrint(game.allocator, "* {s}", .{@tagName(game.level.entities.name.get(obj_id))}));
                 if (game.level.entities.hp.getOrNull(obj_id)) |hp| {
                     try text_list.append(try std.fmt.allocPrint(game.allocator, " hp {}", .{hp}));
                 } else {
@@ -658,14 +658,14 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
                 // Show facing direction for player and monsters.
                 if (game.level.entities.typ.get(obj_id) == .player or game.level.entities.typ.get(obj_id) == .enemy) {
                     if (game.level.entities.facing.getOrNull(obj_id)) |direction| {
-                        try text_list.append(try std.fmt.allocPrint(game.allocator, " facing {}", .{direction}));
+                        try text_list.append(try std.fmt.allocPrint(game.allocator, " facing {s}", .{@tagName(direction)}));
                     }
                 }
 
                 if (game.level.entities.hp.get(obj_id) == 0) {
                     try text_list.append(try game.allocator.dupe(u8, "  dead"));
                 } else if (game.level.entities.behavior.getOrNull(obj_id)) |behave| {
-                    try text_list.append(try std.fmt.allocPrint(game.allocator, " currently {}", .{behave}));
+                    try text_list.append(try std.fmt.allocPrint(game.allocator, " currently {s}", .{@tagName(behave)}));
                 }
             }
         }
@@ -683,13 +683,14 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
 
         text_pos = Pos.init(x_offset, y_pos);
 
+        // If the tile is visible, report additional information about it.
         if (try game.level.posInsideFov(player_id, info_pos)) {
             const info_tile = game.level.map.get(info_pos);
 
             if (info_tile.impassable) {
                 try text_list.append(try game.allocator.dupe(u8, "Tile is water"));
             } else {
-                try text_list.append(try std.fmt.allocPrint(game.allocator, "Tile is {}", .{game.level.map.get(info_pos).center}));
+                try text_list.append(try std.fmt.allocPrint(game.allocator, "Tile is {s} {s}", .{ @tagName(game.level.map.get(info_pos).center.height), @tagName(game.level.map.get(info_pos).center.material) }));
             }
 
             if (info_tile.down.height != .empty) {

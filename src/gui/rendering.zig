@@ -729,7 +729,7 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
             }
 
             var color: Color = text_color;
-            if ((painter.state.console_log.turns[index] + 1) != painter.state.turn_count) {
+            if ((painter.state.console_log.turns[index] + 1) < painter.state.turn_count) {
                 color.a = 200;
             }
 

@@ -23,6 +23,7 @@ const Config = core.config.Config;
 const entities = core.entities;
 const Stance = entities.Stance;
 const Name = entities.Name;
+const Entities = entities.Entities;
 
 const gen = @import("gen");
 
@@ -173,7 +174,7 @@ pub const Gui = struct {
 
                 else => {},
             }
-            try gui.state.console_log.queue(msg, gui.state.turn_count);
+            try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
         }
     }
 
@@ -181,6 +182,7 @@ pub const Gui = struct {
         try gui.assignAllIdleAnimations();
         gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
         try gui.state.move_mode.insert(entities.Entities.player_id, MoveMode.walk);
+        gui.state.console_log.clear();
     }
 
     fn endTurn(gui: *Gui) !void {
@@ -578,26 +580,28 @@ pub const ConsoleLog = struct {
 
     pub fn init() ConsoleLog {
         var console_log = ConsoleLog{ .slices = undefined, .turns = undefined };
-
-        var index: usize = 0;
-        while (index < num_msgs) : (index += 1) {
-            console_log.slices[index] = &.{};
-            console_log.turns[index] = 0;
-        }
-
+        console_log.clear();
         return console_log;
     }
 
-    pub fn queue(console_log: *ConsoleLog, msg: Msg, turn: usize) !void {
+    pub fn queue(console_log: *ConsoleLog, entities_ptr: *const Entities, msg: Msg, turn: usize) !void {
         const start = console_log.index * msg_len;
         const end = start + msg_len;
 
-        const str = try msg.consoleMessage(console_log.log[start..end]);
+        const str = try msg.consoleMessage(entities_ptr, console_log.log[start..end]);
 
         if (str.len > 0) {
             console_log.slices[console_log.index] = str;
             console_log.turns[console_log.index] = turn;
             console_log.index = (console_log.index + 1) % num_msgs;
+        }
+    }
+
+    pub fn clear(console_log: *ConsoleLog) void {
+        var index: usize = 0;
+        while (index < num_msgs) : (index += 1) {
+            console_log.slices[index] = &.{};
+            console_log.turns[index] = 0;
         }
     }
 };

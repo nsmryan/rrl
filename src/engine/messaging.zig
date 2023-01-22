@@ -17,6 +17,7 @@ const MoveMode = core.movement.MoveMode;
 const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
 const Name = core.entities.Name;
+const Entities = core.entities.Entities;
 
 pub const Msg = union(enum) {
     tryMove: struct { id: Id, dir: Direction, amount: usize },
@@ -61,10 +62,22 @@ pub const Msg = union(enum) {
         return @unionInit(Msg, @tagName(msg_type), value);
     }
 
-    pub fn consoleMessage(msg: Msg, buf: []u8) std.fmt.BufPrintError![]u8 {
+    pub fn consoleMessage(msg: Msg, entities: *const Entities, buf: []u8) std.fmt.BufPrintError![]u8 {
         switch (msg) {
             .pass => {
                 return try std.fmt.bufPrint(buf, "Player passed their turn", .{});
+            },
+
+            .move => |params| {
+                return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+            },
+
+            .gainEnergy => |params| {
+                return try std.fmt.bufPrint(buf, "{s} gained {} energy", .{ @tagName(entities.typ.get(params.id)), params.amount });
+            },
+
+            .collided => |params| {
+                return try std.fmt.bufPrint(buf, "{s} collided with something!", .{@tagName(entities.typ.get(params.id))});
             },
 
             else => {},

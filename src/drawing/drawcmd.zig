@@ -20,7 +20,7 @@ pub const DrawHighlightTile = struct { color: Color, pos: Pos };
 pub const DrawOutlineTile = struct { color: Color, pos: Pos };
 pub const DrawText = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, color: Color, pos: Pos, scale: f32 };
 pub const DrawTextFloat = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, color: Color, x: f32, y: f32, scale: f32 };
-pub const DrawTextJustify = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, pos: Pos, width: u32, scale: f32 };
+pub const DrawTextJustify = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, bg_color: Color, pos: Pos, width: u32, scale: f32 };
 pub const DrawRect = struct { pos: Pos, width: u32, height: u32, offset_percent: f32, filled: bool, color: Color };
 pub const DrawRectFloat = struct { x: f32, y: f32, width: f32, height: f32, filled: bool, color: Color };
 pub const DrawFill = struct { pos: Pos, color: Color };
@@ -92,8 +92,8 @@ pub const DrawCmd = union(enum) {
         return textCmd;
     }
 
-    pub fn textJustify(txt: []const u8, justify: Justify, position: Pos, color: Color, width: u32, scale: f32) DrawCmd {
-        var textCmd = DrawCmd{ .textJustify = DrawTextJustify{ .len = txt.len, .justify = justify, .color = color, .pos = position, .width = width, .scale = scale } };
+    pub fn textJustify(txt: []const u8, justify: Justify, position: Pos, color: Color, bg_color: Color, width: u32, scale: f32) DrawCmd {
+        var textCmd = DrawCmd{ .textJustify = DrawTextJustify{ .len = txt.len, .justify = justify, .color = color, .bg_color = bg_color, .pos = position, .width = width, .scale = scale } };
         std.mem.copy(u8, textCmd.textJustify.text[0..txt.len], txt);
         return textCmd;
     }

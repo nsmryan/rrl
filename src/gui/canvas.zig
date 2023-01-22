@@ -154,7 +154,7 @@ pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
 
     //_ = sdl2.SDL_SetTextureColorMod(canvas.sprites.texture, color.r, color.g, color.b);
-    //_ = sdl2.SDL_SetTextureAlphaMod(canvas.sprites.texture, color.a);
+    _ = sdl2.SDL_SetTextureAlphaMod(canvas.sprites.texture, color.a);
 
     _ = sdl2.SDL_SetTextureColorMod(canvas.ascii_texture.texture, color.r, color.g, color.b);
     _ = sdl2.SDL_SetTextureAlphaMod(canvas.ascii_texture.texture, color.a);
@@ -190,6 +190,10 @@ pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustif
     const char_width_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
     const char_width = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * params.scale);
 
+    //const char_height_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
+    //const char_height = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * params.scale);
+    const char_height = @floatToInt(u32, @intToFloat(f32, cell_dims.height) * params.scale);
+
     const pixel_width = @intCast(i32, params.width * cell_dims.width);
 
     var x_offset: i32 = undefined;
@@ -199,7 +203,7 @@ pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustif
         },
 
         .center => {
-            x_offset = @divFloor(((params.pos.x * @intCast(i32, cell_dims.width)) + pixel_width), 2) - @divFloor((@intCast(i32, char_width) * @intCast(i32, params.len)), 2);
+            x_offset = ((params.pos.x * @intCast(i32, cell_dims.width)) + @divFloor(pixel_width, 2)) - @divFloor((@intCast(i32, char_width) * @intCast(i32, params.len)), 2);
         },
 
         .left => {
@@ -209,17 +213,15 @@ pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustif
 
     const y_offset = params.pos.y * @intCast(i32, cell_dims.height);
 
-    // From original Rust code- draw black background around text.
-    //canvas.set_blend_mode(BlendMode::Blend);
-    //canvas.set_draw_color(sdl2::pixels::Color::BLACK);
-    //canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
+    const rect = Rect.init(x_offset, y_offset, @intCast(u32, params.len * char_width), char_height);
 
-    //canvas.set_blend_mode(BlendMode::Blend);
-    //canvas.set_draw_color(sdl2_color(*bg_color));
-    //canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
+    _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
 
-    //font_texture.set_color_mod(fg_color.r, fg_color.g, fg_color.b);
-    //font_texture.set_alpha_mod(fg_color.a);
+    _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, 0, 0, 0, 255);
+    _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(rect));
+
+    _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.bg_color.r, params.bg_color.g, params.bg_color.b, params.bg_color.a);
+    _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(rect));
 
     processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
 }

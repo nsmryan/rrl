@@ -339,6 +339,12 @@ pub const Gui = struct {
         const info_panel_height = @intCast(u32, gui.panels.info_area.height);
         try gui.panels.screen.drawcmds.append(DrawCmd.rect(info_panel_pos, info_panel_width, info_panel_height, offset, false, color));
 
+        const section_name_scale: f32 = 1.0;
+        const text_color = Color.init(0, 0, 0, 255);
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("player", .center, gui.panels.player_area.position(), text_color, color, @intCast(u32, gui.panels.player_area.width), section_name_scale));
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("inventory", .center, gui.panels.inventory_area.position(), text_color, color, @intCast(u32, gui.panels.inventory_area.width), section_name_scale));
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("message log", .center, gui.panels.info_area.position(), text_color, color, @intCast(u32, gui.panels.info_area.width), section_name_scale));
+
         gui.display.draw(&gui.panels.screen);
     }
 

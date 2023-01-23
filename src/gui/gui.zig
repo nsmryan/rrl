@@ -41,6 +41,7 @@ const Msg = engine.messaging.Msg;
 
 const drawing = @import("drawing");
 const sprite = drawing.sprite;
+const Sprite = sprite.Sprite;
 const Animation = drawing.animation.Animation;
 const SpriteAnimation = sprite.SpriteAnimation;
 const Panel = drawing.panel.Panel;
@@ -69,7 +70,7 @@ pub const MAP_AREA_CELLS_HEIGHT: usize = 15;
 pub const SCREEN_CELLS_WIDTH: usize = MAP_AREA_CELLS_WIDTH;
 pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI_CELLS_BOTTOM;
 
-pub const WINDOW_WIDTH: usize = 800;
+pub const WINDOW_WIDTH: usize = 1200;
 pub const WINDOW_HEIGHT: usize = 640;
 
 pub const UI_CELLS_TOP: u32 = 3;
@@ -310,6 +311,8 @@ pub const Gui = struct {
         try rendering.renderInfo(&gui.game, &painter);
         gui.display.clear(&gui.panels.info);
         gui.display.draw(&gui.panels.info);
+
+        gui.display.clear(&gui.panels.inventory);
     }
 
     pub fn placePanels(gui: *Gui) void {
@@ -350,10 +353,34 @@ pub const Gui = struct {
         gui.display.draw(&gui.panels.screen);
     }
 
-    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+    pub fn drawPlaying(gui: *Gui, delta_ticks: u64) !void {
         try gui.drawPanels(delta_ticks);
         gui.placePanels();
         try gui.drawOverlay();
+    }
+
+    pub fn drawSplash(gui: *Gui) !void {
+        gui.display.clear(&gui.panels.screen);
+        const color = Color.init(255, 255, 255, 255);
+
+        const key = gui.display.strings.toKey(gui.game.settings.splash.slice());
+        const splash_sheet = gui.display.sprites.fromKey(key);
+        const splash_sprite = splash_sheet.sprite();
+
+        // NOTE This assumes a 1x1 splash screen. It should be fixed to adjust the size and position to fill the screen
+        // without changing aspect ratio, and centering within the remaining area.
+        const screen_area = gui.panels.screen.panel.getArea();
+        const scale = std.math.min(screen_area.width, screen_area.height);
+        try gui.panels.screen.drawcmds.append(DrawCmd.spriteScaled(splash_sprite, @intToFloat(f32, scale), .center, color, Pos.init(0, 0)));
+        gui.display.draw(&gui.panels.screen);
+    }
+
+    pub fn draw(gui: *Gui, delta_ticks: u64) !void {
+        if (gui.game.settings.state == .splash) {
+            try gui.drawSplash();
+        } else {
+            try gui.drawPlaying(delta_ticks);
+        }
 
         gui.display.present(&gui.panels.screen);
 

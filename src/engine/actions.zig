@@ -97,7 +97,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
         .classMenu => {},
         .helpMenu => {},
         .confirmQuit => {},
-        .splash => resolveActionSplash(game, input_action),
+        .splash => try resolveActionSplash(game, input_action),
         .use => {},
         .exit => {},
     }

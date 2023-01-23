@@ -13,6 +13,8 @@ const MapLoadConfig = gen.make_map.MapLoadConfig;
 
 const input = @import("input.zig");
 
+const Buffer = @import("utils").buffer.Buffer;
+
 const actions = @import("actions.zig");
 const UseAction = actions.UseAction;
 
@@ -40,6 +42,8 @@ pub const Settings = struct {
     map_changed: bool = false,
     exit_condition: LevelExitCondition = LevelExitCondition.rightEdge,
 
+    splash: Buffer(128) = Buffer(128).init(),
+
     pub fn init() Settings {
         return Settings{};
     }
@@ -56,6 +60,7 @@ pub const GameState = enum {
     confirmQuit,
     use,
     exit,
+    splash,
 
     pub fn isMenu(self: GameState) bool {
         return self == .inventory or

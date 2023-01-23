@@ -290,8 +290,10 @@ pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScal
     const dst_width = @floatToInt(u32, @intToFloat(f32, cell_dims.width) * params.scale);
     const dst_height = @floatToInt(u32, @intToFloat(f32, cell_dims.height) * params.scale);
 
-    const x_margin = @intCast(i32, (cell_dims.width - dst_width) / 2);
-    const y_margin = @intCast(i32, (cell_dims.height - dst_height) / 2);
+    // Mod by the dimensions of the cell to find the margin with the cell or within the last cell if
+    // scale > 1.0.
+    const x_margin = @intCast(i32, (cell_dims.width - (dst_width % cell_dims.width)) / 2);
+    const y_margin = @intCast(i32, (cell_dims.height - (dst_height % cell_dims.height)) / 2);
 
     var dst_x = params.pos.x * @intCast(i32, cell_dims.width);
     var dst_y = params.pos.y * @intCast(i32, cell_dims.height);

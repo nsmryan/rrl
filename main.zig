@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
@@ -35,6 +36,9 @@ pub fn main() anyerror!void {
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
     try gui.resolveMessages();
+
+    gui.game.settings.state = .splash;
+    gui.game.settings.splash.set("player_standing_right"[0..]);
 
     var ticks = sdl2.SDL_GetTicks64();
     while (try gui.step(ticks)) {

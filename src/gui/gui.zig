@@ -15,6 +15,7 @@ const Direction = math.direction.Direction;
 const Tween = math.tweening.Tween;
 const Dims = math.utils.Dims;
 const Color = math.utils.Color;
+const Rect = math.rect.Rect;
 
 const core = @import("core");
 const movement = core.movement;
@@ -45,7 +46,6 @@ const Sprite = sprite.Sprite;
 const Animation = drawing.animation.Animation;
 const SpriteAnimation = sprite.SpriteAnimation;
 const Panel = drawing.panel.Panel;
-const Area = drawing.area.Area;
 const DrawCmd = drawing.drawcmd.DrawCmd;
 
 const prof = @import("prof");
@@ -289,7 +289,7 @@ pub const Gui = struct {
             .sprites = &gui.display.sprites.sheets,
             .strings = &gui.display.strings,
             .drawcmds = &gui.panels.level.drawcmds,
-            .area = gui.panels.level.panel.getArea(),
+            .area = gui.panels.level.panel.getRect(),
             .state = &gui.state,
             .dt = delta_ticks,
         };
@@ -297,17 +297,17 @@ pub const Gui = struct {
         gui.display.clear(&gui.panels.level);
         gui.display.draw(&gui.panels.level);
 
-        painter.retarget(&gui.panels.pip.drawcmds, gui.panels.pip.panel.getArea());
+        painter.retarget(&gui.panels.pip.drawcmds, gui.panels.pip.panel.getRect());
         try rendering.renderPips(&gui.game, &painter);
         gui.display.clear(&gui.panels.pip);
         gui.display.draw(&gui.panels.pip);
 
-        painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getArea());
+        painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getRect());
         try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
         gui.display.clear(&gui.panels.player);
         gui.display.draw(&gui.panels.player);
 
-        painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getArea());
+        painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getRect());
         try rendering.renderInfo(&gui.game, &painter);
         gui.display.clear(&gui.panels.info);
         gui.display.draw(&gui.panels.info);
@@ -320,10 +320,10 @@ pub const Gui = struct {
 
         gui.display.clear(&gui.panels.screen);
         gui.display.fitTexture(&gui.panels.screen, gui.panels.level_area, &gui.panels.level, map_area);
-        gui.display.stretchTexture(&gui.panels.screen, gui.panels.pip_area, &gui.panels.pip, gui.panels.pip.panel.getArea());
-        gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getArea());
-        gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getArea());
-        gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getArea());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.pip_area, &gui.panels.pip, gui.panels.pip.panel.getRect());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getRect());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getRect());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getRect());
     }
 
     pub fn drawOverlay(gui: *Gui) !void {
@@ -335,8 +335,8 @@ pub const Gui = struct {
         const player_panel_height = @intCast(u32, gui.panels.player_area.height);
         try gui.panels.screen.drawcmds.append(DrawCmd.rect(player_panel_pos, player_panel_width, player_panel_height, offset, false, color));
 
-        const screen_panel_width = @intCast(u32, gui.panels.screen.panel.getArea().width);
-        const screen_panel_height = @intCast(u32, gui.panels.player.panel.getArea().height);
+        const screen_panel_width = @intCast(u32, gui.panels.screen.panel.getRect().width);
+        const screen_panel_height = @intCast(u32, gui.panels.player.panel.getRect().height);
         try gui.panels.screen.drawcmds.append(DrawCmd.rect(player_panel_pos, screen_panel_width, screen_panel_height, offset, false, color));
 
         const info_panel_pos = gui.panels.info_area.position();
@@ -361,18 +361,23 @@ pub const Gui = struct {
 
     pub fn drawSplash(gui: *Gui) !void {
         gui.display.clear(&gui.panels.screen);
-        const color = Color.init(255, 255, 255, 255);
+        //const color = Color.init(255, 255, 255, 255);
 
-        const key = gui.display.strings.toKey(gui.game.settings.splash.slice());
-        const splash_sheet = gui.display.sprites.fromKey(key);
-        const splash_sprite = splash_sheet.sprite();
+        //const key = gui.display.strings.toKey(gui.game.settings.splash.slice());
+        //const splash_sheet = gui.display.sprites.fromKey(key);
+        //const splash_sprite = splash_sheet.sprite();
 
         // NOTE This assumes a 1x1 splash screen. It should be fixed to adjust the size and position to fill the screen
         // without changing aspect ratio, and centering within the remaining area.
-        const screen_area = gui.panels.screen.panel.getArea();
-        const scale = std.math.min(screen_area.width, screen_area.height);
-        try gui.panels.screen.drawcmds.append(DrawCmd.spriteScaled(splash_sprite, @intToFloat(f32, scale), .center, color, Pos.init(0, 0)));
-        gui.display.draw(&gui.panels.screen);
+        //const screen_area = gui.panels.screen.panel.getRect();
+        //const scale = std.math.min(screen_area.width, screen_area.height);
+        //const x_offset = screen_area.width - (splash_sheet
+        //try gui.panels.screen.drawcmds.append(DrawCmd.spriteScaled(splash_sprite, @intToFloat(f32, scale), .center, color, Pos.init(0, 0)));
+        //gui.display.draw(&gui.panels.screen);
+
+        //const splash_texture_panel = TexturePanel.init(gui.display.sprites.texture, sprites_panel);
+        //const splash_area = sprite to area...
+        //gui.display.fitTexture(&gui.panels.screen, splash_area, &splash_texture_panel, splash_texture_panel.panel.getRect());
     }
 
     pub fn draw(gui: *Gui, delta_ticks: u64) !void {
@@ -394,25 +399,25 @@ pub const Panels = struct {
     screen: TexturePanel,
 
     level: TexturePanel,
-    level_area: Area,
+    level_area: Rect,
 
     player: TexturePanel,
-    player_area: Area,
+    player_area: Rect,
 
     pip: TexturePanel,
-    pip_area: Area,
+    pip_area: Rect,
 
     info: TexturePanel,
-    info_area: Area,
+    info_area: Rect,
 
     menu: TexturePanel,
-    menu_area: Area,
+    menu_area: Rect,
 
     help: TexturePanel,
-    help_area: Area,
+    help_area: Rect,
 
     inventory: TexturePanel,
-    inventory_area: Area,
+    inventory_area: Rect,
 
     pub fn init(width: usize, height: usize, disp: *Display, allocator: Allocator) !Panels {
         // Set up screen and its area.
@@ -422,7 +427,7 @@ pub const Panels = struct {
         const screen_texture_panel = try disp.texturePanel(screen_panel, allocator);
 
         // Lay out panels within the screen.
-        const screen_area = Area.init(screen_dims.width, screen_dims.height);
+        const screen_area = Rect.init(screen_dims.width, screen_dims.height);
         const top_bottom_split = screen_area.splitBottom(@intCast(usize, UI_CELLS_BOTTOM));
 
         const pip_map_area = top_bottom_split.first.splitTop(@intCast(usize, UI_CELLS_TOP));
@@ -487,11 +492,11 @@ pub const Panels = struct {
     }
 };
 
-fn mapWindowArea(dims: Dims, center: Pos, dist: i32) Area {
+fn mapWindowArea(dims: Dims, center: Pos, dist: i32) Rect {
     const up_left_edge = dims.clamp(Pos.init(center.x - dist, center.y - dist));
     const width = std.math.min(2 * dist + 1, dims.width);
     const height = std.math.min(2 * dist + 1, dims.height);
-    return Area.initAt(@intCast(usize, up_left_edge.x), @intCast(usize, up_left_edge.y), width, height);
+    return Rect.initAt(@intCast(usize, up_left_edge.x), @intCast(usize, up_left_edge.y), width, height);
 }
 
 /// A map window controls the part of the map around the player that is visible

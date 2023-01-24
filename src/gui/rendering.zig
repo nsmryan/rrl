@@ -40,10 +40,10 @@ const Color = math.utils.Color;
 const Direction = math.direction.Direction;
 const Easing = math.easing.Easing;
 const Tween = math.tweening.Tween;
+const Rect = math.rect.Rect;
 
 const drawing = @import("drawing");
 const DrawCmd = drawing.drawcmd.DrawCmd;
-const Area = drawing.area.Area;
 const Panel = drawing.panel.Panel;
 const Sprites = drawing.sprite.Sprites;
 const Sprite = drawing.sprite.Sprite;
@@ -57,14 +57,14 @@ pub const Painter = struct {
     strings: *const Intern,
     state: *DisplayState,
     dt: u64,
-    area: Area,
+    area: Rect,
 
     pub fn sprite(painter: *Painter, name: []const u8) Sprite {
         const key = painter.strings.toKey(name);
         return painter.sprites.get(key).?.sprite();
     }
 
-    pub fn retarget(painter: *Painter, drawcmds: *ArrayList(DrawCmd), area: Area) void {
+    pub fn retarget(painter: *Painter, drawcmds: *ArrayList(DrawCmd), area: Rect) void {
         painter.drawcmds = drawcmds;
         painter.area = area;
     }

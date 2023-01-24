@@ -7,6 +7,7 @@ pub const rand = @import("rand.zig");
 pub const utils = @import("utils.zig");
 pub const easing = @import("easing.zig");
 pub const tweening = @import("tweening.zig");
+pub const rect = @import("rect.zig");
 
 fn lessDistance(start: pos.Pos, first: pos.Pos, second: pos.Pos) bool {
     return line.Line.distance(start, first, true) < line.Line.distance(start, second, true);

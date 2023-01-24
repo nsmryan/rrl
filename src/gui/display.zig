@@ -20,7 +20,6 @@ const DrawCmd = drawing.drawcmd.DrawCmd;
 const Panel = drawing.panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
 const Animation = drawing.animation.Animation;
-const Area = drawing.area.Area;
 
 const utils = @import("utils");
 const Comp = utils.comp.Comp;
@@ -35,7 +34,7 @@ const Pos = math.pos.Pos;
 const MoveDirection = math.direction.MoveDirection;
 const Color = math.utils.Color;
 const Dims = math.utils.Dims;
-const Rect = math.utils.Rect;
+const Rect = math.rect.Rect;
 
 pub const MAX_MAP_WIDTH: usize = 80;
 pub const MAX_MAP_HEIGHT: usize = 80;
@@ -129,7 +128,7 @@ pub const Display = struct {
     }
 
     /// Paste an area of one texture onto an area of another texture, stretching or squishing the source texture to fit into the destination.
-    pub fn stretchTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
+    pub fn stretchTexture(display: *Display, target: *TexturePanel, target_area: Rect, source: *TexturePanel, source_area: Rect) void {
         display.useTexturePanel(target);
         const src_rect = sdl2Rect(source.panel.getRectFromArea(source_area));
         const dst_rect = sdl2Rect(target.panel.getRectFromArea(target_area));
@@ -138,7 +137,7 @@ pub const Display = struct {
 
     /// Paste an area of one texture onto an area of another texture, while maintaining the aspect ratio of the original texture,
     /// centering the source texture within the remaining area of the destination texture.
-    pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Area, source: *TexturePanel, source_area: Area) void {
+    pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Rect, source: *TexturePanel, source_area: Rect) void {
         display.useTexturePanel(target);
 
         const src_rect = sdl2Rect(source.panel.getRectFromArea(source_area));
@@ -307,6 +306,7 @@ pub const TexturePanel = struct {
 
     pub fn deinit(panel: *TexturePanel) void {
         sdl2.SDL_DestroyTexture(panel.texture);
+        panel.drawcmds.deinit();
     }
 };
 
@@ -329,7 +329,7 @@ fn loadSprites(atlas_text: []const u8, atlas_image: []const u8, strings: *intern
 }
 
 fn sdl2Rect(rect: Rect) sdl2.SDL_Rect {
-    return sdl2.SDL_Rect{ .x = @intCast(c_int, rect.x), .y = @intCast(c_int, rect.y), .w = @intCast(c_int, rect.w), .h = @intCast(c_int, rect.h) };
+    return sdl2.SDL_Rect{ .x = @intCast(c_int, rect.x_offset), .y = @intCast(c_int, rect.y_offset), .w = @intCast(c_int, rect.width), .h = @intCast(c_int, rect.height) };
 }
 
 // Color palette structure and load from palette.txt file

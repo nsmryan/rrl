@@ -10,7 +10,7 @@ const Intern = utils.intern.Intern;
 const math = @import("math");
 const Tween = math.tweening.Tween;
 
-const Rect = math.utils.Rect;
+const Rect = math.rect.Rect;
 const Dims = math.utils.Dims;
 
 pub const FONT_WIDTH: i32 = 16;
@@ -162,11 +162,11 @@ pub const SpriteSheet = struct {
         //const sprite_width = cell_dims.width;
         //const sprite_height = cell_dims.height;
 
-        const x = @intCast(i32, self.x_offset) + @intCast(i32, sprite_x * sprite_dims.width);
-        const y = @intCast(i32, self.y_offset) + @intCast(i32, sprite_y * sprite_dims.height);
-        const w = @intCast(u32, sprite_dims.width);
-        const h = @intCast(u32, sprite_dims.height);
-        const src = Rect{ .x = x, .y = y, .w = w, .h = h };
+        const x = self.x_offset + sprite_x * sprite_dims.width;
+        const y = self.y_offset + sprite_y * sprite_dims.height;
+        const w = sprite_dims.width;
+        const h = sprite_dims.height;
+        const src = Rect{ .x_offset = x, .y_offset = y, .width = w, .height = h };
 
         return src;
     }

@@ -33,6 +33,10 @@ pub const Panel = struct {
         return Rect.init(@intCast(usize, self.cells.width), @intCast(usize, self.cells.height));
     }
 
+    pub fn getPixelRect(self: *const Panel) Rect {
+        return Rect.init(@intCast(usize, self.num_pixels.width), @intCast(usize, self.cells.height));
+    }
+
     pub fn cellFromPixel(self: *const Panel, pixel: Pos) Pos {
         const dims = self.cellDims();
         return Pos.init(@intCast(i32, pixel.x / dims.width), @intCast(i32, pixel.y / dims.height));

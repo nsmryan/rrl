@@ -361,19 +361,29 @@ pub const Gui = struct {
 
     pub fn drawSplash(gui: *Gui) !void {
         gui.display.clear(&gui.panels.screen);
-        //const color = Color.init(255, 255, 255, 255);
+        const color = Color.init(255, 255, 255, 255);
 
-        //const key = gui.display.strings.toKey(gui.game.settings.splash.slice());
-        //const splash_sheet = gui.display.sprites.fromKey(key);
-        //const splash_sprite = splash_sheet.sprite();
+        const key = gui.display.strings.toKey(gui.game.settings.splash.slice());
+        const splash_sheet = gui.display.sprites.fromKey(key);
+        const splash_sprite = splash_sheet.sprite();
 
-        // NOTE This assumes a 1x1 splash screen. It should be fixed to adjust the size and position to fill the screen
-        // without changing aspect ratio, and centering within the remaining area.
-        //const screen_area = gui.panels.screen.panel.getRect();
-        //const scale = std.math.min(screen_area.width, screen_area.height);
-        //const x_offset = screen_area.width - (splash_sheet
-        //try gui.panels.screen.drawcmds.append(DrawCmd.spriteScaled(splash_sprite, @intToFloat(f32, scale), .center, color, Pos.init(0, 0)));
-        //gui.display.draw(&gui.panels.screen);
+        const screen_panel = gui.panels.screen.panel;
+        const screen_rect = gui.panels.screen.panel.getPixelRect();
+        const sprite_area = splash_sheet.spriteSrc(0);
+
+        const dst_pixel_area = screen_rect.fitWithin(sprite_area);
+        const dst_area = dst_pixel_area.scaleXY(@intToFloat(f32, screen_panel.num_pixels.width), @intToFloat(f32, screen_panel.num_pixels.height));
+
+        try gui.panels.screen.drawcmds.append(
+            DrawCmd.spriteScaled(
+                splash_sprite,
+                @intToFloat(f32, dst_area.width),
+                .center,
+                color,
+                Pos.init(@intCast(i32, dst_area.x_offset), @intCast(i32, dst_area.y_offset)),
+            ),
+        );
+        gui.display.draw(&gui.panels.screen);
 
         //const splash_texture_panel = TexturePanel.init(gui.display.sprites.texture, sprites_panel);
         //const splash_area = sprite to area...

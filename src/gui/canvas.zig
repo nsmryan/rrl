@@ -22,7 +22,7 @@ const Str = utils.intern.Str;
 const math = @import("math");
 const Pos = math.pos.Pos;
 const Color = math.utils.Color;
-const Rect = math.utils.Rect;
+const Rect = math.rect.Rect;
 
 pub const Canvas = struct {
     panel: *Panel,

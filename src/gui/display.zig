@@ -140,20 +140,23 @@ pub const Display = struct {
     pub fn fitTexture(display: *Display, target: *TexturePanel, target_area: Rect, source: *TexturePanel, source_area: Rect) void {
         display.useTexturePanel(target);
 
-        const src_rect = sdl2Rect(source.panel.getRectFromArea(source_area));
-        const dst_rect = sdl2Rect(target.panel.getRectFromArea(target_area));
+        const src_rect = source.panel.getRectFromArea(source_area);
+        const dst_rect = target.panel.getRectFromArea(target_area).fitWithin(src_rect);
+        //const dst_rect = sdl2Rect(target.panel.getRectFromArea(target_area));
 
-        const x_scale = @intToFloat(f32, dst_rect.w) / @intToFloat(f32, src_rect.w);
-        const y_scale = @intToFloat(f32, dst_rect.h) / @intToFloat(f32, src_rect.h);
-        const scale = std.math.min(x_scale, y_scale);
+        //const x_scale = @intToFloat(f32, dst_rect.w) / @intToFloat(f32, src_rect.w);
+        //const y_scale = @intToFloat(f32, dst_rect.h) / @intToFloat(f32, src_rect.h);
+        //const scale = std.math.min(x_scale, y_scale);
 
-        const width = @floatToInt(i32, @intToFloat(f32, src_rect.w) * scale);
-        const height = @floatToInt(i32, @intToFloat(f32, src_rect.h) * scale);
-        const x = dst_rect.x + @divFloor((dst_rect.w - width), @as(c_int, 2));
-        const y = dst_rect.y + @divFloor((dst_rect.h - height), @as(c_int, 2));
-        const final_dst_rect = sdl2.SDL_Rect{ .x = x, .y = y, .w = width, .h = height };
+        //const width = @floatToInt(i32, @intToFloat(f32, src_rect.w) * scale);
+        //const height = @floatToInt(i32, @intToFloat(f32, src_rect.h) * scale);
+        //const x = dst_rect.x + @divFloor((dst_rect.w - width), @as(c_int, 2));
+        //const y = dst_rect.y + @divFloor((dst_rect.h - height), @as(c_int, 2));
+        //const final_dst_rect = sdl2.SDL_Rect{ .x = x, .y = y, .w = width, .h = height };
 
-        _ = sdl2.SDL_RenderCopy(display.renderer, source.texture, &src_rect, &final_dst_rect);
+        const sdl2_src_rect = sdl2Rect(src_rect);
+        const sdl2_dst_rect = sdl2Rect(dst_rect);
+        _ = sdl2.SDL_RenderCopy(display.renderer, source.texture, &sdl2_src_rect, &sdl2_dst_rect);
     }
 
     /// Draw a texture panel onto the screen and present it to the user. The entire texture is drawn on the

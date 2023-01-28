@@ -34,7 +34,7 @@ pub const Panel = struct {
     }
 
     pub fn getPixelRect(self: *const Panel) Rect {
-        return Rect.init(@intCast(usize, self.num_pixels.width), @intCast(usize, self.cells.height));
+        return Rect.init(@intCast(usize, self.num_pixels.width), @intCast(usize, self.num_pixels.height));
     }
 
     pub fn cellFromPixel(self: *const Panel, pixel: Pos) Pos {

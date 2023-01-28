@@ -107,13 +107,24 @@ pub const Rect = struct {
         const y_scale = @intToFloat(f32, target.height) / @intToFloat(f32, source.height);
         const scale = std.math.min(x_scale, y_scale);
 
-        const width = @intCast(usize, @floatToInt(i32, @intToFloat(f32, source.width) * scale));
-        const height = @intCast(usize, @floatToInt(i32, @intToFloat(f32, source.height) * scale));
+        const width = @intToFloat(f32, source.width) * scale;
+        const height = @intToFloat(f32, source.height) * scale;
 
-        const x = target.x_offset + @divFloor((target.width - width), @as(c_int, 2));
-        const y = target.y_offset + @divFloor((target.height - height), @as(c_int, 2));
+        const x = target.x_offset + @floatToInt(usize, (@intToFloat(f32, target.width) - width) / 2.0);
+        const y = target.y_offset + @floatToInt(usize, (@intToFloat(f32, target.height) - height) / 2.0);
 
-        return Rect.initAt(x, y, width, height);
+        return Rect.initAt(x, y, @floatToInt(usize, width), @floatToInt(usize, height));
+    }
+
+    pub fn scaleCentered(rect: Rect, x_scale: f32, y_scale: f32) Rect {
+        const new_width = @floatToInt(usize, @intToFloat(f32, rect.width) * x_scale);
+        const new_height = @floatToInt(usize, @intToFloat(f32, rect.height) * y_scale);
+        return Rect.initAt(
+            rect.x_offset - (new_width / 2),
+            rect.y_offset - (new_height / 2),
+            new_width,
+            new_height,
+        );
     }
 
     pub fn scaleXY(rect: Rect, x_scale: f32, y_scale: f32) Rect {

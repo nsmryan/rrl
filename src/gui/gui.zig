@@ -70,8 +70,9 @@ pub const MAP_AREA_CELLS_HEIGHT: usize = 15;
 pub const SCREEN_CELLS_WIDTH: usize = MAP_AREA_CELLS_WIDTH;
 pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI_CELLS_BOTTOM;
 
-pub const WINDOW_WIDTH: usize = 1200;
-pub const WINDOW_HEIGHT: usize = 640;
+pub const PIXELS_PER_CELL: usize = 28;
+pub const WINDOW_WIDTH: usize = PIXELS_PER_CELL * SCREEN_CELLS_WIDTH;
+pub const WINDOW_HEIGHT: usize = PIXELS_PER_CELL * SCREEN_CELLS_HEIGHT;
 
 pub const UI_CELLS_TOP: u32 = 3;
 pub const UI_CELLS_BOTTOM: u32 = 12;
@@ -367,12 +368,16 @@ pub const Gui = struct {
         const splash_sheet = gui.display.sprites.fromKey(key);
         const splash_sprite = splash_sheet.sprite();
 
-        const screen_panel = gui.panels.screen.panel;
         const screen_rect = gui.panels.screen.panel.getPixelRect();
         const sprite_area = splash_sheet.spriteSrc(0);
 
+        const screen_pixel_dims = gui.panels.screen.panel.cellDims();
+
         const dst_pixel_area = screen_rect.fitWithin(sprite_area);
-        const dst_area = dst_pixel_area.scaleXY(@intToFloat(f32, screen_panel.num_pixels.width), @intToFloat(f32, screen_panel.num_pixels.height));
+        const dst_area = dst_pixel_area.scaleXY(
+            1.0 / @intToFloat(f32, screen_pixel_dims.width),
+            1.0 / @intToFloat(f32, screen_pixel_dims.height),
+        );
 
         try gui.panels.screen.drawcmds.append(
             DrawCmd.spriteScaled(
@@ -384,10 +389,6 @@ pub const Gui = struct {
             ),
         );
         gui.display.draw(&gui.panels.screen);
-
-        //const splash_texture_panel = TexturePanel.init(gui.display.sprites.texture, sprites_panel);
-        //const splash_area = sprite to area...
-        //gui.display.fitTexture(&gui.panels.screen, splash_area, &splash_texture_panel, splash_texture_panel.panel.getRect());
     }
 
     pub fn draw(gui: *Gui, delta_ticks: u64) !void {

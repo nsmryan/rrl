@@ -169,12 +169,12 @@ pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color
         const chr_num = std.ascii.toLower(chr);
         const chr_index = @intCast(i32, chr_num) - @intCast(i32, math.utils.ASCII_START);
 
-        const src_rect = Rect.init(@intCast(i32, font_width) * chr_index, 0, @intCast(u32, font_width), @intCast(u32, font_height));
+        const src_rect = Rect.initAt(font_width * @intCast(usize, chr_index), 0, @intCast(u32, font_width), @intCast(u32, font_height));
 
         const dst_pos = Pos.init(x_offset, y_offset);
-        const dst_rect = Rect.init(
-            @intCast(i32, dst_pos.x),
-            @intCast(i32, dst_pos.y),
+        const dst_rect = Rect.initAt(
+            @intCast(usize, dst_pos.x),
+            @intCast(usize, dst_pos.y),
             @intCast(u32, char_width),
             @intCast(u32, char_height),
         );
@@ -188,32 +188,32 @@ pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustif
     const cell_dims = canvas.panel.cellDims();
 
     const char_width_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
-    const char_width = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * params.scale);
+    const char_width = @floatToInt(usize, @intToFloat(f32, char_width_unscaled) * params.scale);
 
     //const char_height_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
     //const char_height = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * params.scale);
-    const char_height = @floatToInt(u32, @intToFloat(f32, cell_dims.height) * params.scale);
+    const char_height = @floatToInt(usize, @intToFloat(f32, cell_dims.height) * params.scale);
 
-    const pixel_width = @intCast(i32, params.width * cell_dims.width);
+    const pixel_width = params.width * cell_dims.width;
 
-    var x_offset: i32 = undefined;
+    var x_offset: usize = undefined;
     switch (params.justify) {
         .right => {
-            x_offset = (params.pos.x * @intCast(i32, cell_dims.width)) + pixel_width - @intCast(i32, char_width) * @intCast(i32, params.len);
+            x_offset = (@intCast(usize, params.pos.x) * cell_dims.width) + pixel_width - char_width * params.len;
         },
 
         .center => {
-            x_offset = ((params.pos.x * @intCast(i32, cell_dims.width)) + @divFloor(pixel_width, 2)) - @divFloor((@intCast(i32, char_width) * @intCast(i32, params.len)), 2);
+            x_offset = (@intCast(usize, params.pos.x) * cell_dims.width) + @divFloor(pixel_width, 2) - @divFloor(char_width * params.len, 2);
         },
 
         .left => {
-            x_offset = params.pos.x * @intCast(i32, cell_dims.width);
+            x_offset = @intCast(usize, params.pos.x) * cell_dims.width;
         },
     }
 
-    const y_offset = params.pos.y * @intCast(i32, cell_dims.height);
+    const y_offset = @intCast(usize, params.pos.y) * cell_dims.height;
 
-    const rect = Rect.init(x_offset, y_offset, @intCast(u32, params.len * char_width), char_height);
+    const rect = Rect.initAt(x_offset, y_offset, @intCast(usize, params.len * char_width), char_height);
 
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
 
@@ -223,7 +223,9 @@ pub fn processTextJustify(canvas: Canvas, params: drawing.drawcmd.DrawTextJustif
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.bg_color.r, params.bg_color.g, params.bg_color.b, params.bg_color.a);
     _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(rect));
 
-    processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
+    const x = @intCast(i32, x_offset);
+    const y = @intCast(i32, y_offset);
+    processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x, y), params.scale);
 }
 
 pub fn processTextFloat(canvas: Canvas, params: drawing.drawcmd.DrawTextFloat) void {
@@ -254,14 +256,14 @@ pub fn processSpriteFloat(canvas: Canvas, params: drawing.drawcmd.DrawSpriteFloa
 
     const src_rect = sprite_sheet.spriteSrc(params.sprite.index);
 
-    const x_offset = @floatToInt(i32, params.x * @intToFloat(f32, cell_dims.width));
-    const y_offset = @floatToInt(i32, params.y * @intToFloat(f32, cell_dims.height));
+    const x_offset = @floatToInt(usize, params.x * @intToFloat(f32, cell_dims.width));
+    const y_offset = @floatToInt(usize, params.y * @intToFloat(f32, cell_dims.height));
 
-    const dst_rect = Rect.init(
+    const dst_rect = Rect.initAt(
         x_offset,
         y_offset,
-        @floatToInt(u32, @intToFloat(f32, cell_dims.width) * params.x_scale),
-        @floatToInt(u32, @intToFloat(f32, cell_dims.height) * params.y_scale),
+        @floatToInt(usize, @intToFloat(f32, cell_dims.width) * params.x_scale),
+        @floatToInt(usize, @intToFloat(f32, cell_dims.height) * params.y_scale),
     );
 
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
@@ -292,11 +294,11 @@ pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScal
 
     // Mod by the dimensions of the cell to find the margin with the cell or within the last cell if
     // scale > 1.0.
-    const x_margin = @intCast(i32, (cell_dims.width - (dst_width % cell_dims.width)) / 2);
-    const y_margin = @intCast(i32, (cell_dims.height - (dst_height % cell_dims.height)) / 2);
+    const x_margin = (cell_dims.width - (dst_width % cell_dims.width)) / 2;
+    const y_margin = (cell_dims.height - (dst_height % cell_dims.height)) / 2;
 
-    var dst_x = params.pos.x * @intCast(i32, cell_dims.width);
-    var dst_y = params.pos.y * @intCast(i32, cell_dims.height);
+    var dst_x = @intCast(usize, params.pos.x) * cell_dims.width;
+    var dst_y = @intCast(usize, params.pos.y) * cell_dims.height;
 
     switch (params.dir) {
         .center => {
@@ -309,7 +311,7 @@ pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScal
         },
 
         .right => {
-            dst_x += @intCast(i32, cell_dims.width) - @intCast(i32, dst_width);
+            dst_x += cell_dims.width - dst_width;
             dst_y += y_margin;
         },
 
@@ -319,16 +321,16 @@ pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScal
 
         .down => {
             dst_x += x_margin;
-            dst_y += @intCast(i32, cell_dims.height) - @intCast(i32, dst_height);
+            dst_y += cell_dims.height - dst_height;
         },
 
         .downLeft => {
-            dst_y += @intCast(i32, cell_dims.height) - @intCast(i32, dst_height);
+            dst_y += cell_dims.height - dst_height;
         },
 
         .downRight => {
-            dst_x += @intCast(i32, cell_dims.width) - @intCast(i32, dst_width);
-            dst_y += @intCast(i32, cell_dims.height) - @intCast(i32, dst_height);
+            dst_x += cell_dims.width - dst_width;
+            dst_y += cell_dims.height - dst_height;
         },
 
         .upLeft => {
@@ -336,11 +338,11 @@ pub fn processSpriteScale(canvas: Canvas, params: drawing.drawcmd.DrawSpriteScal
         },
 
         .upRight => {
-            dst_x += @intCast(i32, cell_dims.width) - @intCast(i32, dst_width);
+            dst_x += cell_dims.width - dst_width;
         },
     }
 
-    const dst_rect = Rect.init(dst_x, dst_y, dst_width, dst_height);
+    const dst_rect = Rect.initAt(dst_x, dst_y, dst_width, dst_height);
 
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
     // NOTE(error) ignoring error return.
@@ -366,9 +368,9 @@ pub fn processHighlightTile(canvas: Canvas, params: drawing.drawcmd.DrawHighligh
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
 
-    const rect = Rect.init(
-        params.pos.x * @intCast(i32, cell_dims.width),
-        params.pos.y * @intCast(i32, cell_dims.height),
+    const rect = Rect.initAt(
+        @intCast(usize, params.pos.x) * cell_dims.width,
+        @intCast(usize, params.pos.y) * cell_dims.height,
         @intCast(u32, cell_dims.width),
         @intCast(u32, cell_dims.height),
     );
@@ -382,9 +384,9 @@ pub fn processOutlineTile(canvas: Canvas, params: drawing.drawcmd.DrawOutlineTil
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
 
-    const rect = Rect.init(
-        params.pos.x * @intCast(i32, cell_dims.width) + 1,
-        params.pos.y * @intCast(i32, cell_dims.height) + 1,
+    const rect = Rect.initAt(
+        @intCast(usize, params.pos.x) * cell_dims.width + 1,
+        @intCast(usize, params.pos.y) * cell_dims.height + 1,
         @intCast(u32, cell_dims.width),
         @intCast(u32, cell_dims.height),
     );
@@ -395,7 +397,7 @@ pub fn processOutlineTile(canvas: Canvas, params: drawing.drawcmd.DrawOutlineTil
 pub fn processFillCmd(canvas: Canvas, params: drawing.drawcmd.DrawFill) void {
     const cell_dims = canvas.panel.cellDims();
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
-    var src_rect = Rect{ .x = params.pos.x * @intCast(i32, cell_dims.width), .y = params.pos.y * @intCast(i32, cell_dims.height), .w = @intCast(u32, cell_dims.width), .h = @intCast(u32, cell_dims.height) };
+    var src_rect = Rect.initAt(@intCast(usize, params.pos.x) * cell_dims.width, @intCast(usize, params.pos.y) * cell_dims.height, @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
     var sdl2_rect = Sdl2Rect(src_rect);
     _ = sdl2.SDL_RenderFillRect(canvas.renderer, &sdl2_rect);
 }
@@ -408,23 +410,23 @@ pub fn processRectCmd(canvas: Canvas, params: drawing.drawcmd.DrawRect) void {
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
 
-    const offset_x = @floatToInt(i32, @intToFloat(f32, cell_dims.width) * params.offset_percent);
-    const x: i32 = @intCast(i32, cell_dims.width) * params.pos.x + @intCast(i32, offset_x);
+    const offset_x = @floatToInt(usize, @intToFloat(f32, cell_dims.width) * params.offset_percent);
+    const x: usize = @intCast(usize, cell_dims.width) * @intCast(usize, params.pos.x) + offset_x;
 
-    const offset_y = @floatToInt(i32, @intToFloat(f32, cell_dims.height) * params.offset_percent);
-    const y: i32 = @intCast(i32, cell_dims.height) * params.pos.y + @intCast(i32, offset_y);
+    const offset_y = @floatToInt(usize, @intToFloat(f32, cell_dims.height) * params.offset_percent);
+    const y: usize = @intCast(usize, cell_dims.height) * @intCast(usize, params.pos.y) + offset_y;
 
     const width = @intCast(u32, cell_dims.width * params.width - (2 * @intCast(u32, offset_x)));
     const height = @intCast(u32, cell_dims.height * params.height - (2 * @intCast(u32, offset_y)));
 
     if (params.filled) {
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x, y, width, height)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x, y, width, height)));
     } else {
         const size = @intCast(u32, (canvas.panel.num_pixels.width / canvas.panel.cells.width) / 10);
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x, y, size, height)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x, y, width, size)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x + @intCast(i32, width), y, size, height + size)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x, y + @intCast(i32, height), width + size, size)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x, y, size, height)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x, y, width, size)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x + width, y, size, height + size)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x, y + height, width + size, size)));
     }
 }
 
@@ -433,20 +435,20 @@ pub fn processRectFloatCmd(canvas: Canvas, params: drawing.drawcmd.DrawRectFloat
 
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
 
-    const x_offset = @floatToInt(i32, params.x * @intToFloat(f32, cell_dims.width));
-    const y_offset = @floatToInt(i32, params.y * @intToFloat(f32, cell_dims.height));
+    const x_offset = @floatToInt(usize, params.x * @intToFloat(f32, cell_dims.width));
+    const y_offset = @floatToInt(usize, params.y * @intToFloat(f32, cell_dims.height));
 
     const width = @floatToInt(u32, params.width * @intToFloat(f32, cell_dims.width));
     const height = @floatToInt(u32, params.height * @intToFloat(f32, cell_dims.height));
 
     const size = @intCast(u32, (canvas.panel.num_pixels.width / canvas.panel.cells.width) / 5);
     if (params.filled) {
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x_offset, y_offset, width, height)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x_offset, y_offset, width, height)));
     } else {
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x_offset, y_offset, size, height)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x_offset, y_offset, width + size, size)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x_offset + @intCast(i32, width), y_offset, size, height)));
-        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.init(x_offset, y_offset + @intCast(i32, height) - @intCast(i32, size), width + size, size)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x_offset, y_offset, size, height)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x_offset, y_offset, width + size, size)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x_offset + width, y_offset, size, height)));
+        _ = sdl2.SDL_RenderFillRect(canvas.renderer, &Sdl2Rect(Rect.initAt(x_offset, y_offset + height - size, width + size, size)));
     }
 }
 
@@ -458,7 +460,7 @@ pub fn processSpriteCmd(canvas: Canvas, params: drawing.drawcmd.DrawSprite) void
     const y = params.pos.y * @intCast(i32, cell_dims.height);
     const pos = Pos.init(x, y);
 
-    const dst_rect = Rect.init(@intCast(i32, pos.x), @intCast(i32, pos.y), @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
+    const dst_rect = Rect.initAt(@intCast(usize, pos.x), @intCast(usize, pos.y), @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
 
     // NOTE(error) ignoring error return.
     _ = sdl2.SDL_SetTextureBlendMode(canvas.target, sdl2.SDL_BLENDMODE_BLEND);
@@ -500,7 +502,12 @@ pub fn Sdl2Color(color: Color) sdl2.SDL_Color {
 }
 
 pub fn Sdl2Rect(rect: Rect) sdl2.SDL_Rect {
-    return sdl2.SDL_Rect{ .x = rect.x, .y = rect.y, .w = @intCast(c_int, rect.w), .h = @intCast(c_int, rect.h) };
+    return sdl2.SDL_Rect{
+        .x = @intCast(c_int, rect.x_offset),
+        .y = @intCast(c_int, rect.y_offset),
+        .w = @intCast(c_int, rect.width),
+        .h = @intCast(c_int, rect.height),
+    };
 }
 
 pub fn makeColor(r: u8, g: u8, b: u8, a: u8) sdl2.SDL_Color {

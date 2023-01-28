@@ -65,7 +65,10 @@ pub const MAX_MAP_WIDTH: usize = 80;
 pub const MAX_MAP_HEIGHT: usize = 80;
 
 pub const MAP_AREA_CELLS_WIDTH: usize = 44;
-pub const MAP_AREA_CELLS_HEIGHT: usize = 15;
+pub const MAP_AREA_CELLS_HEIGHT: usize = 18;
+
+pub const UI_CELLS_TOP: u32 = 3;
+pub const UI_CELLS_BOTTOM: u32 = 8;
 
 pub const SCREEN_CELLS_WIDTH: usize = MAP_AREA_CELLS_WIDTH;
 pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI_CELLS_BOTTOM;
@@ -73,9 +76,6 @@ pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI
 pub const PIXELS_PER_CELL: usize = 28;
 pub const WINDOW_WIDTH: usize = PIXELS_PER_CELL * SCREEN_CELLS_WIDTH;
 pub const WINDOW_HEIGHT: usize = PIXELS_PER_CELL * SCREEN_CELLS_HEIGHT;
-
-pub const UI_CELLS_TOP: u32 = 3;
-pub const UI_CELLS_BOTTOM: u32 = 12;
 
 pub const Gui = struct {
     display: display.Display,
@@ -613,7 +613,7 @@ test "map window no follow y bottom edge" {
 }
 
 pub const ConsoleLog = struct {
-    pub const num_msgs: usize = 8;
+    pub const num_msgs: usize = 6;
     pub const msg_len: usize = 32;
 
     log: [num_msgs * msg_len]u8 = [_]u8{0} ** (num_msgs * msg_len),

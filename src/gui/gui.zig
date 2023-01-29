@@ -65,15 +65,15 @@ pub const MAX_MAP_WIDTH: usize = 80;
 pub const MAX_MAP_HEIGHT: usize = 80;
 
 pub const MAP_AREA_CELLS_WIDTH: usize = 44;
-pub const MAP_AREA_CELLS_HEIGHT: usize = 18;
+pub const MAP_AREA_CELLS_HEIGHT: usize = 20;
 
 pub const UI_CELLS_TOP: u32 = 3;
-pub const UI_CELLS_BOTTOM: u32 = 8;
+pub const UI_CELLS_BOTTOM: u32 = 11;
 
 pub const SCREEN_CELLS_WIDTH: usize = MAP_AREA_CELLS_WIDTH;
 pub const SCREEN_CELLS_HEIGHT: usize = MAP_AREA_CELLS_HEIGHT + UI_CELLS_TOP + UI_CELLS_BOTTOM;
 
-pub const PIXELS_PER_CELL: usize = 28;
+pub const PIXELS_PER_CELL: usize = 24;
 pub const WINDOW_WIDTH: usize = PIXELS_PER_CELL * SCREEN_CELLS_WIDTH;
 pub const WINDOW_HEIGHT: usize = PIXELS_PER_CELL * SCREEN_CELLS_HEIGHT;
 
@@ -277,6 +277,13 @@ pub const Gui = struct {
                             continue;
                     }
 
+                    try gui.state.animation.insert(id, anim);
+                },
+
+                .sword => {
+                    const pos = gui.game.level.entities.pos.get(id);
+                    var anim = try gui.display.animation("sword", pos, gui.game.config.idle_speed);
+                    anim.repeat = true;
                     try gui.state.animation.insert(id, anim);
                 },
 

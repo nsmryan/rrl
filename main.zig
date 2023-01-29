@@ -15,6 +15,7 @@ const board = @import("board");
 const Map = board.map.Map;
 
 const core = @import("core");
+const engine = @import("engine");
 
 const g = @import("gui");
 const Display = g.display.Display;
@@ -33,6 +34,9 @@ pub fn main() anyerror!void {
     defer gui.deinit();
 
     try gui.game.startLevel(21, 21);
+
+    try engine.spawn.spawnSword(&gui.game.level.entities, &gui.game.log, &gui.game.config, gui.allocator);
+
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
     try gui.resolveMessages();

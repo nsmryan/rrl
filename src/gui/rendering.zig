@@ -662,10 +662,12 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
                     }
                 }
 
-                if (game.level.entities.hp.get(obj_id) == 0) {
-                    try text_list.append(try game.allocator.dupe(u8, "  dead"));
-                } else if (game.level.entities.behavior.getOrNull(obj_id)) |behave| {
-                    try text_list.append(try std.fmt.allocPrint(game.allocator, " currently {s}", .{@tagName(behave)}));
+                if (game.level.entities.hp.getOrNull(obj_id)) |entity_hp| {
+                    if (entity_hp == 0) {
+                        try text_list.append(try game.allocator.dupe(u8, "  dead"));
+                    } else if (game.level.entities.behavior.getOrNull(obj_id)) |behave| {
+                        try text_list.append(try std.fmt.allocPrint(game.allocator, " currently {s}", .{@tagName(behave)}));
+                    }
                 }
             }
         }

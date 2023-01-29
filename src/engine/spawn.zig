@@ -46,3 +46,13 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try log.log(.facing, .{ id, entities.facing.get(id) });
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
 }
+
+pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    _ = config;
+    _ = allocator;
+
+    const id = try entities.createEntity(Pos.init(0, 0), .sword, .item);
+
+    try log.log(.spawn, .{ id, .sword });
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
+}

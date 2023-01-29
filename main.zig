@@ -35,14 +35,13 @@ pub fn main() anyerror!void {
 
     try gui.game.startLevel(21, 21);
 
-    try engine.spawn.spawnSword(&gui.game.level.entities, &gui.game.log, &gui.game.config, gui.allocator);
-
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
     try gui.resolveMessages();
 
-    gui.game.settings.state = .splash;
-    gui.game.settings.splash.set("player_standing_right"[0..]);
+    // Set up a splash screen.
+    //gui.game.settings.state = .splash;
+    //gui.game.settings.splash.set("player_standing_right"[0..]);
 
     var ticks = sdl2.SDL_GetTicks64();
     while (try gui.step(ticks)) {

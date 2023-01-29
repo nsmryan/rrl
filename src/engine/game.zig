@@ -111,6 +111,9 @@ pub const Game = struct {
         // NOTE(implement) carry over skills/talents/items as per spreadsheet.
         try spawn.spawnPlayer(&game.level.entities, &game.log, &game.config, game.allocator);
 
+        // NOTE(remove) this is just for testing
+        try spawn.spawnSword(&game.level.entities, &game.log, &game.config, game.allocator);
+
         try game.log.log(.startLevel, .{});
 
         try resolve.resolve(game);

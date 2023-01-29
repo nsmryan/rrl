@@ -73,7 +73,7 @@ pub const Level = struct {
         for (level.entities.ids.items) |id| {
             if (level.entities.pos.getOrNull(id)) |entity_pos| {
                 if (entity_pos.eql(pos) and level.entities.blocking.has(id)) {
-                    return true;
+                    return level.entities.blocking.get(id);
                 }
             }
         }
@@ -89,6 +89,11 @@ pub const Level = struct {
     pub fn updateFov(level: *Level, id: Id) !void {
         prof.scope("fov");
         defer prof.end();
+
+        // Only calculate FoV for the player and enemies.
+        if (!(level.entities.typ.get(id) == .player or level.entities.typ.get(id) == .enemy)) {
+            return;
+        }
 
         const start_pos = level.entities.pos.get(id);
 

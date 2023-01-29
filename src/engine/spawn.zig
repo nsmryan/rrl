@@ -52,6 +52,7 @@ pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allo
     _ = allocator;
 
     const id = try entities.createEntity(Pos.init(0, 0), .sword, .item);
+    entities.blocking.getPtr(id).* = false;
 
     try log.log(.spawn, .{ id, .sword });
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });

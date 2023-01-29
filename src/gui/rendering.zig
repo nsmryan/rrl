@@ -95,8 +95,20 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
 }
 
 fn renderEntities(game: *Game, painter: *Painter) !void {
-    _ = game;
-    try painter.drawcmds.append(painter.state.animation.get(Entities.player_id).draw());
+    // Render items first, then all other entities so items will appear
+    // to be at the entities feet.
+
+    for (painter.state.animation.ids.items) |id| {
+        if (game.level.entities.typ.get(id) == .item) {
+            try painter.drawcmds.append(painter.state.animation.get(id).draw());
+        }
+    }
+
+    for (painter.state.animation.ids.items) |id| {
+        if (game.level.entities.typ.get(id) != .item) {
+            try painter.drawcmds.append(painter.state.animation.get(id).draw());
+        }
+    }
 }
 
 fn renderMapMiddle(game: *Game, painter: *Painter) !void {

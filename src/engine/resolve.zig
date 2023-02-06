@@ -45,6 +45,8 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .stance => |args| resolveStance(args.id, args.stance, game),
         .startLevel => try resolveStartLevel(game),
         .endTurn => try resolveEndTurn(game),
+        .pickup => |args| try resolvePickup(game, args),
+        .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
         else => {},
     }
 }
@@ -426,4 +428,53 @@ fn resolveStartLevel(game: *Game) !void {
 
 fn resolveEndTurn(game: *Game) !void {
     game.level.entities.turn.getPtr(core.entities.Entities.player_id).* = core.entities.Turn.init();
+}
+
+fn resolvePickup(game: *Game, id: Id) !void {
+    const pos = game.level.entities.pos.get(id);
+
+    if (game.level.itemAtPos(pos)) |item_id| {
+        try game.log.log(.pickedUp, .{ id, item_id });
+
+        // NOTE(implement)
+        //const displaced_item_id = game.level.entities.pickUpItem(id, item_id);
+        //if (displaced_item_id) |dropped_item_id| {
+        //    try game.log.log(.dropItem, .{ id, dropped_item_id });
+        //}
+    }
+}
+
+fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
+    // NOTE(implement)
+    //const pos = game.level.entities.pos.get(id);
+    //const item = game.level.entities.item.get(item_id);
+
+    //game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
+
+    // Find a place to drop the item, without placing it on the same tile
+    // as another item.
+    var found_tile = false;
+    var dist: usize = 1;
+    while (!found_tile and dist < 10) {
+        // NOTE(implement)
+        //const positions = floodfill(&game.level.map, pos, dist);
+
+        //for (positions.items) |cur| {
+        //    if (game.level.itemAtPos(cur) == null) {
+        //        game.level.entities.removeItem(id, item_id);
+        //        game.level.entities.setPos(item_id, cur);
+
+        //        try game.log.log(.droppedItem, .{ id, item_id });
+        //        try game.log.log(.moved, .{ item_id, .blink, .walk, cur });
+        //        found_tile = true;
+        //        break;
+        //    }
+        //}
+
+        dist += 1;
+    }
+
+    if (!found_tile) {
+        try game.log.log(.dropFailed, .{ id, item_id });
+    }
 }

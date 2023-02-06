@@ -58,7 +58,7 @@ pub const Level = struct {
         return Level.init(try Map.fromDims(width, height, allocator), Entities.init(allocator));
     }
 
-    pub fn checkCollision(level: *Level, pos: Pos, dir: Direction) Collision {
+    pub fn checkCollision(level: *const Level, pos: Pos, dir: Direction) Collision {
         var collision: Collision = Collision.init(pos, dir);
         if (blocking.moveBlocked(&level.map, pos, dir, BlockedType.move)) |blocked| {
             collision.wall = HitWall.init(blocked.height, blocked.blocked_tile);
@@ -69,7 +69,7 @@ pub const Level = struct {
         return collision;
     }
 
-    pub fn blockingEntityAt(level: *Level, pos: Pos) bool {
+    pub fn blockingEntityAt(level: *const Level, pos: Pos) bool {
         for (level.entities.ids.items) |id| {
             if (level.entities.pos.getOrNull(id)) |entity_pos| {
                 if (entity_pos.eql(pos) and level.entities.blocking.has(id)) {
@@ -78,6 +78,17 @@ pub const Level = struct {
             }
         }
         return false;
+    }
+
+    pub fn itemAtPos(level: *const Level, pos: Pos) ?Id {
+        for (level.entities.ids.items) |id| {
+            if (level.entities.pos.getOrNull(id)) |entity_pos| {
+                if (entity_pos.eql(pos) and level.entities.typ.get(id) == .item) {
+                    return id;
+                }
+            }
+        }
+        return null;
     }
 
     pub fn updateAllFov(level: *Level) !void {

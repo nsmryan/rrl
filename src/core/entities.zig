@@ -21,6 +21,7 @@ const View = fov.View;
 
 const items = @import("items.zig");
 const Item = items.Item;
+const Inventory = items.Inventory;
 
 const ai = @import("ai.zig");
 const Behavior = ai.Behavior;
@@ -100,6 +101,7 @@ pub const Entities = struct {
     view: Comp(View),
     hp: Comp(usize),
     behavior: Comp(Behavior),
+    inventory: Comp(Inventory),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -169,6 +171,13 @@ pub const Entities = struct {
 
     pub fn markForRemoval(entities: *Entities, id: Id) void {
         entities.state.set(id, .remove);
+    }
+
+    // Pick up an item, and return the dropped item if any.
+    pub fn pickupItem(entities: *Entities, id: Id, item_id: Id) ?Id {
+        var inventory = entities.inventory.getPtr(id);
+        const item = entities.item.get(id);
+        return inventory.addItem(item_id, item.class());
     }
 };
 

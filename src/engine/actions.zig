@@ -121,6 +121,8 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
         .cursorReturn => cursorReturn(game),
 
+        .pickup => try game.log.log(.pickup, Entities.player_id),
+
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
         else => {},

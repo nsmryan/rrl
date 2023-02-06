@@ -282,8 +282,8 @@ test "comp contains key" {
 
     try comp.insert(0, 10);
 
-    try std.testing.expect(comp.contains_key(0));
-    try std.testing.expect(!comp.contains_key(1));
+    try std.testing.expect(comp.containsKey(0));
+    try std.testing.expect(!comp.containsKey(1));
 }
 
 test "comp iterator" {

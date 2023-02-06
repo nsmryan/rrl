@@ -5,6 +5,10 @@ const EntityName = core.entities.EntityName;
 const WeaponType = core.entities.WeaponType;
 const Config = core.config.Config;
 
+const utils = @import("utils");
+const comp = utils.comp;
+const Id = comp.Id;
+
 pub const ItemClass = enum(u8) {
     primary,
     consumable,
@@ -39,9 +43,9 @@ pub const Item = enum {
 
     pub fn class(item: Item) ItemClass {
         switch (item) {
-            .stone, .key => ItemClass.misc,
-            .dagger, .shield, .hammer, .spear, .greatSword, .sword, .axe, .khopesh, .sling => ItemClass.primary,
-            .teleporter, .herb, .seedOfStone, .seedCache, .smokeBomb, .lookingGlass, .glassEye, .lantern, .thumper, .spikeTrap, .soundTrap, .blinkTrap, .freezeTrap => ItemClass.consumable,
+            .stone, .key => return ItemClass.misc,
+            .dagger, .shield, .hammer, .spear, .greatSword, .sword, .axe, .khopesh, .sling => return ItemClass.primary,
+            .teleporter, .herb, .seedOfStone, .seedCache, .smokeBomb, .lookingGlass, .glassEye, .lantern, .thumper, .spikeTrap, .soundTrap, .blinkTrap, .freezeTrap => return ItemClass.consumable,
         }
     }
 
@@ -75,5 +79,39 @@ pub const Item = enum {
             .spear => config.stun_turns_throw_spear,
             else => config.stun_turns_throw_default,
         }
+    }
+};
+
+pub const Inventory = struct {
+    weapon: ?Id,
+    throwing: ?Id,
+    artifacts: [2]?Id,
+
+    pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) ?Id {
+        var displaced: ?Id = null;
+        switch (class) {
+            .primary => {
+                displaced = inventory.weapon;
+                inventory.weapon = item_id;
+            },
+
+            .consumable => {
+                displaced = inventory.throwing;
+                inventory.throwing = item_id;
+            },
+
+            .misc => {
+                if (inventory.artifacts[0] == null) {
+                    inventory.artifacts[0] = item_id;
+                } else if (inventory.artifacts[1] == null) {
+                    inventory.artifacts[1] = item_id;
+                } else {
+                    displaced = inventory.artifacts[1];
+                    inventory.artifacts[1] = item_id;
+                }
+            },
+        }
+
+        return displaced;
     }
 };

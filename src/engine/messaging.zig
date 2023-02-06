@@ -38,6 +38,10 @@ pub const Msg = union(enum) {
     cursorStart: Pos,
     cursorEnd,
     cursorMove: Pos,
+    pickup: Id,
+    pickedUp: struct { id: Id, item_id: Id },
+    dropItem: struct { id: Id, item_id: Id },
+    dropFailed: struct { id: Id, item_id: Id },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

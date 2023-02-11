@@ -114,4 +114,24 @@ pub const Inventory = struct {
 
         return displaced;
     }
+
+    pub fn drop(inventory: *Inventory, item_id: Id, class: ItemClass) void {
+        switch (class) {
+            .primary => {
+                inventory.weapon = null;
+            },
+
+            .consumable => {
+                inventory.throwing = null;
+            },
+
+            .misc => {
+                var index: usize = 0;
+                if (inventory.artifacts[0] != item_id) {
+                    index = 1;
+                }
+                inventory.artifacts[index] = null;
+            },
+        }
+    }
 };

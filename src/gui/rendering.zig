@@ -99,13 +99,13 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
     // to be at the entities feet.
 
     for (painter.state.animation.ids.items) |id| {
-        if (game.level.entities.typ.get(id) == .item) {
+        if (game.level.entities.typ.get(id) == .item and game.level.entities.active.get(id)) {
             try painter.drawcmds.append(painter.state.animation.get(id).draw());
         }
     }
 
     for (painter.state.animation.ids.items) |id| {
-        if (game.level.entities.typ.get(id) != .item) {
+        if (game.level.entities.typ.get(id) != .item and game.level.entities.active.get(id)) {
             try painter.drawcmds.append(painter.state.animation.get(id).draw());
         }
     }

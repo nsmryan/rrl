@@ -11,6 +11,7 @@ const board = @import("board");
 const Material = board.tile.Tile.Material;
 const Height = board.tile.Tile.Height;
 const Wall = board.tile.Tile.Wall;
+const FloodFill = board.floodfill.FloodFill;
 
 const core = @import("core");
 const Skill = core.skills.Skill;
@@ -47,6 +48,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .endTurn => try resolveEndTurn(game),
         .pickup => |args| try resolvePickup(game, args),
         .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
+        .droppedItem => |args| try resolveDroppedItem(game, args),
         else => {},
     }
 }
@@ -443,32 +445,35 @@ fn resolvePickup(game: *Game, id: Id) !void {
     }
 }
 
-fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
-    // NOTE(implement)
-    //const pos = game.level.entities.pos.get(id);
-    //const item = game.level.entities.item.get(item_id);
+fn resolveDroppedItem(game: *Game, item_id: Id) !void {
+    game.level.entities.active.set(item_id, true);
+}
 
-    //game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
+fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
+    const pos = game.level.entities.pos.get(id);
+    const item = game.level.entities.item.get(item_id);
+
+    game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
 
     // Find a place to drop the item, without placing it on the same tile
     // as another item.
     var found_tile = false;
     var dist: usize = 1;
+    // NOTE(perf) use frame allocator.
+    var floodfill = FloodFill.init(game.allocator);
     while (!found_tile and dist < 10) {
-        // NOTE(implement)
-        //const positions = floodfill(&game.level.map, pos, dist);
+        try floodfill.fill(&game.level.map, pos, dist);
 
-        //for (positions.items) |cur| {
-        //    if (game.level.itemAtPos(cur) == null) {
-        //        game.level.entities.removeItem(id, item_id);
-        //        game.level.entities.setPos(item_id, cur);
+        for (floodfill.flood.items) |cur| {
+            if (game.level.itemAtPos(cur) == null) {
+                game.level.entities.removeItem(id, item_id);
 
-        //        try game.log.log(.droppedItem, .{ id, item_id });
-        //        try game.log.log(.moved, .{ item_id, .blink, .walk, cur });
-        //        found_tile = true;
-        //        break;
-        //    }
-        //}
+                try game.log.log(.droppedItem, item_id);
+                try game.log.log(.move, .{ item_id, .blink, .walk, cur });
+                found_tile = true;
+                break;
+            }
+        }
 
         dist += 1;
     }

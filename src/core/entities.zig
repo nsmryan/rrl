@@ -86,6 +86,7 @@ pub const Entities = struct {
     typ: Comp(Type),
     state: Comp(EntityState),
     name: Comp(Name),
+    active: Comp(bool),
     blocking: Comp(bool),
     move_mode: Comp(MoveMode),
     next_move_mode: Comp(MoveMode),
@@ -156,6 +157,7 @@ pub const Entities = struct {
         try self.pos.insert(id, position);
         try self.typ.insert(id, typ);
         try self.name.insert(id, name);
+        try self.active.insert(id, true);
         try self.blocking.insert(id, false);
         try self.turn.insert(id, Turn.init());
         try self.state.insert(id, .play);
@@ -177,7 +179,14 @@ pub const Entities = struct {
     pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) ?Id {
         var inventory = entities.inventory.getPtr(id);
         const item = entities.item.get(item_id);
+        entities.active.set(item_id, false);
+        entities.pos.set(Pos.init(-1, -1));
         return inventory.addItem(item_id, item.class());
+    }
+
+    pub fn removeItem(entities: *Entities, id: Id, item_id: Id) void {
+        const item_class = entities.item.get(item_id).class();
+        entities.inventory.getPtr(id).drop(item_id, item_class);
     }
 };
 

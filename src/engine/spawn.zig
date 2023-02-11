@@ -23,6 +23,7 @@ const Type = core.entities.Type;
 const Name = core.entities.Name;
 const Config = core.config.Config;
 const View = core.fov.View;
+const Inventory = core.items.Inventory;
 
 pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     const id = Entities.player_id;
@@ -40,6 +41,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.facing.insert(id, Direction.right);
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
     try entities.hp.insert(id, @intCast(usize, config.player_health));
+    try entities.inventory.insert(id, Inventory{});
 
     try log.log(.spawn, .{ id, Name.player });
     try log.log(.stance, .{ id, entities.stance.get(id) });
@@ -53,6 +55,7 @@ pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allo
 
     const id = try entities.createEntity(Pos.init(0, 0), .sword, .item);
     entities.blocking.getPtr(id).* = false;
+    try entities.item.insert(id, .sword);
 
     try log.log(.spawn, .{ id, .sword });
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });

@@ -8,7 +8,11 @@ const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Dims = math.utils.Dims;
 
+const utils = @import("utils");
+const Array = utils.buffer.Array;
+
 const Tile = @import("tile.zig").Tile;
+const blocking = @import("blocking.zig");
 
 pub const Map = struct {
     width: i32,
@@ -187,6 +191,35 @@ pub const Map = struct {
     pub fn fromIndex(map: *const Map, index: usize) Pos {
         return Pos.init(@mod(@intCast(i32, index), map.width), @divFloor(@intCast(i32, index), map.width));
     }
+
+    pub fn neighbors(map: *const Map, pos: Pos) !Array(Pos, 8) {
+        var result = Array(Pos, 8).init();
+
+        for (Direction.directions()) |dir| {
+            const end_pos = dir.offsetPos(pos, 1);
+            if (map.isWithinBounds(end_pos)) {
+                try result.push(end_pos);
+            }
+        }
+
+        return result;
+    }
+
+    /// Returns an array of positions that are not blocked by any wall.
+    /// Note that this considers short walls blocking.
+    pub fn reachableNeighbors(map: *const Map, pos: Pos) !Array(Pos, 8) {
+        var result = Array(Pos, 8).init();
+
+        for (Direction.directions()) |dir| {
+            const blocked = blocking.moveBlocked(map, pos, dir, .move);
+            if (blocked == null) {
+                const end_pos = dir.offsetPos(pos, 1);
+                try result.push(end_pos);
+            }
+        }
+
+        return result;
+    }
 };
 
 // NOTE add these back in if needed
@@ -211,22 +244,6 @@ pub const Map = struct {
 //        }
 //
 //        return circle_positions.iter().map(|pos| *pos).collect();
-//    }
-//
-//    pub fn neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
-//        let neighbors = [(1, 0),  (1, 1),  (0, 1),
-//                         (-1, 1), (-1, 0), (-1, -1),
-//                         (0, -1), (1, -1)];
-//
-//        let mut result = SmallVec::new();
-//        for delta in neighbors.iter() {
-//            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
-//            if self.is_within_bounds(new_pos) {
-//                result.push(new_pos);
-//            }
-//        }
-//
-//        return result;
 //    }
 //
 //    pub fn cardinal_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 4]> {

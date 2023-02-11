@@ -174,9 +174,9 @@ pub const Entities = struct {
     }
 
     // Pick up an item, and return the dropped item if any.
-    pub fn pickupItem(entities: *Entities, id: Id, item_id: Id) ?Id {
+    pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) ?Id {
         var inventory = entities.inventory.getPtr(id);
-        const item = entities.item.get(id);
+        const item = entities.item.get(item_id);
         return inventory.addItem(item_id, item.class());
     }
 };

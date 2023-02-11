@@ -165,7 +165,7 @@ pub fn blockedUp(map: *const Map, position: Pos, blocked_type: BlockedType) Heig
     return blocking_wall.join(blocking_tile);
 }
 
-pub fn blockedDir(map: *const Map, position: Pos, dir: Direction, blocked_type: BlockedType) Height {
+fn blockedDir(map: *const Map, position: Pos, dir: Direction, blocked_type: BlockedType) Height {
     return switch (dir) {
         .left => blockedLeft(map, position, blocked_type),
         .right => blockedRight(map, position, blocked_type),

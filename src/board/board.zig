@@ -4,6 +4,7 @@ pub const pathing = @import("pathing.zig");
 pub const rotate = @import("rotate.zig");
 pub const shadowcasting = @import("shadowcasting.zig");
 pub const tile = @import("tile.zig");
+pub const floodfill = @import("floodfill.zig");
 
 comptime {
     if (@import("builtin").is_test) {

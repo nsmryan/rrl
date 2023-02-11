@@ -83,9 +83,9 @@ pub const Item = enum {
 };
 
 pub const Inventory = struct {
-    weapon: ?Id,
-    throwing: ?Id,
-    artifacts: [2]?Id,
+    weapon: ?Id = null,
+    throwing: ?Id = null,
+    artifacts: [2]?Id = [2]?Id{ null, null },
 
     pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) ?Id {
         var displaced: ?Id = null;

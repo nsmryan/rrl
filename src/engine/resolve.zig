@@ -436,11 +436,10 @@ fn resolvePickup(game: *Game, id: Id) !void {
     if (game.level.itemAtPos(pos)) |item_id| {
         try game.log.log(.pickedUp, .{ id, item_id });
 
-        // NOTE(implement)
-        //const displaced_item_id = game.level.entities.pickUpItem(id, item_id);
-        //if (displaced_item_id) |dropped_item_id| {
-        //    try game.log.log(.dropItem, .{ id, dropped_item_id });
-        //}
+        const displaced_item_id = game.level.entities.pickUpItem(id, item_id);
+        if (displaced_item_id) |dropped_item_id| {
+            try game.log.log(.dropItem, .{ id, dropped_item_id });
+        }
     }
 }
 

@@ -198,7 +198,7 @@ const pkgs = struct {
     const board = std.build.Pkg{
         .name = "board",
         .source = .{ .path = "src/board/board.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, prof },
+        .dependencies = &[_]std.build.Pkg{ math, prof, utils },
     };
 
     const engine = std.build.Pkg{

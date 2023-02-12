@@ -7,7 +7,7 @@ const Offset = math.direction.Offset;
 const Pos = math.pos.Pos;
 
 const core = @import("core");
-const ItemClass = core.items.ItemClass;
+const InventorySlot = core.items.InventorySlot;
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const Config = core.config.Config;
@@ -24,8 +24,8 @@ const Settings = s.Settings;
 
 const TALENT_KEYS = [_]u8{ 'q', 'w', 'e', 'r' };
 const SKILL_KEYS = [_]u8{ 'a', 's', 'd', 'f' };
-const ITEM_KEYS = [_]u8{ 'z', 'x', 'c' };
-const CLASSES = [_]ItemClass{ ItemClass.primary, ItemClass.consumable, ItemClass.misc };
+const ITEM_KEYS = [_]u8{ 'z', 'x', 'c', 'v' };
+const SLOTS = [_]InventorySlot{ .weapon, .throwing, .artifact0, .artifact1 };
 const DEBUG_TOGGLE_KEY: u8 = '\\';
 
 const REPEAT_DELAY: f32 = 0.35;
@@ -52,7 +52,7 @@ pub const InputDirection = union(enum) {
 };
 
 pub const Target = union(enum) {
-    item: ItemClass,
+    slot: InventorySlot,
     skill: usize,
     talent: usize,
 };
@@ -295,15 +295,15 @@ pub const Input = struct {
         } else if (chr == ' ') {
             action = InputAction.abortUse;
         } else if (getItemIndex(chr)) |index| {
-            const item_class = CLASSES[index];
+            const slot = SLOTS[index];
 
             // check if you press down the same item again, aborting use-mode
             if (self.target != null and self.target.? == Target.item) {
                 action = InputAction.abortUse;
                 self.target = null;
             } else {
-                self.target = Target{ .item = item_class };
-                action = InputAction{ .startUseItem = item_class };
+                self.target = Target{ .item = slot };
+                action = InputAction{ .startUseItem = slot };
             }
         } else if (getSkillIndex(chr)) |index| {
             // check if you press down the same item again, aborting use-mode
@@ -340,10 +340,10 @@ pub const Input = struct {
                 self.direction = input_dir;
             } else if (!(settings.mode == .cursor and self.ctrl)) {
                 if (getItemIndex(chr)) |index| {
-                    const item_class = CLASSES[index];
+                    const slot = SLOTS[index];
 
-                    self.target = Target{ .item = item_class };
-                    action = InputAction{ .startUseItem = item_class };
+                    self.target = Target{ .slot = slot };
+                    action = InputAction{ .startUseItem = slot };
 
                     // directions are cleared when entering use-mode
                     self.direction = null;
@@ -445,9 +445,9 @@ pub const Input = struct {
         } else {
             if (settings.mode == .cursor) {
                 if (getItemIndex(chr)) |index| {
-                    const item_class = CLASSES[index];
+                    const slot = SLOTS[index];
                     const cursor_pos = settings.mode.cursor.pos;
-                    action = InputAction{ .throwItem = .{ .pos = cursor_pos, .item_class = item_class } };
+                    action = InputAction{ .throwItem = .{ .pos = cursor_pos, .slot = slot } };
                 }
             }
 
@@ -569,7 +569,7 @@ test "test input use mode enter" {
     {
         const event = InputEvent.initChar('z', KeyDir.down);
         const input_action = try input.handleEvent(event, &settings, time);
-        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+        try std.testing.expectEqual(InputAction{ .startUseItem = InventorySlot.weapon }, input_action);
     }
 
     // letting item up outside of use-mode does not cause any action.
@@ -583,7 +583,7 @@ test "test input use mode enter" {
     {
         const event = InputEvent.initChar('z', KeyDir.down);
         const input_action = try input.handleEvent(event, &settings, time);
-        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+        try std.testing.expectEqual(InputAction{ .startUseItem = InventorySlot.weapon }, input_action);
     }
 
     settings.state = GameState.use;
@@ -608,7 +608,7 @@ test "input use mode exit" {
     {
         const event = InputEvent.initChar('z', KeyDir.down);
         const input_action = try input.handleEvent(event, &settings, time);
-        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+        try std.testing.expectEqual(InputAction{ .startUseItem = InventorySlot.weapon }, input_action);
     }
 
     settings.state = GameState.use;
@@ -645,7 +645,7 @@ test "input use mode abort" {
     {
         const event = InputEvent.initChar('z', KeyDir.down);
         const input_action = try input.handleEvent(event, &settings, time);
-        try std.testing.expectEqual(InputAction{ .startUseItem = ItemClass.primary }, input_action);
+        try std.testing.expectEqual(InputAction{ .startUseItem = InventorySlot.weapon }, input_action);
     }
 
     settings.state = GameState.use;

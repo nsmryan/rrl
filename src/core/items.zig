@@ -82,6 +82,13 @@ pub const Item = enum {
     }
 };
 
+pub const InventorySlot = enum(u8) {
+    weapon,
+    throwing,
+    artifact0,
+    artifact1,
+};
+
 pub const Inventory = struct {
     weapon: ?Id = null,
     throwing: ?Id = null,

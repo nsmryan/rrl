@@ -8,7 +8,7 @@ const Pos = math.pos.Pos;
 const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
-const ItemClass = core.items.ItemClass;
+const InventorySlot = core.items.InventorySlot;
 const Entities = core.entities.Entities;
 const MoveMode = core.movement.MoveMode;
 
@@ -32,7 +32,7 @@ pub const ActionMode = enum {
 };
 
 pub const UseAction = union(enum) {
-    item: ItemClass,
+    item: InventorySlot,
     skill: struct { skill: Skill, action_mode: ActionMode },
     talent: Talent,
     interact,
@@ -54,14 +54,14 @@ pub const InputAction = union(enum) {
         index: usize,
         action: ActionMode,
     },
-    startUseItem: ItemClass,
+    startUseItem: InventorySlot,
     startUseSkill: struct { index: usize, action: ActionMode },
     startUseTalent: usize,
     useDir: Direction,
     finalizeUse,
     abortUse,
     pass,
-    throwItem: struct { pos: Pos, item_class: ItemClass },
+    throwItem: struct { pos: Pos, slot: InventorySlot },
     pickup,
     dropItem,
     yell,
@@ -98,7 +98,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
         .helpMenu => {},
         .confirmQuit => {},
         .splash => try resolveActionSplash(game, input_action),
-        .use => {},
+        .use => try resolveActionUse(game, input_action),
         .exit => {},
     }
 }
@@ -122,6 +122,38 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
         .cursorReturn => cursorReturn(game),
 
         .pickup => try game.log.log(.pickup, Entities.player_id),
+
+        .startUseItem => |slot| {
+            startUseItem(slot);
+        },
+
+        .startUseSkill => |args| {
+            startUseSkill(args.index, args.action);
+        },
+
+        .startUseTalent => |index| {
+            startUseTalent(index);
+        },
+
+        // TODO for now esc exits, but when menus work only exit should exit the game.
+        .esc => game.changeState(.exit),
+        else => {},
+    }
+}
+
+pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
+    switch (input_action) {
+        .startUseItem => |slot| {
+            startUseItem(slot);
+        },
+
+        .startUseSkill => |args| {
+            startUseSkill(args.index, args.action);
+        },
+
+        .startUseTalent => |index| {
+            startUseTalent(index);
+        },
 
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
@@ -175,4 +207,17 @@ fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) !vo
 fn cursorReturn(game: *Game) void {
     std.debug.assert(game.settings.mode == .cursor);
     game.settings.mode.cursor.pos = game.level.entities.pos.get(Entities.player_id);
+}
+
+fn startUseItem(slot: InventorySlot) void {
+    _ = slot;
+}
+
+fn startUseSkill(index: usize, action: ActionMode) void {
+    _ = index;
+    _ = action;
+}
+
+fn startUseTalent(index: usize) void {
+    _ = index;
 }

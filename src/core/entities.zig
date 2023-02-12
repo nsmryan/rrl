@@ -180,7 +180,7 @@ pub const Entities = struct {
         var inventory = entities.inventory.getPtr(id);
         const item = entities.item.get(item_id);
         entities.active.set(item_id, false);
-        entities.pos.set(Pos.init(-1, -1));
+        entities.pos.set(item_id, Pos.init(-1, -1));
         return inventory.addItem(item_id, item.class());
     }
 

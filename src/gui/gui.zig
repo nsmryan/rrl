@@ -718,19 +718,6 @@ fn needsFlipHoriz(direction: Direction) bool {
     };
 }
 
-//fn needsFlipVert(direction: Direction) bool {
-//    return switch (direction) {
-//        Direction.up => true,
-//        Direction.down => true,
-//        Direction.left => false,
-//        Direction.right => true,
-//        Direction.upRight => true,
-//        Direction.upLeft => false,
-//        Direction.downRight => true,
-//        Direction.downLeft => false,
-//    };
-//}
-
 fn getSheetStance(stance: Stance) Stance {
     if (stance == .running) {
         return .standing;

@@ -144,6 +144,12 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
 pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
+        .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
+
+        .sneak => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.sneak }),
+
+        .walk => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.walk }),
+
         .startUseItem => |slot| {
             try startUseItem(game, slot);
         },
@@ -155,6 +161,20 @@ pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
         .startUseTalent => |index| {
             try startUseTalent(game, index);
         },
+
+        .dropItem => {
+            const slot = game.settings.mode.use.use_action.item;
+            const item_id = game.level.entities.inventory.get(Entities.player_id).accessSlot(slot).?;
+            try game.log.log(.dropItem, .{ Entities.player_id, item_id });
+            game.settings.mode = .playing;
+            game.changeState(.playing);
+        },
+
+        // drop item
+        // use dir
+        // finalize use
+        // abort use mode
+        // overlay toggle
 
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
@@ -242,9 +262,20 @@ fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
     _ = game;
     _ = index;
     _ = action;
+    // TODO
+    // add skills to player
+    // index skills to check if slot is full.
+    // if so, check skill mode- direction, immediate, cursor.
+    // for immediate, Rust's handle_skill function switches on the skill enum
+    // and processes the skill.
+    // For direction skills, enter use mode with skill as the action.
+    // For cursor skills, enter cursor mode with skill as the action.
 }
 
 fn startUseTalent(game: *Game, index: usize) !void {
     _ = game;
     _ = index;
+    // NOTE(implement) the player does not yet have talents, so there is no use in checking for one.
+    // check if the indexed talent slot is full.
+    // If so, immediately process the talent by emitting a log message to be processed.
 }

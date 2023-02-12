@@ -22,6 +22,7 @@ const KeyDir = input.KeyDir;
 
 const s = @import("settings.zig");
 const GameState = s.GameState;
+const Mode = s.Mode;
 
 const g = @import("game.zig");
 const Game = g.Game;
@@ -124,15 +125,15 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
         .pickup => try game.log.log(.pickup, Entities.player_id),
 
         .startUseItem => |slot| {
-            startUseItem(slot);
+            try startUseItem(game, slot);
         },
 
         .startUseSkill => |args| {
-            startUseSkill(args.index, args.action);
+            try startUseSkill(game, args.index, args.action);
         },
 
         .startUseTalent => |index| {
-            startUseTalent(index);
+            try startUseTalent(game, index);
         },
 
         // TODO for now esc exits, but when menus work only exit should exit the game.
@@ -144,15 +145,15 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
         .startUseItem => |slot| {
-            startUseItem(slot);
+            try startUseItem(game, slot);
         },
 
         .startUseSkill => |args| {
-            startUseSkill(args.index, args.action);
+            try startUseSkill(game, args.index, args.action);
         },
 
         .startUseTalent => |index| {
-            startUseTalent(index);
+            try startUseTalent(game, index);
         },
 
         // TODO for now esc exits, but when menus work only exit should exit the game.
@@ -209,15 +210,41 @@ fn cursorReturn(game: *Game) void {
     game.settings.mode.cursor.pos = game.level.entities.pos.get(Entities.player_id);
 }
 
-fn startUseItem(slot: InventorySlot) void {
-    _ = slot;
+fn startUseItem(game: *Game, slot: InventorySlot) !void {
+    // Check that there is an item in the requested slot. If not, ignore the action.
+    if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
+        // There is an item in the slot. Handle instant items immediately, enter cursor
+        // mode for stones with the action set to a UseAction.item, and for other items enter use-mode.
+        const item = game.level.entities.item.get(item_id);
+        if (item == .herb) {
+            try game.log.log(.eatHerb, .{ Entities.player_id, item_id });
+        } else if (item == .stone) {
+            var cursor_pos = game.level.entities.pos.get(Entities.player_id);
+            if (game.settings.mode != .cursor) {
+                // Enter cursor mode. This will use the player position here and below.
+                try game.log.log(.cursorStart, cursor_pos);
+            } else {
+                // Otherwise keep the current cursor position.
+                cursor_pos = game.settings.mode.cursor.pos;
+            }
+            game.settings.mode = Mode{ .cursor = .{ .pos = cursor_pos, .use_action = UseAction{ .item = slot } } };
+        } else {
+            game.settings.mode = Mode{ .use = .{ .pos = null, .use_action = UseAction{ .item = slot }, .dir = null } };
+
+            game.changeState(.use);
+
+            try game.log.log(.startUseItem, slot);
+        }
+    }
 }
 
-fn startUseSkill(index: usize, action: ActionMode) void {
+fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
+    _ = game;
     _ = index;
     _ = action;
 }
 
-fn startUseTalent(index: usize) void {
+fn startUseTalent(game: *Game, index: usize) !void {
+    _ = game;
     _ = index;
 }

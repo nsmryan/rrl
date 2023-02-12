@@ -13,6 +13,7 @@ const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
+const InventorySlot = core.items.InventorySlot;
 const MoveMode = core.movement.MoveMode;
 const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
@@ -43,6 +44,8 @@ pub const Msg = union(enum) {
     dropItem: struct { id: Id, item_id: Id },
     droppedItem: Id,
     dropFailed: struct { id: Id, item_id: Id },
+    eatHerb: struct { id: Id, item_id: Id },
+    startUseItem: InventorySlot,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

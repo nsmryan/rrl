@@ -298,11 +298,11 @@ pub const Input = struct {
             const slot = SLOTS[index];
 
             // check if you press down the same item again, aborting use-mode
-            if (self.target != null and self.target.? == Target.item) {
+            if (self.target != null and self.target.? == Target.slot) {
                 action = InputAction.abortUse;
                 self.target = null;
             } else {
-                self.target = Target{ .item = slot };
+                self.target = Target{ .slot = slot };
                 action = InputAction{ .startUseItem = slot };
             }
         } else if (getSkillIndex(chr)) |index| {

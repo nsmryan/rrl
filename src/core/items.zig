@@ -94,6 +94,15 @@ pub const Inventory = struct {
     throwing: ?Id = null,
     artifacts: [2]?Id = [2]?Id{ null, null },
 
+    pub fn accessSlot(inventory: *const Inventory, slot: InventorySlot) ?Id {
+        switch (slot) {
+            .weapon => return inventory.weapon,
+            .throwing => return inventory.throwing,
+            .artifact0 => return inventory.artifacts[0],
+            .artifact1 => return inventory.artifacts[1],
+        }
+    }
+
     pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) ?Id {
         var displaced: ?Id = null;
         switch (class) {

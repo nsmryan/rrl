@@ -49,6 +49,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .pickup => |args| try resolvePickup(game, args),
         .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
         .droppedItem => |args| try resolveDroppedItem(game, args),
+        .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
         else => {},
     }
 }
@@ -481,4 +482,11 @@ fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
     if (!found_tile) {
         try game.log.log(.dropFailed, .{ id, item_id });
     }
+}
+
+fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
+    _ = game;
+    _ = id;
+    _ = item_id;
+    // NOTE(implement) eating herb.
 }

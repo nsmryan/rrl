@@ -252,8 +252,10 @@ fn cursorReturn(game: *Game) void {
 }
 
 fn startUseItem(game: *Game, slot: InventorySlot) !void {
+    print("starting to use {}\n", .{slot});
     // Check that there is an item in the requested slot. If not, ignore the action.
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
+        print("starting to use {}\n", .{item_id});
         // There is an item in the slot. Handle instant items immediately, enter cursor
         // mode for stones with the action set to a UseAction.item, and for other items enter use-mode.
         const item = game.level.entities.item.get(item_id);
@@ -270,6 +272,7 @@ fn startUseItem(game: *Game, slot: InventorySlot) !void {
             }
             game.settings.mode = Mode{ .cursor = .{ .pos = cursor_pos, .use_action = UseAction{ .item = slot } } };
         } else {
+            print("use mode\n", .{});
             game.settings.mode = Mode{ .use = .{ .pos = null, .use_action = UseAction{ .item = slot }, .dir = null } };
 
             game.changeState(.use);

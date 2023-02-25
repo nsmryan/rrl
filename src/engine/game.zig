@@ -30,7 +30,6 @@ const MapLoadConfig = gen.make_map.MapLoadConfig;
 pub const actions = @import("actions.zig");
 pub const input = @import("input.zig");
 const Input = input.Input;
-const UseAction = actions.UseAction;
 const InputAction = actions.InputAction;
 const InputEvent = input.InputEvent;
 
@@ -99,6 +98,9 @@ pub const Game = struct {
 
     pub fn changeState(game: *Game, new_state: GameState) void {
         game.settings.state = new_state;
+        if (new_state == .playing) {
+            game.settings.mode = .playing;
+        }
     }
 
     pub fn startLevel(game: *Game, width: i32, height: i32) !void {

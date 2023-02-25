@@ -20,6 +20,8 @@ const input = @import("input.zig");
 const MouseClick = input.MouseClick;
 const KeyDir = input.KeyDir;
 
+const board = @import("board");
+
 const s = @import("settings.zig");
 const GameState = s.GameState;
 const Mode = s.Mode;
@@ -38,20 +40,27 @@ pub const UseDir = struct {
     move_pos: Pos,
     hit_positions: Array(Pos, 8),
 
-    pub fn init() UseResult {
-        var result = UseResult{ .move_pos = Pos.init(-1, -1) };
-        result.hit_position.init();
+    pub fn init() UseDir {
+        var result = UseDir{ .move_pos = Pos.init(-1, -1), .hit_positions = Array(Pos, 8).init() };
         return result;
     }
 };
 
 pub const UseResult = struct {
-    use_dir: Array(?UseDir, 8),
+    use_dir: [8]?UseDir,
+
+    pub fn init() UseResult {
+        return UseResult{ .use_dir = [1]?UseDir{null} ** 8 };
+    }
 
     pub fn clear(use_result: *UseResult) void {
         for (use_result.mem[0..]) |*dir| {
             dir.* = UseDir.init();
         }
+    }
+
+    pub fn inDirection(use_result: *const UseResult, dir: Direction) ?UseDir {
+        return use_result.use_dir[@enumToInt(dir)];
     }
 };
 
@@ -193,8 +202,15 @@ pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
             game.changeState(.playing);
         },
 
-        // use dir
-        // finalize use
+        .useDir => |dir| {
+            useDir(dir, game);
+        },
+
+        .finalizeUse => {
+            try finalizeUse(game);
+            game.changeState(.playing);
+        },
+
         // abort use mode
         // overlay toggle
         // TODO for now esc exits, but when menus work only exit should exit the game.
@@ -252,10 +268,8 @@ fn cursorReturn(game: *Game) void {
 }
 
 fn startUseItem(game: *Game, slot: InventorySlot) !void {
-    print("starting to use {}\n", .{slot});
     // Check that there is an item in the requested slot. If not, ignore the action.
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
-        print("starting to use {}\n", .{item_id});
         // There is an item in the slot. Handle instant items immediately, enter cursor
         // mode for stones with the action set to a UseAction.item, and for other items enter use-mode.
         const item = game.level.entities.item.get(item_id);
@@ -272,8 +286,13 @@ fn startUseItem(game: *Game, slot: InventorySlot) !void {
             }
             game.settings.mode = Mode{ .cursor = .{ .pos = cursor_pos, .use_action = UseAction{ .item = slot } } };
         } else {
-            print("use mode\n", .{});
-            game.settings.mode = Mode{ .use = .{ .pos = null, .use_action = UseAction{ .item = slot }, .dir = null } };
+            const use_result = try useSword(game);
+            game.settings.mode = Mode{ .use = .{
+                .pos = null,
+                .use_action = UseAction{ .item = slot },
+                .dir = null,
+                .use_result = use_result,
+            } };
 
             game.changeState(.use);
 
@@ -312,33 +331,67 @@ fn startUseTalent(game: *Game, index: usize) !void {
 // likely add some convenience to mode concept.
 //
 fn useDir(dir: Direction, game: *Game) void {
-    const use_action = game.settings.use_action;
+    game.settings.mode.use.dir = dir;
+}
 
-    if (use_action == .item) {
-        if (game.level.entities.inventory(Entities.player_id).accessSlot(use_action.item)) |item_id| {
-            const use_result = game.level.calculateUseItem(Entities.player_id, item_id, dir, game.settings.move_mode);
-            _ = use_result;
+fn useSword(game: *Game) !UseResult {
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    var use_result = UseResult.init();
+
+    for (Direction.directions()) |dir| {
+        var use_dir = UseDir.init();
+
+        const dir_index = @enumToInt(dir);
+        const target_pos = dir.offsetPos(player_pos, 1);
+
+        // If move is not blocked, determine the outcome of the move.
+        if (board.blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null) {
+            use_dir.move_pos = target_pos;
+
+            const left_pos = dir.counterclockwise().offsetPos(player_pos, 1);
+            try use_dir.hit_positions.push(left_pos);
+
+            const right_pos = dir.clockwise().offsetPos(player_pos, 1);
+            try use_dir.hit_positions.push(right_pos);
         }
-    } else if (use_action == .skill) {
-        // NOTE skill.action_mode is currently unused
-        const use_result = game.level.calculateUseSkill(Entities.player_id, use_action.skill.skill, dir, game.settings.move_mode);
-        _ = use_result;
+        use_result.use_dir[dir_index] = use_dir;
+    }
+
+    return use_result;
+}
+
+fn finalizeUse(game: *Game) !void {
+    // If there is no direction, the user tried an invalid movement.
+    // Returning here will just end use-mode.
+    if (game.settings.mode.use.dir == null) {
+        return;
+    }
+
+    switch (game.settings.mode.use.use_action) {
+        .item => |slot| {
+            try finalizeUseItem(slot, game);
+        },
+
+        .skill => |params| {
+            try finalizeUseSkill(params.skill, params.action_mode, game);
+        },
+
+        .talent => |talent| {
+            _ = talent;
+        },
+
+        .interact => {},
     }
 }
 
-//fn useSword(dir: Direction, game: *Game) UseState {
-//    const target_pos = dir.offsetPos(pos, 1);
-//
-//    if self.clear_path(pos, target_pos, false) {
-//        result.pos = Some(target_pos);
-//
-//        for dir in &Direction::directions() {
-//            let dir_pos = dir.offset_pos(pos, 1);
-//
-//            let still_adjacent = distance(target_pos, dir_pos) == 1;
-//            if still_adjacent {
-//                result.hit_positions.push(dir_pos);
-//            }
-//        }
-//    }
-//}
+pub fn finalizeUseSkill(skill: Skill, action_mode: ActionMode, game: *Game) !void {
+    _ = skill;
+    _ = action_mode;
+    _ = game;
+}
+
+pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
+    _ = slot;
+    _ = game;
+}

@@ -311,6 +311,29 @@ fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
         _ = anim.step(painter.dt);
     }
 
+    var attack_highlight_color = game.config.color_red;
+    attack_highlight_color.a = game.config.highlight_alpha_attack;
+
+    if (game.settings.mode == .use) {
+        if (game.settings.mode.use.use_result) |use_result| {
+            if (game.settings.mode.use.dir) |dir| {
+                const arrow_pos = dir.offsetPos(game.level.entities.pos.get(Entities.player_id), 1);
+                const arrow_color = Color.white();
+                try renderArrow(painter, dir, arrow_pos, arrow_color);
+            } else {
+                for (Direction.directions()) |dir| {
+                    var use_dir = use_result.use_dir[@enumToInt(dir)];
+                    for (use_dir.?.hit_positions.slice()) |pos| {
+                        try painter.drawcmds.append(DrawCmd.highlightTile(pos, attack_highlight_color));
+                    }
+                    const arrow_pos = use_dir.?.move_pos;
+                    const arrow_color = Color.white();
+                    try renderArrow(painter, dir, arrow_pos, arrow_color);
+                }
+            }
+        }
+    }
+
     // NOTE(remove) when new animation system is working well enough that the cursor is using it.
     //var color = game.config.color_mint_green;
     //color.a = @floatToInt(u8, painter.state.cursor_tween.value());
@@ -753,4 +776,55 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
         const text_pos = Pos.init(1, 1);
         try renderColoredTextList(painter, text_list, text_pos, 1.0);
     }
+}
+
+fn renderArrow(painter: *Painter, dir: Direction, pos: Pos, color: Color) !void {
+    var rotation: f64 = undefined;
+    var arrow_name: []const u8 = undefined;
+
+    switch (dir) {
+        .up => {
+            rotation = -90.0;
+            arrow_name = "arrow_horiz"[0..];
+        },
+
+        .down => {
+            rotation = 90.0;
+            arrow_name = "arrow_horiz"[0..];
+        },
+
+        .right => {
+            rotation = 0.0;
+            arrow_name = "arrow_horiz"[0..];
+        },
+
+        .left => {
+            rotation = 180.0;
+            arrow_name = "arrow_horiz"[0..];
+        },
+
+        .downLeft => {
+            rotation = -180.0;
+            arrow_name = "arrow_diag"[0..];
+        },
+
+        .downRight => {
+            rotation = 90.0;
+            arrow_name = "arrow_diag"[0..];
+        },
+
+        .upLeft => {
+            rotation = -90.0;
+            arrow_name = "arrow_diag"[0..];
+        },
+
+        .upRight => {
+            rotation = 0.0;
+            arrow_name = "arrow_diag"[0..];
+        },
+    }
+
+    var arrow_sprite = painter.sprite(arrow_name);
+    arrow_sprite.rotation = rotation;
+    try painter.drawcmds.append(DrawCmd.sprite(arrow_sprite, color, pos));
 }

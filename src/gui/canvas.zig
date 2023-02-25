@@ -368,6 +368,11 @@ pub fn processHighlightTile(canvas: Canvas, params: drawing.drawcmd.DrawHighligh
     _ = sdl2.SDL_SetRenderDrawBlendMode(canvas.renderer, sdl2.SDL_BLENDMODE_BLEND);
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
 
+    // Ignore negative indices.
+    if (params.pos.x < 0 or params.pos.y < 0) {
+        return;
+    }
+
     const rect = Rect.initAt(
         @intCast(usize, params.pos.x) * cell_dims.width,
         @intCast(usize, params.pos.y) * cell_dims.height,
@@ -459,6 +464,11 @@ pub fn processSpriteCmd(canvas: Canvas, params: drawing.drawcmd.DrawSprite) void
     const x = params.pos.x * @intCast(i32, cell_dims.width);
     const y = params.pos.y * @intCast(i32, cell_dims.height);
     const pos = Pos.init(x, y);
+
+    // Negative positions are accepted, but not drawn.
+    if (pos.x < 0 or pos.y < 0) {
+        return;
+    }
 
     const dst_rect = Rect.initAt(@intCast(usize, pos.x), @intCast(usize, pos.y), @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
 

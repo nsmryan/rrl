@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ArrayError = error{NoFreeSpace};
+
 pub fn Array(comptime Elem: type, comptime n: usize) type {
     return struct {
         mem: [n]Elem = [_]Elem{undefined} ** n,

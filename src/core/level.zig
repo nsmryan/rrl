@@ -137,6 +137,11 @@ pub const Level = struct {
     }
 
     pub fn entityInFov(level: *Level, id: Id, other: Id) FovError!FovResult {
+        // Inactive entities are never in FoV.
+        if (!level.entities.active.get(other)) {
+            return .outside;
+        }
+
         const stance = level.entities.stance.get(id);
         const other_stance = level.entities.stance.getOrNull(other) orelse Stance.standing;
         var view_height: ViewHeight = undefined;

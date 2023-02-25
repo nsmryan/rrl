@@ -27,9 +27,32 @@ const Mode = s.Mode;
 const g = @import("game.zig");
 const Game = g.Game;
 
+const Array = @import("utils").buffer.Array;
+
 pub const ActionMode = enum {
     primary,
     alternate,
+};
+
+pub const UseDir = struct {
+    move_pos: Pos,
+    hit_positions: Array(Pos, 8),
+
+    pub fn init() UseResult {
+        var result = UseResult{ .move_pos = Pos.init(-1, -1) };
+        result.hit_position.init();
+        return result;
+    }
+};
+
+pub const UseResult = struct {
+    use_dir: Array(?UseDir, 8),
+
+    pub fn clear(use_result: *UseResult) void {
+        for (use_result.mem[0..]) |*dir| {
+            dir.* = UseDir.init();
+        }
+    }
 };
 
 pub const UseAction = union(enum) {
@@ -170,12 +193,10 @@ pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
             game.changeState(.playing);
         },
 
-        // drop item
         // use dir
         // finalize use
         // abort use mode
         // overlay toggle
-
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
         else => {},
@@ -279,3 +300,42 @@ fn startUseTalent(game: *Game, index: usize) !void {
     // check if the indexed talent slot is full.
     // If so, immediately process the talent by emitting a log message to be processed.
 }
+
+// NOTE
+// implementing use-mode: add a UseDir struct with Array(8, ?UseResult)
+// UseResult then has a move_pos: Pos and Array(8, Pos) hit_positions.
+// calculate this immediately on enter use mode, and make part of its mode structure.
+// keep track of ?Dir separately as selection within these options.
+// likely add some convenience to mode concept.
+//
+fn useDir(dir: Direction, game: *Game) void {
+    const use_action = game.settings.use_action;
+
+    if (use_action == .item) {
+        if (game.level.entities.inventory(Entities.player_id).accessSlot(use_action.item)) |item_id| {
+            const use_result = game.level.calculateUseItem(Entities.player_id, item_id, dir, game.settings.move_mode);
+            _ = use_result;
+        }
+    } else if (use_action == .skill) {
+        // NOTE skill.action_mode is currently unused
+        const use_result = game.level.calculateUseSkill(Entities.player_id, use_action.skill.skill, dir, game.settings.move_mode);
+        _ = use_result;
+    }
+}
+
+//fn useSword(dir: Direction, game: *Game) UseState {
+//    const target_pos = dir.offsetPos(pos, 1);
+//
+//    if self.clear_path(pos, target_pos, false) {
+//        result.pos = Some(target_pos);
+//
+//        for dir in &Direction::directions() {
+//            let dir_pos = dir.offset_pos(pos, 1);
+//
+//            let still_adjacent = distance(target_pos, dir_pos) == 1;
+//            if still_adjacent {
+//                result.hit_positions.push(dir_pos);
+//            }
+//        }
+//    }
+//}

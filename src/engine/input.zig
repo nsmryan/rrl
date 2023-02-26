@@ -16,8 +16,8 @@ const gen = @import("gen");
 const MapGenType = gen.MapGenType;
 
 const actions = @import("actions.zig");
-const ActionMode = actions.ActionMode;
 const InputAction = actions.InputAction;
+const ActionMode = @import("use.zig").ActionMode;
 const s = @import("settings.zig");
 const GameState = s.GameState;
 const Settings = s.Settings;

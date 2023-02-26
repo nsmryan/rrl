@@ -16,8 +16,8 @@ const input = @import("input.zig");
 const Buffer = @import("utils").buffer.Buffer;
 
 const actions = @import("actions.zig");
-const UseAction = actions.UseAction;
-const UseResult = actions.UseResult;
+
+const use = @import("use.zig");
 
 pub const LevelExitCondition = enum {
     rightEdge,
@@ -26,8 +26,8 @@ pub const LevelExitCondition = enum {
 
 pub const Mode = union(enum) {
     playing,
-    use: struct { pos: ?Pos, use_action: UseAction, dir: ?Direction, use_result: ?UseResult },
-    cursor: struct { pos: Pos, use_action: ?UseAction },
+    use: struct { pos: ?Pos, use_action: use.UseAction, dir: ?Direction, use_result: ?use.UseResult },
+    cursor: struct { pos: Pos, use_action: ?use.UseAction },
 };
 
 pub const Settings = struct {

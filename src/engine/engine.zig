@@ -5,6 +5,7 @@ pub const messaging = @import("messaging.zig");
 pub const settings = @import("settings.zig");
 pub const game = @import("game.zig");
 pub const spawn = @import("spawn.zig");
+pub const use = @import("use.zig");
 
 comptime {
     if (@import("builtin").is_test) {

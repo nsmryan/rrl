@@ -188,6 +188,10 @@ pub const Entities = struct {
         const item_class = entities.item.get(item_id).class();
         entities.inventory.getPtr(id).drop(item_id, item_class);
     }
+
+    pub fn hasEnoughEnergy(entities: *const Entities, id: Id, amount: u32) bool {
+        return entities.energy.get(id) >= amount;
+    }
 };
 
 test "basic entities" {

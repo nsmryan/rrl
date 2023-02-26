@@ -9,6 +9,7 @@ const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const InventorySlot = core.items.InventorySlot;
+const AttackStyle = core.items.AttackStyle;
 const Entities = core.entities.Entities;
 const MoveMode = core.movement.MoveMode;
 
@@ -392,6 +393,61 @@ pub fn finalizeUseSkill(skill: Skill, action_mode: ActionMode, game: *Game) !voi
 }
 
 pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
-    _ = slot;
-    _ = game;
+    const player_id = Entities.player_id;
+    const player_pos = game.level.entities.pos.get(player_id);
+
+    const mode = game.settings.mode;
+
+    if (game.level.entities.inventory.get(player_id).accessSlot(slot)) |item_id| {
+        const item = game.level.entities.item.get(item_id);
+
+        // There should be no way to get here without a direction
+        const dir = mode.use.dir.?;
+
+        // determine action to take based on weapon type
+        if (item == .hammer) {
+            if (game.level.entities.hasEnoughEnergy(player_id, 1)) {
+                // Stamina is used on hammer strike
+                try game.log.log(.hammerRaise, .{ player_id, dir });
+            } else {
+                try game.log.log(.notEnoughEnergy, player_id);
+            }
+        } else if (item == .spikeTrap or item == .soundTrap or item == .blinkTrap or item == .freezeTrap) {
+            const place_pos = dir.offsetPos(player_pos, 1);
+            try game.log.log(.placeTrap, .{ player_id, place_pos, item_id });
+        } else if (item.isThrowable()) {
+            const throw_pos = dir.offsetPos(player_pos, @intCast(i32, game.config.player_throw_dist));
+            try game.log.log(.itemThrow, .{ player_id, item_id, player_pos, throw_pos, false });
+        } else if (item == .sling) {
+            const throw_pos = dir.offsetPos(player_pos, @intCast(i32, game.config.player_sling_dist));
+            try game.log.log(.itemThrow, .{ player_id, item_id, player_pos, throw_pos, true });
+        } else {
+            // It is possible to select a direction, then press shift, causing the move to be
+            // invalid. In this case we just suppress the action, and return to playing.
+            // Otherwise, process the move below.
+            if (mode.use.use_result.?.use_dir[@enumToInt(dir)]) |*use_dir| {
+                if (game.level.entities.hasEnoughEnergy(player_id, 1)) {
+                    if (!use_dir.move_pos.eql(player_pos)) {
+                        const move_dir = Direction.fromPositions(player_pos, use_dir.move_pos).?;
+                        const dist = @intCast(usize, use_dir.move_pos.distanceMaximum(player_pos));
+                        try game.log.log(.tryMove, .{ player_id, move_dir, dist });
+                    }
+
+                    var attack_type: AttackStyle = .normal;
+                    if (item == .spear and game.level.entities.next_move_mode.get(player_id) == .run) {
+                        attack_type = .strong;
+                    } else if (item == .dagger) {
+                        attack_type = .stealth;
+                    }
+
+                    for (use_dir.hit_positions.constSlice()) |hit_pos| {
+                        const weapon_type = item.weaponType().?;
+                        try game.log.log(.hit, .{ player_id, hit_pos, weapon_type, attack_type });
+                    }
+                } else {
+                    try game.log.log(.notEnoughEnergy, player_id);
+                }
+            }
+        }
+    }
 }

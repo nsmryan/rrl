@@ -1,9 +1,8 @@
 const std = @import("std");
 
-const core = @import("core");
-const EntityName = core.entities.EntityName;
-const WeaponType = core.entities.WeaponType;
-const Config = core.config.Config;
+const entities = @import("entities.zig");
+const EntityName = entities.EntityName;
+const Config = @import("config.zig").config.Config;
 
 const utils = @import("utils");
 const comp = utils.comp;
@@ -13,6 +12,18 @@ pub const ItemClass = enum(u8) {
     primary,
     consumable,
     misc,
+};
+
+pub const AttackStyle = enum {
+    stealth,
+    normal,
+    strong,
+};
+
+pub const WeaponType = enum {
+    pierce,
+    slash,
+    blunt,
 };
 
 pub const Item = enum {
@@ -59,10 +70,10 @@ pub const Item = enum {
 
     pub fn weaponType(item: Item) ?WeaponType {
         switch (item) {
-            .spear => WeaponType.pierce,
-            .dagger, .shield, .greatSword, .sword, .axe, .khopesh => WeaponType.slash,
-            .sling, .hammer => WeaponType.blunt,
-            else => null,
+            .spear => return WeaponType.pierce,
+            .dagger, .shield, .greatSword, .sword, .axe, .khopesh => return WeaponType.slash,
+            .sling, .hammer => return WeaponType.blunt,
+            else => return null,
         }
     }
 
@@ -79,6 +90,12 @@ pub const Item = enum {
             .spear => config.stun_turns_throw_spear,
             else => config.stun_turns_throw_default,
         }
+    }
+
+    pub fn isThrowable(item: Item) bool {
+        return item == .stone or item == .lantern or item == .seedOfStone or item == .seedCache or
+            item == .herb or item == .glassEye or item == .smokeBomb or item == .lookingGlass or
+            item == .thumper;
     }
 };
 

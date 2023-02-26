@@ -22,6 +22,10 @@ pub fn Array(comptime Elem: type, comptime n: usize) type {
             return buffer.mem[0..buffer.used];
         }
 
+        pub fn constSlice(buffer: *const @This()) []const Elem {
+            return buffer.mem[0..buffer.used];
+        }
+
         pub fn push(buffer: *@This(), elem: Elem) ArrayError!void {
             if (buffer.used == n) {
                 return ArrayError.NoFreeSpace;

@@ -19,6 +19,9 @@ const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
 const Name = core.entities.Name;
 const Entities = core.entities.Entities;
+const items = core.items;
+const WeaponType = items.WeaponType;
+const AttackStyle = items.AttackStyle;
 
 pub const Msg = union(enum) {
     tryMove: struct { id: Id, dir: Direction, amount: usize },
@@ -46,6 +49,11 @@ pub const Msg = union(enum) {
     dropFailed: struct { id: Id, item_id: Id },
     eatHerb: struct { id: Id, item_id: Id },
     startUseItem: InventorySlot,
+    hammerRaise: struct { id: Id, dir: Direction },
+    notEnoughEnergy: Id,
+    placeTrap: struct { id: Id, pos: Pos, trap_id: Id },
+    itemThrow: struct { id: Id, item_id: Id, start: Pos, end: Pos, hard: bool },
+    hit: struct { id: Id, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

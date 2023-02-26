@@ -33,6 +33,8 @@ pub const Config = struct {
     player_stamina_max: u32,
     player_energy: u32,
     player_energy_max: u32,
+    player_throw_dist: usize,
+    player_sling_dist: usize,
     explored_alpha: u8,
     fov_edge_alpha: u8,
     sound_rubble_radius: usize,

@@ -185,18 +185,40 @@ pub const Gui = struct {
     }
 
     fn processHit(gui: *Gui, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle) !void {
-        // NOTE(implement) add blunt and pierce weapon type attacks.
         _ = id;
-        _ = weapon_type;
         _ = attack_style;
 
         var name: []const u8 = undefined;
         if (start_pos.eql(hit_pos) or Direction.fromPositions(start_pos, hit_pos).?.diag()) {
             // Diagonal attack.
-            name = "player_slash_diagonal"[0..];
+            switch (weapon_type) {
+                .pierce => {
+                    name = "player_pierce_diagonal"[0..];
+                },
+
+                .slash => {
+                    name = "player_slash_diagonal"[0..];
+                },
+
+                .blunt => {
+                    name = "player_blunt_diagonal"[0..];
+                },
+            }
         } else {
             // Horizontal attack.
-            name = "player_slash_cardinal"[0..];
+            switch (weapon_type) {
+                .pierce => {
+                    name = "player_pierce_cardinal"[0..];
+                },
+
+                .slash => {
+                    name = "player_slash_cardinal"[0..];
+                },
+
+                .blunt => {
+                    name = "player_blunt_cardinal"[0..];
+                },
+            }
         }
 
         var hit_animation = try gui.display.animation(name, hit_pos, gui.game.config.attack_animation_speed);

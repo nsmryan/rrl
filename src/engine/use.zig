@@ -246,7 +246,7 @@ pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
 
                     for (use_dir.hit_positions.constSlice()) |hit_pos| {
                         const weapon_type = item.weaponType().?;
-                        try game.log.log(.hit, .{ player_id, hit_pos, weapon_type, attack_type });
+                        try game.log.log(.hit, .{ player_id, player_pos, hit_pos, weapon_type, attack_type });
                     }
                 } else {
                     try game.log.log(.notEnoughEnergy, player_id);

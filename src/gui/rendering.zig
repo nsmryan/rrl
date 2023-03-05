@@ -299,6 +299,14 @@ fn renderWallShadow(pos: Pos, game: *Game, painter: *Painter) !void {
 
 fn renderOverlays(game: *Game, painter: *Painter) !void {
     try renderOverlayCursor(game, painter);
+    try renderOverlayUseMode(game, painter);
+    try renderOverlayEffects(painter);
+}
+
+fn renderOverlayEffects(painter: *Painter) !void {
+    for (painter.state.effects.items) |animation| {
+        try painter.drawcmds.append(animation.draw());
+    }
 }
 
 fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
@@ -310,7 +318,9 @@ fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
         }
         _ = anim.step(painter.dt);
     }
+}
 
+fn renderOverlayUseMode(game: *Game, painter: *Painter) !void {
     var attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
 

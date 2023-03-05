@@ -5,6 +5,7 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const utils = @import("utils");
+const Str = utils.intern.Str;
 const Comp = utils.comp.Comp;
 const Id = utils.comp.Id;
 const Timer = utils.timer.Timer;
@@ -25,6 +26,8 @@ const entities = core.entities;
 const Stance = entities.Stance;
 const Name = entities.Name;
 const Entities = entities.Entities;
+const WeaponType = core.items.WeaponType;
+const AttackStyle = core.items.AttackStyle;
 
 const gen = @import("gen");
 
@@ -173,11 +176,31 @@ pub const Gui = struct {
                 .cursorStart => |args| try gui.cursorStart(args),
                 .cursorEnd => gui.cursorEnd(),
                 .cursorMove => |args| gui.cursorMove(args),
+                .hit => |args| try gui.processHit(args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
 
                 else => {},
             }
             try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
         }
+    }
+
+    fn processHit(gui: *Gui, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle) !void {
+        // NOTE(implement) add blunt and pierce weapon type attacks.
+        _ = id;
+        _ = weapon_type;
+        _ = attack_style;
+
+        var name: []const u8 = undefined;
+        if (start_pos.eql(hit_pos) or Direction.fromPositions(start_pos, hit_pos).?.diag()) {
+            // Diagonal attack.
+            name = "player_slash_diagonal"[0..];
+        } else {
+            // Horizontal attack.
+            name = "player_slash_cardinal"[0..];
+        }
+
+        var hit_animation = try gui.display.animation(name, hit_pos, gui.game.config.attack_animation_speed);
+        try gui.state.effects.append(hit_animation);
     }
 
     fn startLevel(gui: *Gui) !void {
@@ -409,6 +432,16 @@ pub const Gui = struct {
 
         for (gui.state.animation.ids.items) |id| {
             _ = gui.state.animation.getPtr(id).step(delta_ticks);
+        }
+
+        var effectIndex: usize = 0;
+        while (effectIndex < gui.state.effects.items.len) {
+            const done = !gui.state.effects.items[effectIndex].step(delta_ticks);
+            if (done) {
+                _ = gui.state.effects.swapRemove(effectIndex);
+            } else {
+                effectIndex += 1;
+            }
         }
     }
 };
@@ -667,6 +700,7 @@ pub const DisplayState = struct {
     map_window_center: Pos,
     turn_count: usize,
     console_log: ConsoleLog,
+    effects: ArrayList(Animation),
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
@@ -675,6 +709,7 @@ pub const DisplayState = struct {
         state.map_window_center = Pos.init(0, 0);
         state.turn_count = 0;
         state.console_log = ConsoleLog.init();
+        state.effects = ArrayList(Animation).init(allocator);
 
         comptime var names = entities.compNames(DisplayState);
         inline for (names) |field_name| {

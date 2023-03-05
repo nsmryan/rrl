@@ -53,7 +53,7 @@ pub const Msg = union(enum) {
     notEnoughEnergy: Id,
     placeTrap: struct { id: Id, pos: Pos, trap_id: Id },
     itemThrow: struct { id: Id, item_id: Id, start: Pos, end: Pos, hard: bool },
-    hit: struct { id: Id, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle },
+    hit: struct { id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

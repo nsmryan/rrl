@@ -24,6 +24,7 @@ const Name = core.entities.Name;
 const Config = core.config.Config;
 const View = core.fov.View;
 const Inventory = core.items.Inventory;
+const Item = core.items.Item;
 
 pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     const id = Entities.player_id;
@@ -49,14 +50,26 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
 }
 
-pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+pub fn spawnItem(entities: *Entities, name: Name, item: Item, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     _ = config;
     _ = allocator;
 
-    const id = try entities.createEntity(Pos.init(0, 0), .sword, .item);
+    const id = try entities.createEntity(Pos.init(0, 0), name, .item);
     entities.blocking.getPtr(id).* = false;
-    try entities.item.insert(id, .sword);
+    try entities.item.insert(id, item);
 
-    try log.log(.spawn, .{ id, .sword });
+    try log.log(.spawn, .{ id, name });
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
+}
+
+pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .sword, .sword, log, config, allocator);
+}
+
+pub fn spawnDagger(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .dagger, .dagger, log, config, allocator);
+}
+
+pub fn spawnStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .stone, .stone, log, config, allocator);
 }

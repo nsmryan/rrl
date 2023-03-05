@@ -325,6 +325,20 @@ pub const Gui = struct {
                     try gui.state.animation.insert(id, anim);
                 },
 
+                .stone => {
+                    const pos = gui.game.level.entities.pos.get(id);
+                    var anim = try gui.display.animation("stone", pos, gui.game.config.idle_speed);
+                    anim.repeat = true;
+                    try gui.state.animation.insert(id, anim);
+                },
+
+                .dagger => {
+                    const pos = gui.game.level.entities.pos.get(id);
+                    var anim = try gui.display.animation("dagger", pos, gui.game.config.idle_speed);
+                    anim.repeat = true;
+                    try gui.state.animation.insert(id, anim);
+                },
+
                 .sword => {
                     const pos = gui.game.level.entities.pos.get(id);
                     var anim = try gui.display.animation("sword", pos, gui.game.config.idle_speed);

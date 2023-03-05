@@ -114,7 +114,8 @@ pub const Game = struct {
         try spawn.spawnPlayer(&game.level.entities, &game.log, &game.config, game.allocator);
 
         // NOTE(remove) this is just for testing
-        try spawn.spawnSword(&game.level.entities, &game.log, &game.config, game.allocator);
+        //try spawn.spawnSword(&game.level.entities, &game.log, &game.config, game.allocator);
+        try spawn.spawnDagger(&game.level.entities, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});
 

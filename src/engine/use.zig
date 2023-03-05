@@ -22,6 +22,7 @@ const MouseClick = input.MouseClick;
 const KeyDir = input.KeyDir;
 
 const board = @import("board");
+const blocking = board.blocking;
 
 const s = @import("settings.zig");
 const GameState = s.GameState;
@@ -91,7 +92,12 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
             }
             game.settings.mode = Mode{ .cursor = .{ .pos = cursor_pos, .use_action = UseAction{ .item = slot } } };
         } else {
-            const use_result = try useSword(game);
+            var use_result: UseResult = undefined;
+            if (item == .sword) {
+                use_result = try useSword(game);
+            } else if (item == .dagger) {
+                use_result = try useDagger(game);
+            }
             game.settings.mode = Mode{ .use = .{
                 .pos = null,
                 .use_action = UseAction{ .item = slot },
@@ -147,7 +153,6 @@ pub fn useSword(game: *Game) !UseResult {
     for (Direction.directions()) |dir| {
         var use_dir = UseDir.init();
 
-        const dir_index = @enumToInt(dir);
         const target_pos = dir.offsetPos(player_pos, 1);
 
         // If move is not blocked, determine the outcome of the move.
@@ -160,6 +165,36 @@ pub fn useSword(game: *Game) !UseResult {
             const right_pos = dir.clockwise().offsetPos(player_pos, 1);
             try use_dir.hit_positions.push(right_pos);
         }
+
+        const dir_index = @enumToInt(dir);
+        use_result.use_dir[dir_index] = use_dir;
+    }
+
+    return use_result;
+}
+
+pub fn useDagger(game: *Game) !UseResult {
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    var use_result = UseResult.init();
+
+    for (Direction.directions()) |dir| {
+        var use_dir = UseDir.init();
+
+        const target_pos = dir.offsetPos(player_pos, 1);
+        const hit_pos = dir.offsetPos(target_pos, 1);
+
+        const is_crouching = game.level.entities.stance.get(Entities.player_id) == .crouching;
+        //const is_clear_path = game.level.clearPath(pos, target_pos, false);
+        const is_clear_path = blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null;
+
+        // if crouching and not blocked, then the dagger can be used.
+        if (is_crouching and is_clear_path) {
+            use_dir.move_pos = target_pos;
+            try use_dir.hit_positions.push(hit_pos);
+        }
+
+        const dir_index = @enumToInt(dir);
         use_result.use_dir[dir_index] = use_dir;
     }
 

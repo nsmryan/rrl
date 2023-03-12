@@ -364,16 +364,19 @@ pub const Gui = struct {
         gui.display.clear(&gui.panels.level);
         gui.display.draw(&gui.panels.level);
 
+        // Render health and energy pips.
         painter.retarget(&gui.panels.pip.drawcmds, gui.panels.pip.panel.getRect());
         try rendering.renderPips(&gui.game, &painter);
         gui.display.clear(&gui.panels.pip);
         gui.display.draw(&gui.panels.pip);
 
+        // Render current player information.
         painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getRect());
         try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
         gui.display.clear(&gui.panels.player);
         gui.display.draw(&gui.panels.player);
 
+        // Render message log or info of the entity under the cursor.
         painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getRect());
         try rendering.renderInfo(&gui.game, &painter);
         gui.display.clear(&gui.panels.info);

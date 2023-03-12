@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const math = @import("math");
 const Direction = math.direction.Direction;
@@ -50,6 +51,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
         .droppedItem => |args| try resolveDroppedItem(game, args),
         .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
+        .itemThrow => |args| try resolveItemThrow(args.id, args.item_id, args.start, args.end, args.hard),
         else => {},
     }
 }
@@ -489,4 +491,12 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
     _ = id;
     _ = item_id;
     // NOTE(implement) eating herb.
+}
+
+fn resolveItemThrow(id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
+    _ = id;
+    _ = item_id;
+    _ = start;
+    _ = end;
+    _ = hard;
 }

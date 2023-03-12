@@ -185,10 +185,9 @@ pub fn useDagger(game: *Game) !UseResult {
         const hit_pos = dir.offsetPos(target_pos, 1);
 
         const is_crouching = game.level.entities.stance.get(Entities.player_id) == .crouching;
-        //const is_clear_path = game.level.clearPath(pos, target_pos, false);
         const is_clear_path = blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null;
 
-        // if crouching and not blocked, then the dagger can be used.
+        // If crouching and not blocked, then the dagger can be used.
         if (is_crouching and is_clear_path) {
             use_dir.move_pos = target_pos;
             try use_dir.hit_positions.push(hit_pos);

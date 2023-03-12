@@ -191,6 +191,28 @@ pub fn resolveActionSplash(game: *Game, input_action: InputAction) !void {
 
 fn cursorToggle(game: *Game) !void {
     if (game.settings.mode == .cursor) {
+        if (game.settings.mode.cursor.use_action) |use_action| {
+            switch (use_action) {
+                .item => |slot| {
+                    const inventory = game.level.entities.inventory.get(Entities.player_id);
+                    if (inventory.accessSlot(slot)) |item_id| {
+                        const player_pos = game.level.entities.pos.get(Entities.player_id);
+                        const throw_pos = game.settings.mode.cursor.pos;
+
+                        // Throwing to the current tile does nothing.
+                        if (!player_pos.eql(throw_pos)) {
+                            try game.log.log(.itemThrow, .{ Entities.player_id, item_id, player_pos, throw_pos, false });
+                        }
+                    } else {
+                        @panic("Throwing an item, but no item available of that type!");
+                    }
+                },
+
+                // NOTE(implement) skill as well.
+                else => {},
+            }
+        }
+
         game.settings.mode = .playing;
         try game.log.log(.cursorEnd, .{});
     } else {

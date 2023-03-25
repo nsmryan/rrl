@@ -388,8 +388,8 @@ pub const Gui = struct {
         gui.display.draw(&gui.panels.player);
 
         // Render current inventory information.
-        painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getRect());
-        //try rendering.renderInventory(&gui.game, &painter, gui.allocator);
+        painter.retarget(&gui.panels.inventory.drawcmds, gui.panels.inventory.panel.getRect());
+        try rendering.renderInventory(&gui.game, &painter, gui.allocator);
         gui.display.clear(&gui.panels.inventory);
         gui.display.draw(&gui.panels.inventory);
 

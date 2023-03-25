@@ -26,8 +26,7 @@ const entities = core.entities;
 const Stance = entities.Stance;
 const Name = entities.Name;
 const Entities = entities.Entities;
-const WeaponType = core.items.WeaponType;
-const AttackStyle = core.items.AttackStyle;
+const items = core.items;
 
 const gen = @import("gen");
 
@@ -177,6 +176,8 @@ pub const Gui = struct {
                 .cursorEnd => gui.cursorEnd(),
                 .cursorMove => |args| gui.cursorMove(args),
                 .hit => |args| try gui.processHit(args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
+                .pickedUp => |args| try gui.processPickedUpItem(args.id, args.item_id, args.slot),
+                .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
 
                 else => {},
             }
@@ -184,7 +185,17 @@ pub const Gui = struct {
         }
     }
 
-    fn processHit(gui: *Gui, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle) !void {
+    fn processPickedUpItem(gui: *Gui, id: Id, item_id: Id, slot: items.InventorySlot) !void {
+        _ = id;
+        gui.state.inventory.placeSlot(item_id, slot);
+    }
+
+    fn processDroppedItem(gui: *Gui, id: Id, slot: items.InventorySlot) !void {
+        _ = id;
+        gui.state.inventory.clearSlot(slot);
+    }
+
+    fn processHit(gui: *Gui, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: items.WeaponType, attack_style: items.AttackStyle) !void {
         _ = id;
         _ = attack_style;
 
@@ -375,6 +386,12 @@ pub const Gui = struct {
         try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
         gui.display.clear(&gui.panels.player);
         gui.display.draw(&gui.panels.player);
+
+        // Render current inventory information.
+        painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getRect());
+        //try rendering.renderInventory(&gui.game, &painter, gui.allocator);
+        gui.display.clear(&gui.panels.inventory);
+        gui.display.draw(&gui.panels.inventory);
 
         // Render message log or info of the entity under the cursor.
         painter.retarget(&gui.panels.info.drawcmds, gui.panels.info.panel.getRect());
@@ -740,6 +757,7 @@ pub const DisplayState = struct {
     turn_count: usize,
     console_log: ConsoleLog,
     effects: ArrayList(Animation),
+    inventory: items.Inventory,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
@@ -749,6 +767,7 @@ pub const DisplayState = struct {
         state.turn_count = 0;
         state.console_log = ConsoleLog.init();
         state.effects = ArrayList(Animation).init(allocator);
+        state.inventory = items.Inventory{};
 
         comptime var names = entities.compNames(DisplayState);
         inline for (names) |field_name| {

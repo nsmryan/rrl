@@ -10,6 +10,7 @@ const BlockedType = board.blocking.BlockedType;
 const FovResult = board.blocking.FovResult;
 const Tile = board.tile.Tile;
 const shadowcasting = board.shadowcasting;
+const FloodFill = board.floodfill.FloodFill;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
@@ -190,5 +191,24 @@ pub const Level = struct {
         } else {
             return FovResult.outside;
         }
+    }
+
+    pub fn searchForEmptyTile(level: *const Level, pos: Pos, max_dist: usize, allocator: Allocator) !?Pos {
+        var dist: usize = 1;
+        var floodfill = FloodFill.init(allocator);
+        // NOTE(perf) a perhaps more efficient implementation would be to flood fill once and sort by
+        // distance, rather then flood filling for each successive distance.
+        while (dist < max_dist) {
+            try floodfill.fill(&level.map, pos, dist);
+
+            for (floodfill.flood.items) |cur| {
+                if (level.itemAtPos(cur) == null) {
+                    return cur;
+                }
+            }
+
+            dist += 1;
+        }
+        return null;
     }
 };

@@ -176,17 +176,12 @@ pub const Entities = struct {
     }
 
     // Pick up an item, and return the dropped item if any.
-    pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) ?Id {
+    pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) items.InventoryDropped {
         var inventory = entities.inventory.getPtr(id);
         const item = entities.item.get(item_id);
         entities.active.set(item_id, false);
         entities.pos.set(item_id, Pos.init(-1, -1));
         return inventory.addItem(item_id, item.class());
-    }
-
-    pub fn removeItem(entities: *Entities, id: Id, item_id: Id) void {
-        const item_class = entities.item.get(item_id).class();
-        entities.inventory.getPtr(id).drop(item_id, item_class);
     }
 
     pub fn hasEnoughEnergy(entities: *const Entities, id: Id, amount: u32) bool {

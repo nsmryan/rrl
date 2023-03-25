@@ -12,7 +12,6 @@ const board = @import("board");
 const Material = board.tile.Tile.Material;
 const Height = board.tile.Tile.Height;
 const Wall = board.tile.Tile.Wall;
-const FloodFill = board.floodfill.FloodFill;
 
 const core = @import("core");
 const Skill = core.skills.Skill;
@@ -49,7 +48,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .endTurn => try resolveEndTurn(game),
         .pickup => |args| try resolvePickup(game, args),
         .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
-        .droppedItem => |args| try resolveDroppedItem(game, args),
+        .droppedItem => |args| try resolveDroppedItem(game, args.id, args.slot),
         .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
         .itemThrow => |args| try resolveItemThrow(args.id, args.item_id, args.start, args.end, args.hard),
         else => {},
@@ -439,16 +438,25 @@ fn resolvePickup(game: *Game, id: Id) !void {
     const pos = game.level.entities.pos.get(id);
 
     if (game.level.itemAtPos(pos)) |item_id| {
-        try game.log.log(.pickedUp, .{ id, item_id });
+        const item = game.level.entities.item.get(item_id);
 
-        const displaced_item_id = game.level.entities.pickUpItem(id, item_id);
-        if (displaced_item_id) |dropped_item_id| {
-            try game.log.log(.dropItem, .{ id, dropped_item_id });
+        // If there is an inventory slot available, or there is space to drop the currently held item, pick it up.
+        const slot_available = game.level.entities.inventory.get(id).classAvailable(item.class());
+        if (slot_available or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
+            const dropped = game.level.entities.pickUpItem(id, item_id);
+
+            try game.log.now(.pickedUp, .{ id, item_id, dropped.slot });
+
+            // If we dropped an item when picking this one up, log this action.
+            if (dropped.id) |dropped_item_id| {
+                try game.log.now(.dropItem, .{ id, dropped_item_id });
+            }
         }
     }
 }
 
-fn resolveDroppedItem(game: *Game, item_id: Id) !void {
+fn resolveDroppedItem(game: *Game, item_id: Id, slot: core.items.InventorySlot) !void {
+    _ = slot;
     game.level.entities.active.set(item_id, true);
 }
 
@@ -456,32 +464,13 @@ fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
     const pos = game.level.entities.pos.get(id);
     const item = game.level.entities.item.get(item_id);
 
-    game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
+    // NOTE(perf) ensure using frame allocator.
+    if (try game.level.searchForEmptyTile(pos, 10, game.allocator)) |empty_pos| {
+        const slot = game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
 
-    // Find a place to drop the item, without placing it on the same tile
-    // as another item.
-    var found_tile = false;
-    var dist: usize = 1;
-    // NOTE(perf) use frame allocator.
-    var floodfill = FloodFill.init(game.allocator);
-    while (!found_tile and dist < 10) {
-        try floodfill.fill(&game.level.map, pos, dist);
-
-        for (floodfill.flood.items) |cur| {
-            if (game.level.itemAtPos(cur) == null) {
-                game.level.entities.removeItem(id, item_id);
-
-                try game.log.log(.droppedItem, item_id);
-                try game.log.log(.move, .{ item_id, .blink, .walk, cur });
-                found_tile = true;
-                break;
-            }
-        }
-
-        dist += 1;
-    }
-
-    if (!found_tile) {
+        try game.log.log(.droppedItem, .{ item_id, slot });
+        try game.log.log(.move, .{ item_id, .blink, .walk, empty_pos });
+    } else {
         try game.log.log(.dropFailed, .{ id, item_id });
     }
 }

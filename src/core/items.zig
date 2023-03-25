@@ -106,6 +106,11 @@ pub const InventorySlot = enum(u8) {
     artifact1,
 };
 
+pub const InventoryDropped = struct {
+    id: ?Id = null,
+    slot: InventorySlot = InventorySlot.weapon,
+};
+
 pub const Inventory = struct {
     weapon: ?Id = null,
     throwing: ?Id = null,
@@ -120,51 +125,93 @@ pub const Inventory = struct {
         }
     }
 
-    pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) ?Id {
-        var displaced: ?Id = null;
+    pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) InventoryDropped {
+        var dropped: InventoryDropped = InventoryDropped{};
         switch (class) {
             .primary => {
-                displaced = inventory.weapon;
+                dropped.id = inventory.weapon;
+                dropped.slot = InventorySlot.weapon;
                 inventory.weapon = item_id;
             },
 
             .consumable => {
-                displaced = inventory.throwing;
+                dropped.id = inventory.throwing;
+                dropped.slot = InventorySlot.throwing;
                 inventory.throwing = item_id;
             },
 
             .misc => {
                 if (inventory.artifacts[0] == null) {
+                    // If nothing in first artifact slot, use it.
+                    dropped.id = inventory.artifacts[0];
+                    dropped.slot = InventorySlot.artifact0;
                     inventory.artifacts[0] = item_id;
                 } else if (inventory.artifacts[1] == null) {
+                    // If nothing in second artifact slot, use it.
+                    dropped.id = inventory.artifacts[1];
+                    dropped.slot = InventorySlot.artifact1;
                     inventory.artifacts[1] = item_id;
                 } else {
-                    displaced = inventory.artifacts[1];
+                    // Otherwise displace second artifact.
+                    dropped.id = inventory.artifacts[1];
+                    dropped.slot = InventorySlot.artifact1;
                     inventory.artifacts[1] = item_id;
                 }
             },
         }
 
-        return displaced;
+        return dropped;
     }
 
-    pub fn drop(inventory: *Inventory, item_id: Id, class: ItemClass) void {
+    pub fn drop(inventory: *Inventory, item_id: Id, class: ItemClass) InventorySlot {
         switch (class) {
             .primary => {
                 inventory.weapon = null;
+                return InventorySlot.weapon;
             },
 
             .consumable => {
                 inventory.throwing = null;
+                return InventorySlot.throwing;
             },
 
             .misc => {
+                var slot = InventorySlot.artifact0;
                 var index: usize = 0;
                 if (inventory.artifacts[0] != item_id) {
                     index = 1;
+                    slot = InventorySlot.artifact1;
                 }
                 inventory.artifacts[index] = null;
+                return slot;
             },
+        }
+    }
+
+    pub fn clearSlot(inventory: *Inventory, slot: InventorySlot) void {
+        switch (slot) {
+            .weapon => inventory.weapon = null,
+            .throwing => inventory.throwing = null,
+            .artifact0 => inventory.artifacts[0] = null,
+            .artifact1 => inventory.artifacts[1] = null,
+        }
+    }
+
+    pub fn placeSlot(inventory: *Inventory, item_id: Id, slot: InventorySlot) void {
+        switch (slot) {
+            .weapon => inventory.weapon = item_id,
+            .throwing => inventory.throwing = item_id,
+            .artifact0 => inventory.artifacts[0] = item_id,
+            .artifact1 => inventory.artifacts[1] = item_id,
+        }
+    }
+
+    /// Check whether there is a open slot for an item of the given class.
+    pub fn classAvailable(inventory: *const Inventory, item_class: ItemClass) bool {
+        switch (item_class) {
+            .primary => return inventory.weapon == null,
+            .consumable => return inventory.throwing == null,
+            .misc => return inventory.artifacts[0] == null or inventory.artifacts[1] == null,
         }
     }
 };

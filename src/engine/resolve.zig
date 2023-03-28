@@ -484,8 +484,106 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
 
 fn resolveItemThrow(id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
     _ = id;
-    _ = item_id;
     _ = start;
     _ = end;
-    _ = hard;
+    if (start.eql(end)) {
+        @panic("Is it possible to throw an item and have it end where it started? Apparently yes");
+    }
+
+    // Get target position in direction of player click.
+    const end_pos = math.Line.moveTowards(start, end, PLAYER_THROW_DIST);
+
+    const hit_pos = level.throw_towards(start, end_pos);
+
+    if (level.hasBlockingEntity(hit_pos)) |hit_entity| {
+        if (level.entities.typ.get(hit_entity) == .enemy) {
+            var stun_turns = level.entities.item.get(item_id).throwStunTurns(config);
+
+            if (level.entities.passive.get(player_id).stone_thrower) {
+                stun_turns += 1;
+            }
+
+            if (hard) {
+                stun_turns += 1;
+            }
+
+            if (stun_turns > 0) {
+
+                msg_log.log(.froze, .{ hit_entity, stun_turns });
+            }
+
+            const player_pos = level.entities.pos.get(player_id);
+            level.entities.messages[&hit_entity].push(Message.hit(player_pos));
+        }
+    }
+
+    level.entities.pos.set(item_id, start);
+
+    msg_log.log(.moved, .{ item_id, .misc, .walk, hit_pos });
+
+    level.entities.removeItem(player_id, item_id);
+    level.entities.took_turn.getPtr(player_id).* |= Turn.attack;
+
+    // NOTE the radius here is the stone radius, regardless of item type
+    msg_log.log_front(.sound, .{ player_id, hit_pos, config.sound_radius_stone });
+
+    // Resolve Specific Items
+    if (level.entities.item.get(item_id) == .seedOfStone) {
+        level.map[hit_pos] = Tile.Wall.short();
+        // This is playing a little fast and lose- we assume that if
+        // the seed of stone hits a tile, that any entity at that tile
+        // is something we can destroy like a sword or grass entity.
+        // NOTE(perf) use frame allocator
+        var entity_positions = ArrayList.init(game.allocator);
+        level.entitiesAtPos(hit_pos, entity_positions);
+        for (entity_positions.items) |entity_id| {
+            remove_entity(entity_id, level);
+        }
+        remove_entity(item_id, level);
+    } else if (level.entities.item.get(item_id) == .seedCache) {
+        // NOTE(perf) use frame allocator.
+        var floodfill = board.FloodFill.init(game.allocator);
+        floodfill.fill(&level.map, hit_pos, SEED_CACHE_RADIUS);
+        for (floodfill.flood.items) |seed_pos| {
+            if (rng_trial(rng, 0.70)) {
+                ensure_grass(level, seed_pos, msg_log);
+            }
+        }
+    } else if (level.entities.item[&item_id] == .smokeBomb) {
+        makeSmoke(&level.entities, config, hit_pos, config.smoke_bomb_fov_block, msg_log);
+        var floodfill = board.FloodFill.init(game.allocator);
+        floodfill.fill(&level.map, hit_pos, SMOKE_BOMB_RADIUS);
+        for (floodfill.flood.items) |smoke_pos| {
+            if (smoke_pos != hit_pos) {
+                if (rng_trial(rng, 0.30)) {
+                    makeSmoke(&level.entities, config, smoke_pos, config.smoke_bomb_fov_block, msg_log);
+                }
+            }
+        }
+    } else if (level.entities.item[&item_id] == .lookingGlass) {
+        makeMagnifier(&level.entities, config, hit_pos, config.looking_glass_magnify_amount, msg_log);
+    } else if (level.entities.item[&item_id] == .glassEye) {
+        for pos in level.map.posInRadius(hit_pos, GLASS_EYE_RADIUS) {
+            for eyed_id in level.get_entities_at_pos(pos) {
+                // check if outside FoV. Inside entities are already visible,
+                // and entities on the edge should already have impressions, so
+                // we don't need to make one here.
+                if (level.entities.typ.get(eyed_id) == .enemy &&
+                   level.isInFov(player_id, eyed_id) == .outside) {
+                    msg_log.logInfo(.impression, pos);
+                }
+            }
+        }
+    } else if (level.entities.item.get(item_id) == .teleporter) {
+        const end_x = rngRangeI32(rng, hit_pos.x - 1, hit_pos.x + 1);
+        const end_y = rngRangeI32(rng, hit_pos.y - 1, hit_pos.y + 1);
+        var end_pos = Pos.init(end_x, end_y);
+        if (!level.map.isWithinBounds(end_pos)) {
+            end_pos = hit_pos;
+        }
+        msg_log.logFront(.moved, .{ player_id, .blink, .walk, end_pos });
+        removeEntity(item_id, level);
+    }
+
+    msg_log.log(.itemLanded, .{ item_id, start, hit_pos });
 }

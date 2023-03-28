@@ -139,6 +139,14 @@ pub const Line = struct {
 
         return second_to_last;
     }
+
+    pub fn last(line: Line) Pos {
+        var cur = line.next() orelse @panic("Line was empty!");
+        while (line.next()) |next_pos| {
+            cur = next_pos;
+        }
+        return cur;
+    }
 };
 
 pub fn makeLine(start: Pos, end: Pos, lineArrayList: *ArrayList(Pos)) !void {

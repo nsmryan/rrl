@@ -242,7 +242,7 @@ pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
         // There should be no way to get here without a direction
         const dir = mode.use.dir.?;
 
-        // determine action to take based on weapon type
+        // Determine action to take based on weapon type.
         if (item == .hammer) {
             if (game.level.entities.hasEnoughEnergy(player_id, 1)) {
                 // Stamina is used on hammer strike

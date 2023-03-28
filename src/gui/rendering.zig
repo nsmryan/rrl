@@ -639,6 +639,7 @@ fn shouldHighlightItem(game: *const Game, use_action: UseAction) bool {
 }
 
 fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offset: f32, game: *const Game, painter: *Painter, allocator: Allocator) !void {
+    _ = allocator;
     const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
     const highlight_ui_color = Color.init(0, 0, 0, 255);
 
@@ -661,7 +662,7 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
     const text_y_offset = y_offset + game.config.ui_inv_name_y_offset;
     if (painter.state.inventory.accessSlot(slot)) |item_id| {
         const item = game.level.entities.item.get(item_id);
-        const item_text = try std.fmt.allocPrint(allocator, "{}", .{item});
+        const item_text = utils.baseName(@tagName(item));
         try painter.drawcmds.append(DrawCmd.textFloat(item_text, text_x_offset, text_y_offset, text_color, game.config.ui_inv_name_scale));
     }
 }

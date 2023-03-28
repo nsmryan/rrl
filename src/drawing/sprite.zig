@@ -201,7 +201,8 @@ pub fn parseAtlasFile(atlas_file: []const u8, strings: *Intern, allocator: Alloc
         var sheet = SpriteSheet.withOffset(sprite_str, x, y, width, height);
 
         // Button sprites are handled specially - they are always a single large sprite.
-        if (std.mem.startsWith(u8, sprite_name[0..], "Button")) {
+        // Button names are of the form "X_Button_Y"
+        if (std.mem.startsWith(u8, sprite_name[2..], "Button")) {
             sheet.rows = 1;
             sheet.cols = 1;
             sheet.num_sprites = 1;

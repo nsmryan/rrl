@@ -308,15 +308,16 @@ pub const Gui = struct {
                     const name = gui.state.name.get(id);
 
                     const sheet_direction = sheetDirection(facing);
-                    var name_str_buf: [128]u8 = undefined;
-                    var stance_str_buf: [128]u8 = undefined;
-                    var direction_str_buf: [128]u8 = undefined;
-                    var name_str = try std.fmt.bufPrint(&name_str_buf, "{}", .{name});
-                    var stance_str = try std.fmt.bufPrint(&stance_str_buf, "{}", .{stance});
-                    var direction_str = try std.fmt.bufPrint(&direction_str_buf, "{}", .{sheet_direction});
+                    var name_str = @tagName(name);
+                    var stance_str = @tagName(stance);
+                    var direction_str = @tagName(sheet_direction);
 
                     var sheet_name_buf: [128]u8 = undefined;
-                    var sheet_name = try std.fmt.bufPrint(&sheet_name_buf, "{s}_{s}_{s}", .{ baseName(name_str), baseName(stance_str), baseName(direction_str) });
+                    var sheet_name = try std.fmt.bufPrint(&sheet_name_buf, "{s}_{s}_{s}", .{
+                        utils.baseName(name_str),
+                        utils.baseName(stance_str),
+                        utils.baseName(direction_str),
+                    });
 
                     var char_index: usize = 0;
                     while (char_index < sheet_name.len) : (char_index += 1) {
@@ -398,8 +399,6 @@ pub const Gui = struct {
         try rendering.renderInfo(&gui.game, &painter);
         gui.display.clear(&gui.panels.info);
         gui.display.draw(&gui.panels.info);
-
-        gui.display.clear(&gui.panels.inventory);
     }
 
     pub fn placePanels(gui: *Gui) void {
@@ -408,8 +407,8 @@ pub const Gui = struct {
         gui.display.clear(&gui.panels.screen);
         gui.display.fitTexture(&gui.panels.screen, gui.panels.level_area, &gui.panels.level, map_area);
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.pip_area, &gui.panels.pip, gui.panels.pip.panel.getRect());
-        gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getRect());
+        gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getRect());
     }
 
@@ -816,14 +815,6 @@ fn getSheetStance(stance: Stance) Stance {
         return .standing;
     } else {
         return stance;
-    }
-}
-
-fn baseName(name: []const u8) []const u8 {
-    if (std.mem.lastIndexOf(u8, name, ".")) |last_index| {
-        return name[(last_index + 1)..];
-    } else {
-        return name;
     }
 }
 

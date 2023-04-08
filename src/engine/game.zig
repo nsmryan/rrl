@@ -23,10 +23,6 @@ const Map = board.map.Map;
 const Tile = board.tile.Tile;
 const FovResult = board.blocking.FovResult;
 
-const gen = @import("gen");
-const MapGenType = gen.make_map.MapGenType;
-const MapLoadConfig = gen.make_map.MapLoadConfig;
-
 pub const actions = @import("actions.zig");
 pub const input = @import("input.zig");
 const Input = input.Input;

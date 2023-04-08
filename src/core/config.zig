@@ -26,6 +26,8 @@ pub const Config = struct {
     yell_radius: usize,
     swap_radius: usize,
     ping_sound_radius: usize,
+    seed_cache_radius: usize,
+    smoke_bomb_radius: usize,
     fog_of_war: bool,
     player_health: i32,
     player_health_max: i32,

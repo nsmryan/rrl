@@ -12,9 +12,6 @@ const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const Config = core.config.Config;
 
-const gen = @import("gen");
-const MapGenType = gen.MapGenType;
-
 const actions = @import("actions.zig");
 const InputAction = actions.InputAction;
 const ActionMode = @import("use.zig").ActionMode;

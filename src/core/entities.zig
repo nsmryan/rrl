@@ -103,6 +103,7 @@ pub const Entities = struct {
     hp: Comp(usize),
     behavior: Comp(Behavior),
     inventory: Comp(Inventory),
+    count_down: Comp(usize),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -182,6 +183,12 @@ pub const Entities = struct {
         entities.active.set(item_id, false);
         entities.pos.set(item_id, Pos.init(-1, -1));
         return inventory.addItem(item_id, item.class());
+    }
+
+    pub fn removeItem(entities: *Entities, id: Id, item_id: Id) void {
+        entities.active.set(item_id, true);
+        const item = entities.item.get(item_id);
+        _ = entities.inventory.getPtr(id).drop(item_id, item.class());
     }
 
     pub fn hasEnoughEnergy(entities: *const Entities, id: Id, amount: u32) bool {

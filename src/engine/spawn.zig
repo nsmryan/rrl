@@ -73,3 +73,23 @@ pub fn spawnDagger(entities: *Entities, log: *MsgLog, config: *const Config, all
 pub fn spawnStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     try spawnItem(entities, .stone, .stone, log, config, allocator);
 }
+
+pub fn spawnGrass(entities: *Entities, log: *MsgLog) !Id {
+    const id = try entities.createEntity(Pos.init(0, 0), .grass, .environment);
+    entities.blocking.getPtr(id).* = false;
+
+    try log.log(.spawn, .{ id, .grass });
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
+
+    return id;
+}
+
+pub fn spawnSmoke(entities: *Entities, config: *const Config, pos: Pos, amount: usize, log: *MsgLog) !Id {
+    const id = try entities.createEntity(pos, .smoke, .environment);
+
+    try entities.fov_block.insert(id, core.fov.FovBlock{ .opaqu = amount });
+    try entities.count_down.insert(id, config.smoke_turns);
+    try log.log(.spawn, .{ id, .smoke });
+
+    return id;
+}

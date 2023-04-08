@@ -166,6 +166,59 @@ pub const Level = struct {
         }
     }
 
+    pub fn throwTowards(level: *const Level, start: Pos, end: Pos) Pos {
+        var hit_pos = start;
+
+        var line = Line.init(start, end, false);
+        while (line.next()) |pos| {
+            if (!level.map.isWithinBounds(pos)) {
+                break;
+            }
+
+            const moveDir = Direction.fromPositions(hit_pos, pos).?;
+            if (level.blockingEntityAtPos(pos)) |hit_entity| {
+                if (level.entities.typ.get(hit_entity) != .column) {
+                    // Hitting an entity results in the entities tile, except for columns.
+                    hit_pos = pos;
+                }
+
+                break;
+            } else if (blocking.moveBlocked(&level.map, hit_pos, moveDir, .move) != null) {
+                break;
+            }
+
+            hit_pos = pos;
+        }
+
+        return hit_pos;
+    }
+
+    pub fn entityNameAtPos(level: *const Level, pos: Pos, name: entities.Name) !?Id {
+        for (level.entities.ids.items) |id| {
+            if (level.entities.active.get(id)) {
+                if (level.entities.pos.getOrNull(id)) |entity_pos| {
+                    if (entity_pos.eql(pos) and name == level.entities.name.get(id)) {
+                        return id;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    pub fn blockingEntityAtPos(level: *const Level, pos: Pos) ?Id {
+        for (level.entities.ids.items) |id| {
+            if (level.entities.active.get(id)) {
+                if (level.entities.pos.getOrNull(id)) |entity_pos| {
+                    if (entity_pos.eql(pos) and level.entities.blocking.get(id)) {
+                        return id;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     pub fn posInFov(level: *Level, id: Id, other_pos: Pos) FovError!FovResult {
         return try level.isInFov(id, other_pos, level.entities.stance.get(id).viewHeight());
     }

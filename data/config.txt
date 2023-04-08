@@ -59,6 +59,10 @@ swap_radius: 4
 ping_sound_radius: 3
 # show fog of war
 fog_of_war: true
+# Seed cache growth radius
+seed_cache_radius: 1
+# Radius to spawn smoke when using a smoke bomb
+smoke_bomb_radius: 1
 
 # initial player health
 player_health: 3
@@ -188,6 +192,9 @@ smoke_bomb_fov_block: 2
 
 # Number of turns before smoke dissipates
 smoke_turns: 6
+
+# Number of tiles around a smoke bomb to create smoke
+smoke_bomb_radius: 1
 
 # Magification of a thrown looking glass
 looking_glass_magnify_amount: 2

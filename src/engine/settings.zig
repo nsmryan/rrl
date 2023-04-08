@@ -7,10 +7,6 @@ const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const core = @import("core");
 
-const gen = @import("gen");
-const MapGenType = gen.make_map.MapGenType;
-const MapLoadConfig = gen.make_map.MapLoadConfig;
-
 const input = @import("input.zig");
 
 const Buffer = @import("utils").buffer.Buffer;
@@ -30,10 +26,26 @@ pub const Mode = union(enum) {
     cursor: struct { pos: Pos, use_action: ?use.UseAction },
 };
 
+pub const MapLoadConfig = union(enum) {
+    random,
+    testMap,
+    testWall,
+    testColumns,
+    empty,
+    testSmoke,
+    testCorner,
+    testPlayer,
+    testArmil,
+    testVaults,
+    testTraps,
+    vaultFile: []u8,
+    procGen: []u8,
+    testGen: []u8,
+};
+
 pub const Settings = struct {
     turn_count: usize = 0,
     test_mode: bool = false,
-    map_type: MapGenType = MapGenType.island,
     state: GameState = GameState.playing,
     overlay: bool = false,
     mode: Mode = Mode.playing,

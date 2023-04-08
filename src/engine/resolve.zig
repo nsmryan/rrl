@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const ArrayList = std.ArrayList;
 
 const math = @import("math");
 const Direction = math.direction.Direction;
@@ -12,6 +13,7 @@ const board = @import("board");
 const Material = board.tile.Tile.Material;
 const Height = board.tile.Tile.Height;
 const Wall = board.tile.Tile.Wall;
+const Tile = board.tile.Tile;
 
 const core = @import("core");
 const Skill = core.skills.Skill;
@@ -29,6 +31,9 @@ const MsgType = messaging.MsgType;
 
 const g = @import("game.zig");
 const Game = g.Game;
+
+const spawn = @import("spawn.zig");
+const make_map = @import("make_map.zig");
 
 pub fn resolve(game: *Game) !void {
     while (try game.log.pop()) |msg| {
@@ -203,7 +208,7 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     //    }
     //} else {
     //    const dir = Direction.fromPositions(original_pos, pos);
-    //    game.log.log_front(.setFacing, .{id, dir});
+    //    game.log.now(.setFacing, .{id, dir});
     //}
     if (Direction.fromPositions(start_pos, pos)) |dir| {
         try game.log.now(.facing, .{ id, dir });
@@ -330,13 +335,13 @@ fn resolveGainEnergy(id: Id, amount: u32, game: *Game) void {
 //        if level.entities.typ[key] == Type::Trigger {
 //            // stepped on trigger
 //           if level.entities.pos[key] == level.entities.pos[&id] {
-//               game.log.log_front(Msg::Triggered(*key, id));
+//               game.log.now(Msg::Triggered(*key, id));
 //           }
 //
 //            // stepped off of trigger
 //           if level.entities.pos[key] == original_pos &&
 //              level.entities.status[key].active {
-//               game.log.log_front(Msg::Untriggered(*key, id));
+//               game.log.now(Msg::Untriggered(*key, id));
 //           }
 //        }
 //    }
@@ -483,94 +488,94 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
 }
 
 fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
-    _ = id;
-    _ = start;
-    _ = end;
+    _ = hard;
     if (start.eql(end)) {
         @panic("Is it possible to throw an item and have it end where it started? Apparently yes");
     }
 
     // Get target position in direction of throw.
-    const end_pos = math.Line.moveTowards(start, end, game.config.player_throw_dist);
+    const end_pos = math.line.Line.moveTowards(start, end, game.config.player_throw_dist);
 
     // Get clear tile position, possibly hitting a wall or entity and stopping short.
     const hit_pos = game.level.throwTowards(start, end_pos);
 
     // If we hit an entity, stop on the entities tile and resolve stunning it.
-    if (game.level.hasBlockingEntity(hit_pos)) |hit_entity| {
+    if (game.level.blockingEntityAtPos(hit_pos)) |hit_entity| {
         if (game.level.entities.typ.get(hit_entity) == .enemy) {
-            var stun_turns = game.level.entities.item.get(item_id).throwStunTurns(&game.config);
+            @panic("Message passing to entities has not been implemented yet!");
+            //var stun_turns = game.level.entities.item.get(item_id).throwStunTurns(&game.config);
 
-            // Account for modifiers.
-            if (game.level.entities.passive.get(id).stone_thrower) {
-                stun_turns += 1;
-            }
+            //// Account for modifiers.
+            //if (game.level.entities.passive.get(id).stone_thrower) {
+            //    stun_turns += 1;
+            //}
 
-            if (hard) {
-                stun_turns += 1;
-            }
+            //if (hard) {
+            //    stun_turns += 1;
+            //}
 
-            if (stun_turns > 0) {
+            //if (stun_turns > 0) {
 
-                game.log.log(.froze, .{ hit_entity, stun_turns });
-            }
+            //    game.log.log(.froze, .{ hit_entity, stun_turns });
+            //}
 
-            const player_pos = game.level.entities.pos.get(id);
-            game.level.entities.message.getPtr(hit_entity).push(Message.hit(player_pos));
+            //const player_pos = game.level.entities.pos.get(id);
+            //game.level.entities.message.getPtr(hit_entity).push(Message.hit(player_pos));
         }
     }
 
     // Move the item to its hit location.
     game.level.entities.pos.set(item_id, start);
-    game.log.log(.moved, .{ item_id, .misc, .walk, hit_pos });
+    try game.log.log(.move, .{ item_id, .misc, .walk, hit_pos });
 
     // Remove the item from the inventory.
     game.level.entities.removeItem(id, item_id);
-    game.level.entities.took_turn.getPtr(id).* |= Turn.attack;
+    game.level.entities.turn.getPtr(id).*.attack = true;
 
     // NOTE the radius here is the stone radius, regardless of item type
-    game.log.log_front(.sound, .{ id, hit_pos, config.sound_radius_stone });
+    try game.log.now(.sound, .{ id, hit_pos, game.config.sound_radius_stone });
 
     // Resolve specific items.
     if (game.level.entities.item.get(item_id) == .seedOfStone) {
         // Seed of stone creates a new wall, destroying anything in the hit tile.
-        game.level.map[hit_pos] = Tile.Wall.short();
+        game.level.map.getPtr(hit_pos).center = Wall.short();
         // This is playing a little fast and lose- we assume that if
         // the seed of stone hits a tile, that any entity at that tile
         // is something we can destroy like a sword or grass entity.
         // NOTE(perf) use frame allocator
-        var entity_positions = ArrayList.init(game.allocator);
-        game.level.entitiesAtPos(hit_pos, entity_positions);
+        var entity_positions = ArrayList(Id).init(game.allocator);
+        try game.level.entitiesAtPos(hit_pos, &entity_positions);
         for (entity_positions.items) |entity_id| {
-            remove_entity(entity_id, game.level);
+            game.level.entities.markForRemoval(entity_id);
         }
-        remove_entity(item_id, game.level);
+        game.level.entities.markForRemoval(item_id);
     } else if (game.level.entities.item.get(item_id) == .seedCache) {
         // Seed cache creates a ground of grass tiles around the hit location.
         // NOTE(perf) use frame allocator.
-        var floodfill = board.FloodFill.init(game.allocator);
-        floodfill.fill(&game.level.map, hit_pos, SEED_CACHE_RADIUS);
+        var floodfill = board.floodfill.FloodFill.init(game.allocator);
+        try floodfill.fill(&game.level.map, hit_pos, game.config.seed_cache_radius);
         for (floodfill.flood.items) |seed_pos| {
-            if (rng_trial(rng, 0.70)) {
-                ensure_grass(game.level, seed_pos, game.log);
+            if (math.rand.rngTrial(game.rng.random(), 0.70)) {
+                _ = try make_map.ensureGrass(game, seed_pos);
             }
         }
-    } else if (game.level.entities.item[&item_id] == .smokeBomb) {
+    } else if (game.level.entities.item.get(item_id) == .smokeBomb) {
         // Smoke bomb creates a group of smoke tiles around the hit location.
-        makeSmoke(&game.level.entities, config, hit_pos, config.smoke_bomb_fov_block, game.log);
-        var floodfill = board.FloodFill.init(game.allocator);
-        floodfill.fill(&game.level.map, hit_pos, SMOKE_BOMB_RADIUS);
+        _ = try spawn.spawnSmoke(&game.level.entities, &game.config, hit_pos, game.config.smoke_bomb_fov_block, &game.log);
+        var floodfill = board.floodfill.FloodFill.init(game.allocator);
+        try floodfill.fill(&game.level.map, hit_pos, game.config.smoke_bomb_radius);
         for (floodfill.flood.items) |smoke_pos| {
-            if (smoke_pos != hit_pos) {
-                if (rng_trial(rng, 0.30)) {
-                    makeSmoke(&game.level.entities, config, smoke_pos, config.smoke_bomb_fov_block, game.log);
+            if (!smoke_pos.eql(hit_pos)) {
+                if (math.rand.rngTrial(game.rng.random(), 0.30)) {
+                    _ = try spawn.spawnSmoke(&game.level.entities, &game.config, smoke_pos, game.config.smoke_bomb_fov_block, &game.log);
                 }
             }
         }
-    } else if (game.level.entities.item[&item_id] == .lookingGlass) {
+    } else if (game.level.entities.item.get(item_id) == .lookingGlass) {
+        // NOTE(implement) this is part of magnification and not yet added back into the game.
         // The looking glass creates a magnifier in the hit location.
-        makeMagnifier(&game.level.entities, config, hit_pos, config.looking_glass_magnify_amount, game.log);
-    } else if (game.level.entities.item[&item_id] == .glassEye) {
+        //spawnMagnifier(&game.level.entities, &game.config, hit_pos, game.config.looking_glass_magnify_amount, game.log);
+    } else if (game.level.entities.item.get(item_id) == .glassEye) {
         // NOTE(implement) consider moving this to the code for moving, or a special message for this item.
         // This would allow LoS calculations for the glass eye entity instead of the previous simple radius.
 
@@ -589,15 +594,15 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
         //}
     } else if (game.level.entities.item.get(item_id) == .teleporter) {
         // The teleporter moves the player to a random location around the hit location.
-        const end_x = math.rand.rngRangeI32(rng, hit_pos.x - 1, hit_pos.x + 1);
-        const end_y = math.rand.rngRangeI32(rng, hit_pos.y - 1, hit_pos.y + 1);
-        var end_pos = Pos.init(end_x, end_y);
-        if (!game.level.map.isWithinBounds(end_pos)) {
-            end_pos = hit_pos;
+        const end_x = math.rand.rngRangeI32(game.rng.random(), hit_pos.x - 1, hit_pos.x + 1);
+        const end_y = math.rand.rngRangeI32(game.rng.random(), hit_pos.y - 1, hit_pos.y + 1);
+        var result_pos = Pos.init(end_x, end_y);
+        if (!game.level.map.isWithinBounds(result_pos)) {
+            result_pos = hit_pos;
         }
-        game.log.logFront(.moved, .{ id, .blink, .walk, end_pos });
-        removeEntity(item_id, game.level);
+        try game.log.now(.move, .{ id, .blink, .walk, result_pos });
+        game.level.entities.markForRemoval(item_id);
     }
 
-    game.log.log(.itemLanded, .{ item_id, start, hit_pos });
+    try game.log.log(.itemLanded, .{ item_id, start, hit_pos });
 }

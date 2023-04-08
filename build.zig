@@ -204,19 +204,13 @@ const pkgs = struct {
     const engine = std.build.Pkg{
         .name = "engine",
         .source = .{ .path = "src/engine/engine.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, gen, prof },
+        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, prof },
     };
 
     const gui = std.build.Pkg{
         .name = "gui",
         .source = .{ .path = "src/gui/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, drawing, utils, board, engine, gen, prof },
-    };
-
-    const gen = std.build.Pkg{
-        .name = "gen",
-        .source = .{ .path = "src/gen/gen.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, utils },
+        .dependencies = &[_]std.build.Pkg{ core, math, drawing, utils, board, engine, prof },
     };
 };
 
@@ -227,7 +221,6 @@ fn addPackages(step: *std.build.LibExeObjStep) void {
     step.addPackage(pkgs.drawing);
     step.addPackage(pkgs.math);
     step.addPackage(pkgs.gui);
-    step.addPackage(pkgs.gen);
     step.addPackage(pkgs.engine);
     step.addPackage(pkgs.prof);
 }

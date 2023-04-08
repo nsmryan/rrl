@@ -9,11 +9,11 @@ pub fn rngBool(rng: Random) bool {
 }
 
 pub fn rngTrial(rng: Random, prob: f32) bool {
-    return rand.float(rng) < prob;
+    return Random.float(rng, f32) < prob;
 }
 
 pub fn rngRange(rng: Random, low: f32, high: f32) f32 {
-    return (Random.float(rng) * (high - low)) + low;
+    return (Random.float(rng, f32) * (high - low)) + low;
 }
 
 pub fn rngPos(rng: Random, bounds: Pos) Pos {

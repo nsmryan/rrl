@@ -11,6 +11,11 @@ const SpriteAnimation = sprite.SpriteAnimation;
 
 const DrawCmd = @import("drawcmd.zig").DrawCmd;
 
+pub const FinishedCondition = enum {
+    spriteDone,
+    tweenDone,
+};
+
 pub const Animation = struct {
     sprite_anim: SpriteAnimation,
     random: bool = false,
@@ -20,9 +25,17 @@ pub const Animation = struct {
     alpha: ?Tween = null,
     x: ?Tween = null,
     y: ?Tween = null,
+    delay: u64,
+    finished_condition: FinishedCondition,
 
     pub fn init(sprite_anim: SpriteAnimation, color: Color, position: Pos) Animation {
-        return Animation{ .sprite_anim = sprite_anim, .color = color, .position = position };
+        return Animation{
+            .sprite_anim = sprite_anim,
+            .color = color,
+            .position = position,
+            .delay = 0,
+            .finished_condition = .spriteDone,
+        };
     }
 
     pub fn randomize(anim: Animation) Animation {
@@ -30,26 +43,49 @@ pub const Animation = struct {
         return anim;
     }
 
-    pub fn alpha(anim: Animation, tween: Tween) Animation {
+    pub fn tween_alpha(anim: *Animation, tween: Tween) void {
         anim.alpha = tween;
-        return anim;
     }
 
-    pub fn x(anim: Animation, tween: Tween) Animation {
+    pub fn tween_x(anim: *Animation, tween: Tween) void {
         anim.x = tween;
-        return anim;
     }
 
-    pub fn y(anim: Animation, tween: Tween) Animation {
+    pub fn tween_y(anim: *Animation, tween: Tween) void {
         anim.y = tween;
-        return anim;
+    }
+
+    pub fn delayByCounts(anim: *Animation, dt: u64) void {
+        anim.delay = dt;
+    }
+
+    pub fn delayBy(anim: *Animation, dt: f32) void {
+        anim.delayByCounts(@floatToInt(u64, dt * 1000.0));
     }
 
     pub fn doneTweening(anim: *const Animation) bool {
         return anim.x == null and anim.y == null and anim.alpha == null;
     }
 
-    pub fn step(anim: *Animation, dt: u64) bool {
+    pub fn finishWhenTweensDone(anim: *Animation) void {
+        anim.finished_condition = .tweenDone;
+    }
+
+    // Return whether to continue playing the animation.
+    pub fn step(anim: *Animation, input_dt: u64) bool {
+        var dt = input_dt;
+        if (anim.delay != 0) {
+            // If we need to delay past this update, subtract from delay and keep playing.
+            if (anim.delay >= input_dt) {
+                anim.delay -= input_dt;
+                return true;
+            } else {
+                // Otherwise, delay has played out so animate past the delay time.
+                dt = input_dt - anim.delay;
+                anim.delay = 0;
+            }
+        }
+
         if (anim.alpha) |*alpha_ptr| {
             if (alpha_ptr.done()) {
                 anim.alpha = null;
@@ -73,10 +109,21 @@ pub const Animation = struct {
         }
         anim.sprite_anim.step(@intToFloat(f32, dt) / 1000.0);
 
-        return !(anim.sprite_anim.looped and !anim.repeat);
+        return anim.done();
     }
 
-    pub fn draw(anim: *const Animation) DrawCmd {
+    pub fn done(anim: *const Animation) bool {
+        switch (anim.finished_condition) {
+            .tweenDone => return anim.alpha != null or anim.x != null or anim.y != null,
+            .spriteDone => return !(anim.sprite_anim.looped and !anim.repeat),
+        }
+    }
+
+    pub fn draw(anim: *const Animation) ?DrawCmd {
+        if (anim.delay > 0) {
+            return null;
+        }
+
         var color = anim.color;
         if (anim.alpha) |alpha_ptr| {
             color.a = @floatToInt(u8, alpha_ptr.value());

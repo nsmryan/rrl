@@ -101,13 +101,17 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
 
     for (painter.state.animation.ids.items) |id| {
         if (game.level.entities.typ.get(id) == .item and game.level.entities.active.get(id)) {
-            try painter.drawcmds.append(painter.state.animation.get(id).draw());
+            if (painter.state.animation.get(id).draw()) |drawcmd| {
+                try painter.drawcmds.append(drawcmd);
+            }
         }
     }
 
     for (painter.state.animation.ids.items) |id| {
         if (game.level.entities.typ.get(id) != .item and game.level.entities.active.get(id)) {
-            try painter.drawcmds.append(painter.state.animation.get(id).draw());
+            if (painter.state.animation.get(id).draw()) |drawcmd| {
+                try painter.drawcmds.append(drawcmd);
+            }
         }
     }
 }
@@ -306,7 +310,9 @@ fn renderOverlays(game: *Game, painter: *Painter) !void {
 
 fn renderOverlayEffects(painter: *Painter) !void {
     for (painter.state.effects.items) |animation| {
-        try painter.drawcmds.append(animation.draw());
+        if (animation.draw()) |drawcmd| {
+            try painter.drawcmds.append(drawcmd);
+        }
     }
 }
 
@@ -315,7 +321,9 @@ fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
         if (game.settings.mode != .cursor and anim.doneTweening()) {
             painter.state.cursor_animation = null;
         } else {
-            try painter.drawcmds.append(anim.draw());
+            if (anim.draw()) |drawcmd| {
+                try painter.drawcmds.append(drawcmd);
+            }
         }
         _ = anim.step(painter.dt);
     }

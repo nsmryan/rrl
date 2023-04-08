@@ -47,7 +47,7 @@ player_vault_move_speed: 2.0
 idle_speed: 6
 fire_speed: 7
 grass_idle_speed: 0.5
-item_throw_speed: 30.0
+item_throw_speed: 14.0
 key_speed: 5.0
 
 sound_timeout: 0.5

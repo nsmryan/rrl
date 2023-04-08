@@ -64,6 +64,12 @@ pub const Pos = struct {
         return std.math.max(dist_x, dist_y);
     }
 
+    pub fn distance(self: Pos, other: Pos) f32 {
+        const x_dist = @intToFloat(f32, self.x - other.x);
+        const y_dist = @intToFloat(f32, self.y - other.y);
+        return std.math.fabs(std.math.sqrt(x_dist * x_dist + y_dist * y_dist));
+    }
+
     pub fn mirrorInX(self: Pos, width: i32) Pos {
         return Pos.init(width - self.x - 1, self.y);
     }

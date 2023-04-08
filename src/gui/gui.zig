@@ -178,11 +178,38 @@ pub const Gui = struct {
                 .hit => |args| try gui.processHit(args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
                 .pickedUp => |args| try gui.processPickedUpItem(args.id, args.item_id, args.slot),
                 .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
+                .itemLanded => |args| try gui.processItemLanded(args.id, args.start, args.hit),
 
                 else => {},
             }
             try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
         }
+    }
+
+    fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {
+        //const sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
+
+        //const tile_index = gui.game.level.entities.pos.get(id);
+        //const item_sprite = gui.static_sprite("rustrogueliketiles", tile_index);
+
+        //const move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
+        //const item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
+        //const loop_anim = Animation::Loop(item_sprite);
+
+        //gui.state.play_animation(item_id, move_anim);
+        //gui.state.append_animation(item_id, item_anim);
+        //gui.state.append_animation(item_id, loop_anim);
+
+        // TODO set idle animation to delay until end of other animations
+        const distance = start.distance(hit);
+        const duration = distance / gui.game.config.item_throw_speed;
+        var sprite_anim = gui.state.animation.get(id).sprite_anim;
+        var anim = Animation.init(sprite_anim, Color.white(), hit);
+        anim.finishWhenTweensDone();
+        anim.tween_x(Tween.init(@intToFloat(f32, start.x), @intToFloat(f32, hit.x), duration, .linearInterpolation));
+        anim.tween_y(Tween.init(@intToFloat(f32, start.y), @intToFloat(f32, hit.y), duration, .linearInterpolation));
+        try gui.state.effects.append(anim);
+        gui.state.animation.getPtr(id).delayBy(duration);
     }
 
     fn processPickedUpItem(gui: *Gui, id: Id, item_id: Id, slot: items.InventorySlot) !void {
@@ -301,6 +328,10 @@ pub const Gui = struct {
 
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
         for (gui.state.name.ids.items) |id| {
+            if (gui.state.animation.getOrNull(id) != null) {
+                return;
+            }
+
             switch (gui.state.name.get(id)) {
                 .player => {
                     const stance = getSheetStance(gui.state.stance.get(id));
@@ -491,8 +522,8 @@ pub const Gui = struct {
 
         var effectIndex: usize = 0;
         while (effectIndex < gui.state.effects.items.len) {
-            const done = !gui.state.effects.items[effectIndex].step(delta_ticks);
-            if (done) {
+            const continue_animating = gui.state.effects.items[effectIndex].step(delta_ticks);
+            if (!continue_animating) {
                 _ = gui.state.effects.swapRemove(effectIndex);
             } else {
                 effectIndex += 1;

@@ -17,6 +17,7 @@ const Tween = math.tweening.Tween;
 const Dims = math.utils.Dims;
 const Color = math.utils.Color;
 const Rect = math.rect.Rect;
+const Easing = math.easing.Easing;
 
 const core = @import("core");
 const movement = core.movement;
@@ -32,6 +33,7 @@ const gen = @import("gen");
 
 const board = @import("board");
 const Map = board.map.Map;
+const FloodFill = board.floodfill.FloodFill;
 
 const engine = @import("engine");
 const Game = engine.game.Game;
@@ -210,6 +212,15 @@ pub const Gui = struct {
         gui.state.animation.getPtr(id).delayBy(duration);
 
         // Animate the sound of the item landing after the item lands
+        var floodfill = FloodFill.init(gui.allocator);
+        floodfill.dampen_tile_blocked = gui.game.config.dampen_blocked_tile;
+        floodfill.dampen_short_wall = gui.game.config.dampen_short_wall;
+        floodfill.dampen_tall_wall = gui.game.config.dampen_tall_wall;
+        try floodfill.fill(&gui.game.level.map, hit, gui.game.config.sound_radius_stone);
+        for (floodfill.flood.items) |hit_pos| {
+            var tween = Tween.init(0.0, 255.0, 5.0, Easing.linearInterpolation);
+            try gui.state.effects.append(Effect.highlightEffect(hit_pos.pos, Color.white(), tween));
+        }
     }
 
     fn processPickedUpItem(gui: *Gui, id: Id, item_id: Id, slot: items.InventorySlot) !void {

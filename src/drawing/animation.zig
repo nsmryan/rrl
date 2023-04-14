@@ -145,4 +145,9 @@ pub const Animation = struct {
             return DrawCmd.sprite(anim.sprite_anim.current(), color, anim.position);
         }
     }
+
+    pub fn moveBetween(anim: *Animation, start: Pos, end: Pos, duration: f32) void {
+        anim.tween_x(Tween.init(@intToFloat(f32, start.x), @intToFloat(f32, end.x), duration, .linearInterpolation));
+        anim.tween_y(Tween.init(@intToFloat(f32, start.y), @intToFloat(f32, end.y), duration, .linearInterpolation));
+    }
 };

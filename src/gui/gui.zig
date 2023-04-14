@@ -59,6 +59,10 @@ pub const keyboard = @import("keyboard.zig");
 pub const canvas = @import("canvas.zig");
 pub const sdl2 = @import("sdl2.zig");
 pub const rendering = @import("rendering.zig");
+pub const effects = @import("effects.zig");
+
+pub const Effect = effects.Effect;
+
 const Painter = rendering.Painter;
 
 const Texture = sdl2.SDL_Texture;
@@ -187,29 +191,25 @@ pub const Gui = struct {
     }
 
     fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {
+        // TODO spawn a highlight and outline on each tile hit by aoe.
+        //      delay each by distance from center.
+        //      make sure to check for fov and not blocked on map, perhaps including columns.
         //const sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
+        // TODO split out moving between locations to a function.
+        //      split out fading in and out to a function, perhaps playing with the tweening, or two animations,
+        //      one tween in and one tween out..
 
-        //const tile_index = gui.game.level.entities.pos.get(id);
-        //const item_sprite = gui.static_sprite("rustrogueliketiles", tile_index);
-
-        //const move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
-        //const item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
-        //const loop_anim = Animation::Loop(item_sprite);
-
-        //gui.state.play_animation(item_id, move_anim);
-        //gui.state.append_animation(item_id, item_anim);
-        //gui.state.append_animation(item_id, loop_anim);
-
-        // TODO set idle animation to delay until end of other animations
+        // Animate the item moving to the hit location.
         const distance = start.distance(hit);
         const duration = distance / gui.game.config.item_throw_speed;
         var sprite_anim = gui.state.animation.get(id).sprite_anim;
         var anim = Animation.init(sprite_anim, Color.white(), hit);
         anim.finishWhenTweensDone();
-        anim.tween_x(Tween.init(@intToFloat(f32, start.x), @intToFloat(f32, hit.x), duration, .linearInterpolation));
-        anim.tween_y(Tween.init(@intToFloat(f32, start.y), @intToFloat(f32, hit.y), duration, .linearInterpolation));
-        try gui.state.effects.append(anim);
+        anim.moveBetween(start, hit, duration);
+        try gui.state.effects.append(Effect.animationEffect(anim));
         gui.state.animation.getPtr(id).delayBy(duration);
+
+        // Animate the sound of the item landing after the item lands
     }
 
     fn processPickedUpItem(gui: *Gui, id: Id, item_id: Id, slot: items.InventorySlot) !void {
@@ -260,7 +260,7 @@ pub const Gui = struct {
         }
 
         var hit_animation = try gui.display.animation(name, hit_pos, gui.game.config.attack_animation_speed);
-        try gui.state.effects.append(hit_animation);
+        try gui.state.effects.append(Effect.animationEffect(hit_animation));
     }
 
     fn startLevel(gui: *Gui) !void {
@@ -786,7 +786,7 @@ pub const DisplayState = struct {
     map_window_center: Pos,
     turn_count: usize,
     console_log: ConsoleLog,
-    effects: ArrayList(Animation),
+    effects: ArrayList(Effect),
     inventory: items.Inventory,
 
     pub fn init(allocator: Allocator) DisplayState {
@@ -796,7 +796,7 @@ pub const DisplayState = struct {
         state.map_window_center = Pos.init(0, 0);
         state.turn_count = 0;
         state.console_log = ConsoleLog.init();
-        state.effects = ArrayList(Animation).init(allocator);
+        state.effects = ArrayList(Effect).init(allocator);
         state.inventory = items.Inventory{};
 
         comptime var names = entities.compNames(DisplayState);

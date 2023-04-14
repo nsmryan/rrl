@@ -556,7 +556,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
         try floodfill.fill(&game.level.map, hit_pos, game.config.seed_cache_radius);
         for (floodfill.flood.items) |seed_pos| {
             if (math.rand.rngTrial(game.rng.random(), 0.70)) {
-                _ = try make_map.ensureGrass(game, seed_pos);
+                _ = try make_map.ensureGrass(game, seed_pos.pos);
             }
         }
     } else if (game.level.entities.item.get(item_id) == .smokeBomb) {
@@ -565,9 +565,9 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
         var floodfill = board.floodfill.FloodFill.init(game.allocator);
         try floodfill.fill(&game.level.map, hit_pos, game.config.smoke_bomb_radius);
         for (floodfill.flood.items) |smoke_pos| {
-            if (!smoke_pos.eql(hit_pos)) {
+            if (!smoke_pos.pos.eql(hit_pos)) {
                 if (math.rand.rngTrial(game.rng.random(), 0.30)) {
-                    _ = try spawn.spawnSmoke(&game.level.entities, &game.config, smoke_pos, game.config.smoke_bomb_fov_block, &game.log);
+                    _ = try spawn.spawnSmoke(&game.level.entities, &game.config, smoke_pos.pos, game.config.smoke_bomb_fov_block, &game.log);
                 }
             }
         }

@@ -255,8 +255,8 @@ pub const Level = struct {
             try floodfill.fill(&level.map, pos, dist);
 
             for (floodfill.flood.items) |cur| {
-                if (level.itemAtPos(cur) == null) {
-                    return cur;
+                if (level.itemAtPos(cur.pos) == null) {
+                    return cur.pos;
                 }
             }
 

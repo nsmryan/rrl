@@ -72,12 +72,10 @@ pub const DrawCmd = union(enum) {
 
     pub fn highlightTile(position: Pos, color: Color) DrawCmd {
         return DrawCmd{ .highlightTile = DrawHighlightTile{ .pos = position, .color = color } };
-        //return DrawCmd{ .rect = DrawRect{ .pos = position, .width = 1, .height = 1, .offset_percent = 0.0, .filled = true, .color = color } };
     }
 
     pub fn outlineTile(position: Pos, color: Color) DrawCmd {
         return DrawCmd{ .outlineTile = DrawOutlineTile{ .pos = position, .color = color } };
-        //return DrawCmd{ .rect = DrawRect{ .pos = position, .width = 1, .height = 1, .offset_percent = 0.0, .filled = false, .color = color } };
     }
 
     pub fn text(txt: []const u8, position: Pos, color: Color, scale: f32) DrawCmd {

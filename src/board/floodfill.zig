@@ -20,9 +20,6 @@ pub const HitPos = struct {
     force: i32,
 };
 
-// TODO reduce force according to a table for blocked/tall wall/short wall costs.
-//      use neighbors instead of reachableNeighbors.
-//      if we reach a location with more force, add it to current even if already seen.
 pub const FloodFill = struct {
     flood: ArrayList(HitPos),
     current: ArrayList(HitPos),

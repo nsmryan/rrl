@@ -54,3 +54,11 @@ pub const Dims = struct {
         return Dims.init(dims.width * x_scaler, dims.height * y_scaler);
     }
 };
+
+pub fn saturatedSubtraction(amount: u64, delta: u64) struct { result: u64, delta: u64 } {
+    if (amount > delta) {
+        return .{ .result = amount - delta, .delta = 0 };
+    } else {
+        return .{ .result = 0, .delta = delta - amount };
+    }
+}

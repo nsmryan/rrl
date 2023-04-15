@@ -73,17 +73,12 @@ pub const Animation = struct {
 
     // Return whether to continue playing the animation.
     pub fn step(anim: *Animation, input_dt: u64) bool {
-        var dt = input_dt;
+        const pair = math.utils.saturatedSubtraction(anim.delay, input_dt);
+        anim.delay = pair.result;
+        var dt = pair.delta;
+
         if (anim.delay != 0) {
-            // If we need to delay past this update, subtract from delay and keep playing.
-            if (anim.delay >= input_dt) {
-                anim.delay -= input_dt;
-                return true;
-            } else {
-                // Otherwise, delay has played out so animate past the delay time.
-                dt = input_dt - anim.delay;
-                anim.delay = 0;
-            }
+            return true;
         }
 
         if (anim.alpha) |*alpha_ptr| {

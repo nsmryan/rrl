@@ -232,8 +232,8 @@ pub const Gui = struct {
         const fade_half_duration: f32 = 0.25;
         const sound_alpha: f32 = @intToFloat(f32, gui.game.config.sound_alpha) / 255.0;
         const highlight_color = gui.game.config.color_warm_grey;
-        const ease_up = Easing.linearInterpolation;
-        const ease_down = Easing.linearInterpolation;
+        const ease_up = gui.game.config.sound_ease_in;
+        const ease_down = gui.game.config.sound_ease_out;
 
         for (floodfill.flood.items) |hit_pos| {
             const first_delay = initial_delay + 100 * @intCast(u64, pos.distanceMaximum(hit_pos.pos));

@@ -95,6 +95,8 @@ pub const Config = struct {
     minimal_output: bool,
     blocking_positions: bool,
     smoke_bomb_fov_block: usize,
+    sound_ease_in: Easing,
+    sound_ease_out: Easing,
     smoke_turns: usize,
     looking_glass_magnify_amount: usize,
     hp_render_duration: usize,

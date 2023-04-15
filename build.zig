@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const FileSource = std.Build.FileSource;
+const ModuleDependency = std.Build.ModuleDependency;
+const CreateModuleOptions = std.Build.CreateModuleOptions;
 
 pub fn build(b: *std.build.Builder) !void {
     const target = b.standardTargetOptions(.{});
@@ -38,7 +40,7 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
     exe.linkLibC();
     b.installArtifact(exe);
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
@@ -134,7 +136,7 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
 
     b.installArtifact(exe);
 
-    const run_cmd = exe.addRunArtifact();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     var dir = try std.fs.cwd().openIterableDir("data/sprites/animations/", .{});
     var walker = try dir.walk(b.allocator);
@@ -166,64 +168,117 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
 }
 
 const pkgs = struct {
-    const utils = std.build.Pkg{
-        .name = "utils",
-        .source = .{ .path = "src/utils/utils.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+    const utils = CreateModuleOptions{
+        .source_file = .{ .path = "src/utils/utils.zig" },
+        .dependencies = &[_]ModuleDependency{},
     };
 
-    const prof = std.build.Pkg{
-        .name = "prof",
-        .source = .{ .path = "src/prof.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+    const prof = CreateModuleOptions{
+        .source_file = .{ .path = "src/prof.zig" },
+        .dependencies = &[_]ModuleDependency{},
     };
 
-    const math = std.build.Pkg{
-        .name = "math",
-        .source = .{ .path = "src/math/math.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+    const math = CreateModuleOptions{
+        .source_file = .{ .path = "src/math/math.zig" },
+        .dependencies = &[_]ModuleDependency{},
     };
 
-    const core = std.build.Pkg{
-        .name = "core",
-        .source = .{ .path = "src/core/core.zig" },
-        .dependencies = &[_]std.build.Pkg{ utils, math, board, prof },
+    const core = CreateModuleOptions{
+        .source_file = .{ .path = "src/core/core.zig" },
+        .dependencies = &[_]ModuleDependency{ utils, math, board, prof },
     };
 
-    const drawing = std.build.Pkg{
-        .name = "drawing",
-        .source = .{ .path = "src/drawing/drawing.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, utils },
+    const drawing = CreateModuleOptions{
+        .source_file = .{ .path = "src/drawing/drawing.zig" },
+        .dependencies = &[_]ModuleDependency{ math, utils },
     };
 
-    const board = std.build.Pkg{
-        .name = "board",
-        .source = .{ .path = "src/board/board.zig" },
-        .dependencies = &[_]std.build.Pkg{ math, prof, utils },
+    const board = CreateModuleOptions{
+        .source_file = .{ .path = "src/board/board.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "math", .module = &math },
+            .{ .name = "prof", .module = &prof },
+            .{ .name = "utils", .module = &utils },
+        },
     };
 
-    const engine = std.build.Pkg{
-        .name = "engine",
-        .source = .{ .path = "src/engine/engine.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, utils, board, prof },
+    const engine = CreateModuleOptions{
+        .source_file = .{ .path = "src/engine/engine.zig" },
+        .dependencies = &[_]ModuleDependency{ core, math, utils, board, prof },
     };
 
-    const gui = std.build.Pkg{
-        .name = "gui",
-        .source = .{ .path = "src/gui/gui.zig" },
-        .dependencies = &[_]std.build.Pkg{ core, math, drawing, utils, board, engine, prof },
+    const gui = CreateModuleOptions{
+        .source_file = .{ .path = "src/gui/gui.zig" },
+        .dependencies = &[_]ModuleDependency{ core, math, drawing, utils, board, engine, prof },
     };
 };
 
 fn addPackages(step: *std.build.LibExeObjStep) void {
-    step.addPackage(pkgs.board);
-    step.addPackage(pkgs.utils);
-    step.addPackage(pkgs.core);
-    step.addPackage(pkgs.drawing);
-    step.addPackage(pkgs.math);
-    step.addPackage(pkgs.gui);
-    step.addPackage(pkgs.engine);
-    step.addPackage(pkgs.prof);
+    var utils = step.addModule("utils", CreateModuleOptions{
+        .source_file = .{ .path = "src/utils/utils.zig" },
+        .dependencies = &[_]ModuleDependency{},
+    });
+
+    var prof = step.addModule("prof", CreateModuleOptions{
+        .source_file = .{ .path = "src/prof.zig" },
+        .dependencies = &[_]ModuleDependency{},
+    });
+
+    var math = step.addModule("math", CreateModuleOptions{
+        .source_file = .{ .path = "src/math/math.zig" },
+        .dependencies = &[_]ModuleDependency{},
+    });
+
+    var board = step.addModule("board", CreateModuleOptions{
+        .source_file = .{ .path = "src/board/board.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "math", .module = &math },
+            .{ .name = "prof", .module = &prof },
+            .{ .name = "utils", .module = &utils },
+        },
+    });
+
+    var core = step.addModule("core", CreateModuleOptions{
+        .source_file = .{ .path = "src/core/core.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "utils", .module = &utils },
+            .{ .name = "math", .module = &math },
+            .{ .name = "board", .module = &board },
+            .{ .name = "prof", .module = &prof },
+        },
+    });
+
+    var drawing = step.addModule("drawing", CreateModuleOptions{
+        .source_file = .{ .path = "src/drawing/drawing.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "math", .module = &math },
+            .{ .name = "utils", .module = &utils },
+        },
+    });
+
+    var engine = step.addModule("engine", CreateModuleOptions{
+        .source_file = .{ .path = "src/engine/engine.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "core", .module = &core },
+            .{ .name = "math", .module = &math },
+            .{ .name = "utils", .module = &utils },
+            .{ .name = "board", .module = &board },
+            .{ .name = "prof", .module = &prof },
+        },
+    });
+
+    step.addModule("gui", CreateModuleOptions{
+        .source_file = .{ .path = "src/gui/gui.zig" },
+        .dependencies = &[_]ModuleDependency{
+            .{ .name = "core", .module = &core },
+            .{ .name = "math", .module = &math },
+            .{ .name = "drawing", .module = &drawing },
+            .{ .name = "utils", .module = &utils },
+            .{ .name = "board", .module = &board },
+            .{ .name = "engine", .module = &engine },
+            .{ .name = "prof", .module = &prof },
+        },
+    });
 }
 
 fn addCDeps(step: *std.build.LibExeObjStep) void {

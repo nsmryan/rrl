@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const math = @import("math");
 const Tween = math.tweening.Tween;
 const Color = math.utils.Color;
@@ -37,7 +39,7 @@ pub const Effect = union(enum) {
                 args.delay = pair.result;
                 if (args.delay == 0) {
                     args.alpha.deltaTimeMs(pair.delta);
-                    return args.alpha.done();
+                    return !args.alpha.done();
                 } else {
                     return true;
                 }
@@ -48,7 +50,7 @@ pub const Effect = union(enum) {
                 args.delay = pair.result;
                 if (args.delay == 0) {
                     args.alpha.deltaTimeMs(pair.delta);
-                    return args.alpha.done();
+                    return !args.alpha.done();
                 } else {
                     return true;
                 }
@@ -64,13 +66,17 @@ pub const Effect = union(enum) {
 
             .highlight => |args| {
                 if (args.delay == 0) {
-                    return DrawCmd.highlightTile(args.pos, args.color);
+                    var color = args.color;
+                    color.a = @floatToInt(u8, args.alpha.value() * 255.0);
+                    return DrawCmd.highlightTile(args.pos, color);
                 }
             },
 
             .outline => |args| {
                 if (args.delay == 0) {
-                    return DrawCmd.outlineTile(args.pos, args.color);
+                    var color = args.color;
+                    color.a = @floatToInt(u8, args.alpha.value() * 255.0);
+                    return DrawCmd.outlineTile(args.pos, color);
                 }
             },
         }

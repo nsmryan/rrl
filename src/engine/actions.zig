@@ -131,6 +131,8 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
             try use.startUseTalent(game, index);
         },
 
+        .yell => try game.log.log(.yell, Entities.player_id),
+
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
         else => {},

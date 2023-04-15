@@ -56,6 +56,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .droppedItem => |args| try resolveDroppedItem(game, args.id, args.slot),
         .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
         .itemThrow => |args| try resolveItemThrow(game, args.id, args.item_id, args.start, args.end, args.hard),
+        .yell => |id| try resolveYell(game, id),
         else => {},
     }
 }
@@ -485,6 +486,11 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
     _ = id;
     _ = item_id;
     // NOTE(implement) eating herb.
+}
+
+fn resolveYell(game: *Game, id: Id) !void {
+    const position = game.level.entities.pos.get(id);
+    try game.log.now(.sound, .{ id, position, game.config.yell_radius });
 }
 
 fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {

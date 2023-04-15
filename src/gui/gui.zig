@@ -185,11 +185,17 @@ pub const Gui = struct {
                 .pickedUp => |args| try gui.processPickedUpItem(args.id, args.item_id, args.slot),
                 .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
                 .itemLanded => |args| try gui.processItemLanded(args.id, args.start, args.hit),
+                .sound => |args| try gui.processSound(args.id, args.pos, args.amount),
 
                 else => {},
             }
             try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
         }
+    }
+
+    fn processSound(gui: *Gui, id: Id, pos: Pos, amount: usize) !void {
+        _ = id;
+        try gui.soundEffect(0.0, pos, amount);
     }
 
     fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {
@@ -203,23 +209,44 @@ pub const Gui = struct {
 
         // Animate the item moving to the hit location.
         const distance = start.distance(hit);
-        const duration = distance / gui.game.config.item_throw_speed;
+        const throw_duration = distance / gui.game.config.item_throw_speed;
         var sprite_anim = gui.state.animation.get(id).sprite_anim;
         var anim = Animation.init(sprite_anim, Color.white(), hit);
         anim.finishWhenTweensDone();
-        anim.moveBetween(start, hit, duration);
+        anim.moveBetween(start, hit, throw_duration);
         try gui.state.effects.append(Effect.animationEffect(anim));
-        gui.state.animation.getPtr(id).delayBy(duration);
+        gui.state.animation.getPtr(id).delayBy(throw_duration);
 
+        try gui.soundEffect(throw_duration, hit, gui.game.config.sound_radius_stone);
+    }
+
+    fn soundEffect(gui: *Gui, delay: f32, pos: Pos, amount: usize) !void {
         // Animate the sound of the item landing after the item lands
         var floodfill = FloodFill.init(gui.allocator);
         floodfill.dampen_tile_blocked = gui.game.config.dampen_blocked_tile;
         floodfill.dampen_short_wall = gui.game.config.dampen_short_wall;
         floodfill.dampen_tall_wall = gui.game.config.dampen_tall_wall;
-        try floodfill.fill(&gui.game.level.map, hit, gui.game.config.sound_radius_stone);
+        try floodfill.fill(&gui.game.level.map, pos, amount);
+
+        const first_delay = @floatToInt(u64, delay * 1000);
+        const fade_half_duration: f32 = 0.25;
+        const second_delay = first_delay + @floatToInt(u64, fade_half_duration * 1000);
+        const sound_alpha: f32 = @intToFloat(f32, gui.game.config.sound_alpha) / 255.0;
+        const highlight_color = gui.game.config.color_warm_grey;
+        const ease_up = Easing.linearInterpolation;
+        const ease_down = Easing.linearInterpolation;
+
         for (floodfill.flood.items) |hit_pos| {
-            var tween = Tween.init(0.0, 255.0, 5.0, Easing.linearInterpolation);
-            try gui.state.effects.append(Effect.highlightEffect(hit_pos.pos, Color.white(), tween));
+            var outline_tween = Tween.init(0.0, 1.0, fade_half_duration, ease_up);
+
+            var tween = Tween.init(0.0, sound_alpha, fade_half_duration, ease_up);
+            try gui.state.effects.append(Effect.highlightEffect(hit_pos.pos, highlight_color, tween, first_delay));
+            try gui.state.effects.append(Effect.outlineEffect(hit_pos.pos, highlight_color, outline_tween, first_delay));
+
+            tween = Tween.init(sound_alpha, 0.0, fade_half_duration, ease_down);
+            outline_tween = Tween.init(1.0, 0.0, fade_half_duration, ease_up);
+            try gui.state.effects.append(Effect.highlightEffect(hit_pos.pos, highlight_color, tween, second_delay));
+            try gui.state.effects.append(Effect.outlineEffect(hit_pos.pos, highlight_color, outline_tween, second_delay));
         }
     }
 

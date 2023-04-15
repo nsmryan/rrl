@@ -228,15 +228,17 @@ pub const Gui = struct {
         floodfill.dampen_tall_wall = gui.game.config.dampen_tall_wall;
         try floodfill.fill(&gui.game.level.map, pos, amount);
 
-        const first_delay = @floatToInt(u64, delay * 1000);
+        const initial_delay = @floatToInt(u64, delay * 1000);
         const fade_half_duration: f32 = 0.25;
-        const second_delay = first_delay + @floatToInt(u64, fade_half_duration * 1000);
         const sound_alpha: f32 = @intToFloat(f32, gui.game.config.sound_alpha) / 255.0;
         const highlight_color = gui.game.config.color_warm_grey;
         const ease_up = Easing.linearInterpolation;
         const ease_down = Easing.linearInterpolation;
 
         for (floodfill.flood.items) |hit_pos| {
+            const first_delay = initial_delay + 100 * @intCast(u64, pos.distanceMaximum(hit_pos.pos));
+            const second_delay = first_delay + @floatToInt(u64, fade_half_duration * 1000);
+
             var outline_tween = Tween.init(0.0, 1.0, fade_half_duration, ease_up);
 
             var tween = Tween.init(0.0, sound_alpha, fade_half_duration, ease_up);

@@ -1,9 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const FileSource = std.Build.FileSource;
 
 pub fn build(b: *std.build.Builder) !void {
     const target = b.standardTargetOptions(.{});
-    const mode = b.standardReleaseOptions();
+    const mode = b.standardOptimizeOption(.{});
 
     const step_options = b.addOptions();
     step_options.addOption(bool, "remotery", false);
@@ -17,10 +18,10 @@ pub fn build(b: *std.build.Builder) !void {
 // Main Executable
 fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
     _ = step_options;
-    const exe = b.addExecutable("rustrl", "main.zig");
+    const exe = b.addExecutable(.{ .name = "rustrl", .root_source_file = FileSource.relative("main.zig") });
 
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
+    exe.target = target;
+    exe.optimize = mode;
 
     const options = b.addOptions();
     // TODO set to false when build options are working...
@@ -35,7 +36,7 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
     addPackages(exe);
     addCDeps(exe);
     exe.linkLibC();
-    exe.install();
+    b.installArtifact(exe);
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
@@ -53,9 +54,9 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
 // Unit tests
 fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
     _ = step_options;
-    const exe_tests = b.addTest("main_test.zig");
-    exe_tests.setTarget(target);
-    exe_tests.setBuildMode(mode);
+    const exe_tests = b.addTest(.{ .name = "main tests", .root_source_file = FileSource.relative("main_test.zig") });
+    exe_tests.target = target;
+    exe_tests.optimize = mode;
 
     const options = b.addOptions();
     options.addOption(bool, "remotery", false);
@@ -77,9 +78,9 @@ fn buildTests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.buil
 // Shared Library TCL Extension
 fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode, step_options: *std.build.OptionsStep) void {
     _ = step_options;
-    const lib = b.addSharedLibrary("rrl", "tclrrl.zig", b.version(0, 1, 0));
-    lib.setTarget(target);
-    lib.setBuildMode(mode);
+    const lib = b.addSharedLibrary(
+        .{ .name = "rrl", .root_source_file = FileSource.relative("tclrrl.zig"), .target = target, .optimize = mode },
+    );
     lib.linkLibC();
 
     const options = b.addOptions();
@@ -105,7 +106,7 @@ fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: s
     addPackages(lib);
     addCDeps(lib);
 
-    lib.install();
+    b.installArtifact(lib);
 
     const lib_step = b.step("tcl", "Build TCL extension");
     lib_step.dependOn(&lib.step);
@@ -113,9 +114,9 @@ fn buildTclExtension(b: *std.build.Builder, target: std.zig.CrossTarget, mode: s
 
 // Run Atlas Process
 fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) !void {
-    const exe = b.addExecutable("atlas", null);
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
+    const exe = b.addExecutable(.{ .name = "atlas" });
+    exe.target = target;
+    exe.optimize = mode;
     exe.linkLibC();
 
     // C source
@@ -131,9 +132,9 @@ fn runAtlas(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builti
     exe.addIncludePath("deps/atlas");
     exe.addIncludePath("deps/atlas/lib/stb");
 
-    exe.install();
+    b.installArtifact(exe);
 
-    const run_cmd = exe.run();
+    const run_cmd = exe.addRunArtifact();
     run_cmd.step.dependOn(b.getInstallStep());
     var dir = try std.fs.cwd().openIterableDir("data/sprites/animations/", .{});
     var walker = try dir.walk(b.allocator);

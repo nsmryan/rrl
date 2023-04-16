@@ -79,7 +79,24 @@ pub const Game = struct {
         try game.handleInputAction(input_action);
     }
 
+    pub fn removeMarkedEntities(game: *Game) !void {
+        var index: usize = 0;
+        while (index < game.level.entities.ids.items.len) {
+            const id = game.level.entities.ids.items[index];
+            if (game.level.entities.state.get(id) == .remove) {
+                game.level.entities.remove(id);
+                try game.log.log(.remove, id);
+            } else {
+                index += 1;
+            }
+        }
+    }
+
     pub fn handleInputAction(game: *Game, input_action: InputAction) !void {
+        if (input_action != .none) {
+            try game.removeMarkedEntities();
+        }
+
         try actions.resolveAction(game, input_action);
 
         const already_took_turn = game.level.entities.turn.get(Entities.player_id).any();
@@ -111,7 +128,8 @@ pub const Game = struct {
 
         // NOTE(remove) this is just for testing
         //try spawn.spawnSword(&game.level.entities, &game.log, &game.config, game.allocator);
-        try spawn.spawnStone(&game.level.entities, &game.log, &game.config, game.allocator);
+        //try spawn.spawnStone(&game.level.entities, &game.log, &game.config, game.allocator);
+        try spawn.spawnSeedOfStone(&game.level.entities, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});
 

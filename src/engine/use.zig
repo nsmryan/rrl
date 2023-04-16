@@ -81,7 +81,7 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
         const item = game.level.entities.item.get(item_id);
         if (item == .herb) {
             try game.log.log(.eatHerb, .{ Entities.player_id, item_id });
-        } else if (item == .stone) {
+        } else if (item.isThrowable()) {
             var cursor_pos = game.level.entities.pos.get(Entities.player_id);
             if (game.settings.mode != .cursor) {
                 // Enter cursor mode. This will use the player position here and below.
@@ -97,6 +97,8 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 use_result = try useSword(game);
             } else if (item == .dagger) {
                 use_result = try useDagger(game);
+            } else {
+                @panic("Item not yet implemented for use-mode!");
             }
             game.settings.mode = Mode{ .use = .{
                 .pos = null,

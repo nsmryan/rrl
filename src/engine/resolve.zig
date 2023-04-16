@@ -544,7 +544,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
     // Resolve specific items.
     if (game.level.entities.item.get(item_id) == .seedOfStone) {
         // Seed of stone creates a new wall, destroying anything in the hit tile.
-        game.level.map.getPtr(hit_pos).center = Wall.short();
+        game.level.map.getPtr(hit_pos).center = Wall.tall();
         // This is playing a little fast and lose- we assume that if
         // the seed of stone hits a tile, that any entity at that tile
         // is something we can destroy like a sword or grass entity.

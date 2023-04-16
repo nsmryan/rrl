@@ -50,9 +50,12 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
 }
 
-pub fn spawnItem(entities: *Entities, name: Name, item: Item, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+pub fn spawnItem(entities: *Entities, item: Item, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     _ = config;
     _ = allocator;
+
+    // Item names are included in the entity Name type, so this convertion will find the Name for the given Item.
+    const name = std.meta.stringToEnum(Name, std.meta.tagName(item)).?;
 
     const id = try entities.createEntity(Pos.init(0, 0), name, .item);
     entities.blocking.getPtr(id).* = false;
@@ -63,15 +66,19 @@ pub fn spawnItem(entities: *Entities, name: Name, item: Item, log: *MsgLog, conf
 }
 
 pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .sword, .sword, log, config, allocator);
+    try spawnItem(entities, .sword, log, config, allocator);
 }
 
 pub fn spawnDagger(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .dagger, .dagger, log, config, allocator);
+    try spawnItem(entities, .dagger, log, config, allocator);
 }
 
 pub fn spawnStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .stone, .stone, log, config, allocator);
+    try spawnItem(entities, .stone, log, config, allocator);
+}
+
+pub fn spawnSeedOfStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .seedOfStone, log, config, allocator);
 }
 
 pub fn spawnGrass(entities: *Entities, log: *MsgLog) !Id {

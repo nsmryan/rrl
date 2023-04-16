@@ -186,11 +186,21 @@ pub const Gui = struct {
                 .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
                 .itemLanded => |args| try gui.processItemLanded(args.id, args.start, args.hit),
                 .sound => |args| try gui.processSound(args.id, args.pos, args.amount),
+                .remove => |args| try gui.processRemove(args),
 
                 else => {},
             }
             try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
         }
+    }
+
+    fn processRemove(gui: *Gui, id: Id) !void {
+        gui.state.pos.remove(id);
+        gui.state.stance.remove(id);
+        gui.state.name.remove(id);
+        gui.state.facing.remove(id);
+        gui.state.move_mode.remove(id);
+        gui.state.animation.remove(id);
     }
 
     fn processSound(gui: *Gui, id: Id, pos: Pos, amount: usize) !void {
@@ -408,30 +418,44 @@ pub const Gui = struct {
                     try gui.state.animation.insert(id, anim);
                 },
 
+                .smoke => {
+                    try gui.state.animation.insert(id, gui.simpleAnimation("smoke", id));
+                },
+
                 .stone => {
-                    const pos = gui.game.level.entities.pos.get(id);
-                    var anim = try gui.display.animation("stone", pos, gui.game.config.idle_speed);
-                    anim.repeat = true;
-                    try gui.state.animation.insert(id, anim);
+                    try gui.state.animation.insert(id, gui.simpleAnimation("stone", id));
+                },
+
+                .smokeBomb => {
+                    try gui.state.animation.insert(id, gui.simpleAnimation("smoke_bomb", id));
+                },
+
+                .seedCache => {
+                    try gui.state.animation.insert(id, gui.simpleAnimation("seed_pouch", id));
+                },
+
+                .seedOfStone => {
+                    try gui.state.animation.insert(id, gui.simpleAnimation("seed", id));
                 },
 
                 .dagger => {
-                    const pos = gui.game.level.entities.pos.get(id);
-                    var anim = try gui.display.animation("dagger", pos, gui.game.config.idle_speed);
-                    anim.repeat = true;
-                    try gui.state.animation.insert(id, anim);
+                    try gui.state.animation.insert(id, gui.simpleAnimation("dagger", id));
                 },
 
                 .sword => {
-                    const pos = gui.game.level.entities.pos.get(id);
-                    var anim = try gui.display.animation("sword", pos, gui.game.config.idle_speed);
-                    anim.repeat = true;
-                    try gui.state.animation.insert(id, anim);
+                    try gui.state.animation.insert(id, gui.simpleAnimation("sword", id));
                 },
 
                 else => {},
             }
         }
+    }
+
+    fn simpleAnimation(gui: *Gui, name: []const u8, id: Id) Animation {
+        const pos = gui.game.level.entities.pos.get(id);
+        var anim = try gui.display.animation(name, pos, gui.game.config.idle_speed);
+        anim.repeat = true;
+        return anim;
     }
 
     pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {

@@ -1,6 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
 const ArrayList = std.ArrayList;
+const assert = std.debug.assert;
 
 const Allocator = std.mem.Allocator;
 
@@ -164,34 +165,40 @@ pub const Gui = struct {
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
-        try gui.game.step(input_event, ticks);
+        try gui.game.inputEvent(input_event, ticks);
         try gui.resolveMessages();
     }
 
     pub fn resolveMessages(gui: *Gui) !void {
-        for (gui.game.log.all.items) |msg| {
-            switch (msg) {
-                .spawn => |args| try gui.state.name.insert(args.id, args.name),
-                .facing => |args| try gui.state.facing.insert(args.id, args.facing),
-                .stance => |args| try gui.state.stance.insert(args.id, args.stance),
-                .move => |args| try gui.moveEntity(args.id, args.pos),
-                .nextMoveMode => |args| try gui.nextMoveMode(args.id, args.move_mode),
-                .startLevel => try gui.startLevel(),
-                .endTurn => try gui.endTurn(),
-                .cursorStart => |args| try gui.cursorStart(args),
-                .cursorEnd => gui.cursorEnd(),
-                .cursorMove => |args| gui.cursorMove(args),
-                .hit => |args| try gui.processHit(args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
-                .pickedUp => |args| try gui.processPickedUpItem(args.id, args.item_id, args.slot),
-                .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
-                .itemLanded => |args| try gui.processItemLanded(args.id, args.start, args.hit),
-                .sound => |args| try gui.processSound(args.id, args.pos, args.amount),
-                .remove => |args| try gui.processRemove(args),
-
-                else => {},
-            }
-            try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
+        while (try gui.game.resolveMessage()) |msg| {
+            try gui.resolveMessage(msg);
         }
+    }
+
+    pub fn resolveMessage(gui: *Gui, msg: Msg) !void {
+        switch (msg) {
+            .spawn => |args| try gui.state.name.insert(args.id, args.name),
+            .facing => |args| try gui.state.facing.insert(args.id, args.facing),
+            .stance => |args| try gui.state.stance.insert(args.id, args.stance),
+            .move => |args| try gui.moveEntity(args.id, args.pos),
+            .nextMoveMode => |args| try gui.nextMoveMode(args.id, args.move_mode),
+            .startLevel => try gui.startLevel(),
+            .endTurn => try gui.endTurn(),
+            .cursorStart => |args| try gui.cursorStart(args),
+            .cursorEnd => gui.cursorEnd(),
+            .cursorMove => |args| gui.cursorMove(args),
+            .hit => |args| try gui.processHit(args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
+            .pickedUp => |args| try gui.processPickedUpItem(args.id, args.item_id, args.slot),
+            .droppedItem => |args| try gui.processDroppedItem(args.id, args.slot),
+            .itemLanded => |args| try gui.processItemLanded(args.id, args.start, args.hit),
+            .itemThrow => |args| try gui.processItemThrow(args.id, args.item_id, args.start, args.end, args.hard),
+            .sound => |args| try gui.processSound(args.id, args.pos, args.amount),
+            .remove => |args| try gui.processRemove(args),
+
+            else => {},
+        }
+
+        try gui.state.console_log.queue(&gui.game.level.entities, msg, gui.state.turn_count);
     }
 
     fn processRemove(gui: *Gui, id: Id) !void {
@@ -206,6 +213,15 @@ pub const Gui = struct {
     fn processSound(gui: *Gui, id: Id, pos: Pos, amount: usize) !void {
         _ = id;
         try gui.soundEffect(0.0, pos, amount);
+    }
+
+    fn processItemThrow(gui: *Gui, id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
+        _ = id;
+        _ = start;
+        _ = end;
+        _ = hard;
+        const item = gui.game.level.entities.item.get(item_id);
+        _ = gui.state.inventory.drop(item_id, item.class());
     }
 
     fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {

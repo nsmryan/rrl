@@ -33,6 +33,7 @@ pub const resolve = @import("resolve.zig");
 
 pub const messaging = @import("messaging.zig");
 pub const MsgLog = messaging.MsgLog;
+pub const Msg = messaging.Msg;
 
 pub const s = @import("settings.zig");
 pub const GameState = s.GameState;
@@ -73,7 +74,7 @@ pub const Game = struct {
         game.log.deinit();
     }
 
-    pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
+    pub fn inputEvent(game: *Game, input_event: InputEvent, ticks: u64) !void {
         game.log.clear();
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
         try game.handleInputAction(input_action);
@@ -98,15 +99,36 @@ pub const Game = struct {
         }
 
         try actions.resolveAction(game, input_action);
+    }
 
-        const already_took_turn = game.level.entities.turn.get(Entities.player_id).any();
-        try resolve.resolve(game);
+    pub fn fullyHandleInputAction(game: *Game, input_action: InputAction) !void {
+        try game.handleInputAction(input_action);
+        while (try game.resolveMessage() != null) {}
+    }
 
-        const player_took_turn = game.level.entities.turn.get(Entities.player_id).any();
-        if (!already_took_turn and player_took_turn) {
-            try game.log.log(.endTurn, .{});
-            try resolve.resolve(game);
+    pub fn resolveMessage(game: *Game) !?Msg {
+        if (try game.log.pop()) |msg| {
+            try resolve.resolveMsg(game, msg);
+            return msg;
+        } else {
+            // If there are no new messages, and the player took their turn,
+            // log the end turn message and resolve it, return this message as the result.
+            // The next call to this function will return null, indicating the end of the messages.
+            const player_took_turn = game.level.entities.turn.get(Entities.player_id).any();
+            if (player_took_turn) {
+                try game.log.log(.endTurn, .{});
+                const maybe_msg = try game.log.pop();
+                const msg = maybe_msg.?;
+                try resolve.resolveMsg(game, msg);
+                return msg;
+            }
         }
+
+        return null;
+    }
+
+    pub fn resolveMessages(game: *Game) !void {
+        while (try game.resolveMessage() != null) {}
     }
 
     pub fn changeState(game: *Game, new_state: GameState) void {
@@ -132,8 +154,6 @@ pub const Game = struct {
         try spawn.spawnSeedOfStone(&game.level.entities, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});
-
-        try resolve.resolve(game);
     }
 
     pub fn reloadConfig(game: *Game) void {
@@ -159,23 +179,24 @@ test "walk around a bit" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
 
-    try game.handleInputAction(InputAction{ .move = .right });
+    try game.fullyHandleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(1, 0), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .right });
+    try game.fullyHandleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(2, 0), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .right });
+    try game.fullyHandleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(2, 0), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(2, 1), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .downRight });
+    try game.fullyHandleInputAction(InputAction{ .move = .downRight });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0));
 }
 
@@ -186,17 +207,19 @@ test "walk into full tile wall" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(1, 1), Tile.impassable());
 
-    try game.handleInputAction(InputAction{ .move = .downRight });
+    try game.fullyHandleInputAction(InputAction{ .move = .downRight });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
     game.level.map.set(Pos.init(1, 0), Tile.tallWall());
 
-    try game.handleInputAction(InputAction{ .move = .right });
+    try game.fullyHandleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0));
 }
 
@@ -207,12 +230,14 @@ test "run around" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
-    try game.handleInputAction(InputAction.run);
+    try game.fullyHandleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
 
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 2), game.level.entities.pos.get(0));
 }
 
@@ -223,26 +248,28 @@ test "run blocked" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
     game.level.map.set(Pos.init(0, 1), Tile.tallWall());
 
     game.level.entities.pos.set(0, Pos.init(0, 0));
 
-    try game.handleInputAction(InputAction.run);
+    try game.fullyHandleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
 
     // Can't run into blocked tile
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
     // Can't even run into short wall tile
     game.level.map.set(Pos.init(0, 1), Tile.shortWall());
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
     // Not even if there is no intertile wall
     game.level.map.set(Pos.init(0, 0), Tile.empty());
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 }
 
@@ -253,50 +280,52 @@ test "interact with intertile wall" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
 
     // Try to walk into wall- should fail.
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
     // Try to walk past wall diagonally- should succeed
-    try game.handleInputAction(InputAction{ .move = .downRight });
+    try game.fullyHandleInputAction(InputAction{ .move = .downRight });
     try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0));
 
     // Try to walk back past wall diagonally- should succeed
-    try game.handleInputAction(InputAction{ .move = .upLeft });
+    try game.fullyHandleInputAction(InputAction{ .move = .upLeft });
     try std.testing.expectEqual(Pos.init(0, 0), game.level.entities.pos.get(0));
 
     // Run
-    try game.handleInputAction(InputAction.run);
+    try game.fullyHandleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
 
     // Jump over wall
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0));
 
     // Sneak
-    try game.handleInputAction(InputAction.sneak);
+    try game.fullyHandleInputAction(InputAction.sneak);
     try std.testing.expectEqual(MoveMode.sneak, game.level.entities.next_move_mode.get(0));
 
     // Can't jump over wall
-    try game.handleInputAction(InputAction{ .move = .up });
+    try game.fullyHandleInputAction(InputAction{ .move = .up });
     try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0));
     try std.testing.expectEqual(MoveMode.sneak, game.level.entities.next_move_mode.get(0));
 
     // Pass turn to change stance
-    try game.handleInputAction(InputAction.pass);
+    try game.fullyHandleInputAction(InputAction.pass);
     try std.testing.expectEqual(Stance.standing, game.level.entities.stance.get(0));
 
-    try game.handleInputAction(InputAction.pass);
+    try game.fullyHandleInputAction(InputAction.pass);
     try std.testing.expectEqual(Stance.crouching, game.level.entities.stance.get(0));
 
     // Run again
-    try game.handleInputAction(InputAction.run);
+    try game.fullyHandleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
 
     // Try to run over wall- should fail because crouched from sneaking.
-    try game.handleInputAction(InputAction{ .move = .up });
+    try game.fullyHandleInputAction(InputAction{ .move = .up });
     try std.testing.expectEqual(Pos.init(0, 1), game.level.entities.pos.get(0));
 }
 
@@ -307,43 +336,45 @@ test "interact with intertile corners" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(1, 1), Tile.shortLeftAndDownWall());
 
     game.level.entities.pos.set(0, Pos.init(1, 1));
 
     // Try to walk into wall- should fail.
-    try game.handleInputAction(InputAction{ .move = .down });
+    try game.fullyHandleInputAction(InputAction{ .move = .down });
     try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0));
 
     // Try to walk into wall- should fail.
-    try game.handleInputAction(InputAction{ .move = .left });
+    try game.fullyHandleInputAction(InputAction{ .move = .left });
     try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0));
 
     // Try to walk past wall diagonally- should fail
-    try game.handleInputAction(InputAction{ .move = .downLeft });
+    try game.fullyHandleInputAction(InputAction{ .move = .downLeft });
     try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0));
 
     // Try to walk past wall diagonally in other direction- should fail
     game.level.entities.pos.set(0, Pos.init(2, 2));
-    try game.handleInputAction(InputAction{ .move = .upRight });
+    try game.fullyHandleInputAction(InputAction{ .move = .upRight });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0));
 
     // Run
-    try game.handleInputAction(InputAction.run);
+    try game.fullyHandleInputAction(InputAction.run);
     try std.testing.expectEqual(MoveMode.run, game.level.entities.next_move_mode.get(0));
 
     // Try to run over wall diagonally- should fail
-    try game.handleInputAction(InputAction{ .move = .upRight });
+    try game.fullyHandleInputAction(InputAction{ .move = .upRight });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0));
 
     // Try to run over wall up- should succeed
     game.level.entities.pos.set(0, Pos.init(1, 2));
-    try game.handleInputAction(InputAction{ .move = .up });
+    try game.fullyHandleInputAction(InputAction{ .move = .up });
     try std.testing.expectEqual(Pos.init(1, 1), game.level.entities.pos.get(0));
 
     // Try to run over wall right- should succeed
     game.level.entities.pos.set(0, Pos.init(1, 2));
-    try game.handleInputAction(InputAction{ .move = .right });
+    try game.fullyHandleInputAction(InputAction{ .move = .right });
     try std.testing.expectEqual(Pos.init(2, 2), game.level.entities.pos.get(0));
 }
 
@@ -354,6 +385,8 @@ test "basic level fov" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(1, 1), Tile.tallWall());
 
     game.level.entities.pos.set(0, Pos.init(1, 0));
@@ -376,6 +409,8 @@ test "short wall level fov" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(0, 0), Tile.shortDownWall());
 
     game.level.entities.pos.set(0, Pos.init(0, 0));
@@ -402,6 +437,8 @@ test "basic level fov" {
     defer game.deinit();
 
     try game.startLevel(3, 3);
+    try game.resolveMessages();
+
     game.level.map.set(Pos.init(1, 1), Tile.tallWall());
 
     game.level.entities.pos.set(Entities.player_id, Pos.init(0, 0));
@@ -426,6 +463,6 @@ test "basic level fov" {
     // Moving updates FoV
     try std.testing.expectEqual(FovResult.inside, try game.level.posInFov(Entities.player_id, Pos.init(2, 0)));
 
-    try game.handleInputAction(InputAction{ .move = Direction.down });
+    try game.fullyHandleInputAction(InputAction{ .move = Direction.down });
     try std.testing.expectEqual(FovResult.outside, try game.level.posInFov(Entities.player_id, Pos.init(2, 0)));
 }

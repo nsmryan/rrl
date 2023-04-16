@@ -216,14 +216,6 @@ pub const Gui = struct {
     }
 
     fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {
-        // TODO spawn a highlight and outline on each tile hit by aoe.
-        //      delay each by distance from center.
-        //      make sure to check for fov and not blocked on map, perhaps including columns.
-        //const sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
-        // TODO split out moving between locations to a function.
-        //      split out fading in and out to a function, perhaps playing with the tweening, or two animations,
-        //      one tween in and one tween out..
-
         // Animate the item moving to the hit location.
         const distance = start.distance(hit);
         const throw_duration = distance / gui.game.config.item_throw_speed;

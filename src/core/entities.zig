@@ -174,6 +174,7 @@ pub const Entities = struct {
 
     pub fn markForRemoval(entities: *Entities, id: Id) void {
         entities.state.set(id, .remove);
+        entities.active.set(id, false);
     }
 
     // Pick up an item, and return the dropped item if any.

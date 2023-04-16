@@ -177,11 +177,7 @@ pub const Gui = struct {
 
     pub fn resolveMessage(gui: *Gui, msg: Msg) !void {
         switch (msg) {
-            .spawn => |args| try gui.state.name.insert(args.id, args.name),
-            .facing => |args| try gui.state.facing.insert(args.id, args.facing),
-            .stance => |args| try gui.state.stance.insert(args.id, args.stance),
             .move => |args| try gui.moveEntity(args.id, args.pos),
-            .nextMoveMode => |args| try gui.nextMoveMode(args.id, args.move_mode),
             .startLevel => try gui.startLevel(),
             .endTurn => try gui.endTurn(),
             .cursorStart => |args| try gui.cursorStart(args),
@@ -202,11 +198,6 @@ pub const Gui = struct {
     }
 
     fn processRemove(gui: *Gui, id: Id) !void {
-        gui.state.pos.remove(id);
-        gui.state.stance.remove(id);
-        gui.state.name.remove(id);
-        gui.state.facing.remove(id);
-        gui.state.move_mode.remove(id);
         gui.state.animation.remove(id);
     }
 
@@ -332,7 +323,6 @@ pub const Gui = struct {
     fn startLevel(gui: *Gui) !void {
         try gui.assignAllIdleAnimations();
         gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
-        try gui.state.move_mode.insert(entities.Entities.player_id, MoveMode.walk);
         gui.state.console_log.clear();
     }
 
@@ -341,13 +331,7 @@ pub const Gui = struct {
         gui.state.turn_count += 1;
     }
 
-    fn nextMoveMode(gui: *Gui, id: Id, move_mode: MoveMode) !void {
-        try gui.state.move_mode.insert(id, move_mode);
-    }
-
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
-        try gui.state.pos.insert(id, pos);
-
         // Remove the animation, so the idle will be replayed in the new location.
         //gui.state.animation.remove(id);
         if (gui.state.animation.getPtrOrNull(id)) |anim| {
@@ -393,16 +377,16 @@ pub const Gui = struct {
     }
 
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
-        for (gui.state.name.ids.items) |id| {
+        for (gui.game.level.entities.name.ids.items) |id| {
             if (gui.state.animation.getOrNull(id) != null) {
                 return;
             }
 
-            switch (gui.state.name.get(id)) {
+            switch (gui.game.level.entities.name.get(id)) {
                 .player => {
-                    const stance = getSheetStance(gui.state.stance.get(id));
-                    const facing = gui.state.facing.get(id);
-                    const name = gui.state.name.get(id);
+                    const stance = getSheetStance(gui.game.level.entities.stance.get(id));
+                    const facing = gui.game.level.entities.facing.get(id);
+                    const name = gui.game.level.entities.name.get(id);
 
                     const sheet_direction = sheetDirection(facing);
                     var name_str = @tagName(name);
@@ -856,11 +840,6 @@ pub const ConsoleLog = struct {
 };
 
 pub const DisplayState = struct {
-    pos: Comp(Pos),
-    stance: Comp(Stance),
-    name: Comp(Name),
-    facing: Comp(Direction),
-    move_mode: Comp(MoveMode),
     animation: Comp(Animation),
     cursor_animation: ?Animation = null,
     map_window_center: Pos,

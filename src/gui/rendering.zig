@@ -403,16 +403,14 @@ pub fn renderPips(game: *Game, painter: *Painter) !void {
 
 // NOTE(memory) provide a frame allocator for display stuff.
 pub fn renderPlayer(game: *Game, painter: *Painter, allocator: Allocator) !void {
-    _ = game;
-
     var list: ArrayList([]u8) = ArrayList([]u8).init(allocator);
 
     const x_offset: usize = 1;
 
-    const stance = painter.state.stance.get(Entities.player_id);
+    const stance = game.level.entities.stance.get(Entities.player_id);
     try list.append(try allocator.dupe(u8, @tagName(stance)));
 
-    const move_mode = painter.state.move_mode.get(Entities.player_id);
+    const move_mode = game.level.entities.move_mode.get(Entities.player_id);
     const next_move_msg = try std.fmt.allocPrint(allocator, "next move {s}", .{@tagName(move_mode)});
     try list.append(next_move_msg);
 

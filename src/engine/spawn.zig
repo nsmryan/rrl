@@ -81,6 +81,10 @@ pub fn spawnSeedOfStone(entities: *Entities, log: *MsgLog, config: *const Config
     try spawnItem(entities, .seedOfStone, log, config, allocator);
 }
 
+pub fn spawnSmokeBomb(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .smokeBomb, log, config, allocator);
+}
+
 pub fn spawnGrass(entities: *Entities, log: *MsgLog) !Id {
     const id = try entities.createEntity(Pos.init(0, 0), .grass, .environment);
     entities.blocking.getPtr(id).* = false;

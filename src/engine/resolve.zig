@@ -565,6 +565,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
                 _ = try make_map.ensureGrass(game, seed_pos.pos);
             }
         }
+        game.level.entities.markForRemoval(item_id);
     } else if (game.level.entities.item.get(item_id) == .smokeBomb) {
         // Smoke bomb creates a group of smoke tiles around the hit location.
         _ = try spawn.spawnSmoke(&game.level.entities, &game.config, hit_pos, game.config.smoke_bomb_fov_block, &game.log);
@@ -577,6 +578,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
                 }
             }
         }
+        game.level.entities.markForRemoval(item_id);
     } else if (game.level.entities.item.get(item_id) == .lookingGlass) {
         // NOTE(implement) this is part of magnification and not yet added back into the game.
         // The looking glass creates a magnifier in the hit location.

@@ -371,7 +371,7 @@ pub const Gui = struct {
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
         for (gui.game.level.entities.name.ids.items) |id| {
             if (gui.state.animation.getOrNull(id) != null) {
-                return;
+                continue;
             }
 
             switch (gui.game.level.entities.name.get(id)) {

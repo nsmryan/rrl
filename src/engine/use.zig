@@ -133,6 +133,8 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 use_result = try useAxe(game);
             } else if (item == .hammer) {
                 use_result = try useHammer(game);
+            } else if (item == .sling) {
+                use_result = try useSling(game);
             } else {
                 @panic("Item not yet implemented for use-mode!");
             }
@@ -390,6 +392,25 @@ pub fn useHammer(game: *Game) !UseResult {
     return use_result;
 }
 
+pub fn useSling(game: *Game) !UseResult {
+    var use_result = UseResult.init();
+
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    for (Direction.directions()) |dir| {
+        var use_dir: UseDir = UseDir.init();
+
+        const hit_pos = dir.offsetPos(player_pos, 1);
+        use_dir.move_pos = player_pos;
+        try use_dir.hit_positions.push(hit_pos);
+
+        const dir_index = @enumToInt(dir);
+        use_result.use_dir[dir_index] = use_dir;
+    }
+
+    return use_result;
+}
+
 pub fn finalizeUse(game: *Game) !void {
     // If there is no direction, the user tried an invalid movement.
     // Returning here will just end use-mode.
@@ -460,7 +481,8 @@ pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
             try game.log.log(.itemThrow, .{ player_id, item_id, player_pos, throw_pos, false });
         } else if (item == .sling) {
             const throw_pos = dir.offsetPos(player_pos, @intCast(i32, game.config.player_sling_dist));
-            try game.log.log(.itemThrow, .{ player_id, item_id, player_pos, throw_pos, true });
+            const stone_id = game.level.entities.inventory.get(player_id).throwing.?;
+            try game.log.log(.itemThrow, .{ player_id, stone_id, player_pos, throw_pos, true });
         } else {
             // It is possible to select a direction, then press shift, causing the move to be
             // invalid. In this case we just suppress the action, and return to playing.

@@ -54,9 +54,9 @@ pub const Item = enum {
 
     pub fn class(item: Item) ItemClass {
         switch (item) {
-            .stone, .key => return ItemClass.misc,
+            .key => return ItemClass.misc,
             .dagger, .shield, .hammer, .spear, .greatSword, .sword, .axe, .khopesh, .sling => return ItemClass.primary,
-            .teleporter, .herb, .seedOfStone, .seedCache, .smokeBomb, .lookingGlass, .glassEye, .lantern, .thumper, .spikeTrap, .soundTrap, .blinkTrap, .freezeTrap => return ItemClass.consumable,
+            .stone, .teleporter, .herb, .seedOfStone, .seedCache, .smokeBomb, .lookingGlass, .glassEye, .lantern, .thumper, .spikeTrap, .soundTrap, .blinkTrap, .freezeTrap => return ItemClass.consumable,
         }
     }
 

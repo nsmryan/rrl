@@ -2,8 +2,10 @@
 
 This repository contains an incomplete re-write of the [Rust Roguelike](https://github.com/nsmryan/RustRoguelike) project in Zig.
 
+This is an attempt to rebuild the entire game logic with similar better visuals.
 
-== Notes ==
+
+== Some Zig/Rust Notes ==
 
 Iterator is much simpler and smaller. There is weirdness to it, like the whole generics-are-functions thing,
 but its not nearly as baroque as Rust as it does not use lifetime parameters.
@@ -28,10 +30,18 @@ Zig does not restrict floats the same. It also provides clamp, which I did in Ru
 Also I believe I will be able to use Zig's random numebr generation, which I couldn't in Rust
 due to orphan rule serde support.
 
+Zig ability to get enum/union tags and to use an enum for union tags is much better then my experience
+with Rust.
+
+I do have memory use issues in Zig which I would not have in Rust. Mostly found by simple tests.
+The main problems are pointers to memory that it realloced like ArrayList.
+
+Zig standard library has a fixed array datastructure, which Rust does not have. Rust in general
+led me to allocate a lot with a global allocator, while in Zig allocation is much more controlled.
+
+The Rust version seems to create a number of threads which I did not spawn myself, which does not make
+me feel like I control my codebase. The Zig does not do this.
+
 
 === Next Steps ===
 
-  * Render the UI
-    * Player info
-    * Log messages
-    * Buttons

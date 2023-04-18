@@ -354,14 +354,6 @@ fn renderOverlayUseMode(game: *Game, painter: *Painter) !void {
         }
     }
 
-    // NOTE(remove) when new animation system is working well enough that the cursor is using it.
-    //var color = game.config.color_mint_green;
-    //color.a = @floatToInt(u8, painter.state.cursor_tween.value());
-
-    //const cursor_sprite = painter.sprite("targeting");
-
-    //try painter.drawcmds.append(DrawCmd.sprite(cursor_sprite, color, game.settings.mode.cursor.pos));
-
     // NOTE(implement)
     // render player ghost
     //if (display_state.player_ghost) |player_ghost_pos| {

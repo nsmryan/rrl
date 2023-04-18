@@ -154,11 +154,25 @@ pub const Game = struct {
         var id: utils.comp.Id = undefined;
         id = try spawn.spawnItem(&game.level.entities, .sword, &game.log, &game.config, game.allocator);
         try game.log.log(.move, .{ id, .blink, .walk, Pos.init(1, 0) });
-        //try spawn.spawnItem(&game.level.entities, .stone, &game.log, &game.config, game.allocator);
-        //try spawn.spawnItem(&game.level.entities, .seedOfStone, &game.log, &game.config, game.allocator);
-        //try spawn.spawnItem(&game.level.entities, .smokeBomb, &game.log, &game.config, game.allocator);
-        //try spawn.spawnItem(&game.level.entities, .dagger, &game.log, &game.config, game.allocator);
-        //try spawn.spawnItem(&game.level.entities, .shield, &game.log, &game.config, game.allocator);
+
+        id = try spawn.spawnItem(&game.level.entities, .stone, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(2, 0) });
+
+        id = try spawn.spawnItem(&game.level.entities, .seedOfStone, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(3, 0) });
+
+        id = try spawn.spawnItem(&game.level.entities, .smokeBomb, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(4, 0) });
+
+        id = try spawn.spawnItem(&game.level.entities, .dagger, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(5, 0) });
+
+        id = try spawn.spawnItem(&game.level.entities, .shield, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(6, 0) });
+
+        id = try spawn.spawnItem(&game.level.entities, .khopesh, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(7, 0) });
+
         _ = try spawn.spawnItem(&game.level.entities, .spear, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});

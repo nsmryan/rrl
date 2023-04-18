@@ -34,10 +34,10 @@ pub fn main() anyerror!void {
     defer gui.deinit();
 
     try gui.game.startLevel(21, 21);
+    try gui.resolveMessages();
 
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
     gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
-    try gui.resolveMessages();
 
     // Set up a splash screen.
     //gui.game.settings.state = .splash;

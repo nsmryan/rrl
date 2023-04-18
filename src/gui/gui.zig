@@ -421,6 +421,8 @@ pub const Gui = struct {
 
                 .spear => anim = gui.simpleAnimation("spear", id),
 
+                .khopesh => anim = gui.simpleAnimation("khopesh", id),
+
                 else => {
                     continue;
                 },

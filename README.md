@@ -42,6 +42,12 @@ led me to allocate a lot with a global allocator, while in Zig allocation is muc
 The Rust version seems to create a number of threads which I did not spawn myself, which does not make
 me feel like I control my codebase. The Zig does not do this.
 
+Zig would allow a very controlled Map and Tile type - currently maps are a simple array, unlike Rust where
+I have a vector of vectors, but that is not completely Rusts fault.
+However, with packed structs a tile could be a u16, making the map quite manageable. This is not done
+because of zigtcl not supporting bit offset pointers, and this data is not reflected in TypeInfo anyway
+at the moment.
+
 
 === Next Steps ===
 

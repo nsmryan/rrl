@@ -153,7 +153,7 @@ pub const Game = struct {
         //try spawn.spawnStone(&game.level.entities, &game.log, &game.config, game.allocator);
         //try spawn.spawnSeedOfStone(&game.level.entities, &game.log, &game.config, game.allocator);
         //try spawn.spawnSmokeBomb(&game.level.entities, &game.log, &game.config, game.allocator);
-        try spawn.spawnTeleporter(&game.level.entities, &game.log, &game.config, game.allocator);
+        try spawn.spawnDagger(&game.level.entities, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});
     }

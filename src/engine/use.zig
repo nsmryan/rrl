@@ -153,19 +153,20 @@ pub fn useSword(game: *Game) !UseResult {
     var use_result = UseResult.init();
 
     for (Direction.directions()) |dir| {
-        var use_dir = UseDir.init();
+        var use_dir: ?UseDir = null;
 
         const target_pos = dir.offsetPos(player_pos, 1);
 
         // If move is not blocked, determine the outcome of the move.
         if (board.blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null) {
-            use_dir.move_pos = target_pos;
+            use_dir = UseDir.init();
+            use_dir.?.move_pos = target_pos;
 
             const left_pos = dir.counterclockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(left_pos);
+            try use_dir.?.hit_positions.push(left_pos);
 
             const right_pos = dir.clockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(right_pos);
+            try use_dir.?.hit_positions.push(right_pos);
         }
 
         const dir_index = @enumToInt(dir);
@@ -181,7 +182,7 @@ pub fn useDagger(game: *Game) !UseResult {
     var use_result = UseResult.init();
 
     for (Direction.directions()) |dir| {
-        var use_dir = UseDir.init();
+        var use_dir: ?UseDir = null;
 
         const target_pos = dir.offsetPos(player_pos, 1);
         const hit_pos = dir.offsetPos(target_pos, 1);
@@ -191,8 +192,9 @@ pub fn useDagger(game: *Game) !UseResult {
 
         // If crouching and not blocked, then the dagger can be used.
         if (is_crouching and is_clear_path) {
-            use_dir.move_pos = target_pos;
-            try use_dir.hit_positions.push(hit_pos);
+            use_dir = UseDir.init();
+            use_dir.?.move_pos = target_pos;
+            try use_dir.?.hit_positions.push(hit_pos);
         }
 
         const dir_index = @enumToInt(dir);
@@ -243,6 +245,9 @@ pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
 
         // There should be no way to get here without a direction
         const dir = mode.use.dir.?;
+        if (mode.use.use_result.?.use_dir[@enumToInt(dir)] == null) {
+            return;
+        }
 
         // Determine action to take based on weapon type.
         if (item == .hammer) {

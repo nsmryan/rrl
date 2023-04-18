@@ -341,13 +341,14 @@ fn renderOverlayUseMode(game: *Game, painter: *Painter) !void {
                 try renderArrow(painter, dir, arrow_pos, arrow_color);
             } else {
                 for (Direction.directions()) |dir| {
-                    var use_dir = use_result.use_dir[@enumToInt(dir)];
-                    for (use_dir.?.hit_positions.slice()) |pos| {
-                        try painter.drawcmds.append(DrawCmd.highlightTile(pos, attack_highlight_color));
+                    if (use_result.use_dir[@enumToInt(dir)]) |use_dir| {
+                        for (use_dir.hit_positions.constSlice()) |pos| {
+                            try painter.drawcmds.append(DrawCmd.highlightTile(pos, attack_highlight_color));
+                        }
+                        const arrow_pos = use_dir.move_pos;
+                        const arrow_color = Color.white();
+                        try renderArrow(painter, dir, arrow_pos, arrow_color);
                     }
-                    const arrow_pos = use_dir.?.move_pos;
-                    const arrow_color = Color.white();
-                    try renderArrow(painter, dir, arrow_pos, arrow_color);
                 }
             }
         }

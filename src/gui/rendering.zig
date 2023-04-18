@@ -648,7 +648,7 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
     var button_name_highlight = [_]u8{ '0', '_', 'B', 'u', 't', 't', 'o', 'n', '_', 'H', 'i', 'g', 'h', 'l', 'i', 'g', 'h', 't' };
     var button_name: []u8 = button_name_base[0..];
 
-    if (painter.state.inventory.accessSlot(slot) != null) {
+    if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot) != null) {
         if (shouldHighlightItem(game, UseAction{ .item = slot })) {
             button_name = button_name_highlight[0..];
             text_color = highlight_ui_color;
@@ -659,7 +659,7 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
 
     const text_x_offset = x_offset + game.config.ui_inv_name_x_offset;
     const text_y_offset = y_offset + game.config.ui_inv_name_y_offset;
-    if (painter.state.inventory.accessSlot(slot)) |item_id| {
+    if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
         const item = game.level.entities.item.get(item_id);
         const item_text = utils.baseName(@tagName(item));
         try painter.drawcmds.append(DrawCmd.textFloat(item_text, text_x_offset, text_y_offset, text_color, game.config.ui_inv_name_scale));

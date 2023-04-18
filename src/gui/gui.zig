@@ -207,12 +207,14 @@ pub const Gui = struct {
     }
 
     fn processItemThrow(gui: *Gui, id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
+        _ = gui;
         _ = id;
         _ = start;
         _ = end;
         _ = hard;
-        const item = gui.game.level.entities.item.get(item_id);
-        _ = gui.state.inventory.drop(item_id, item.class());
+        _ = item_id;
+        //const item = gui.game.level.entities.item.get(item_id);
+        //_ = gui.state.inventory.drop(item_id, item.class());
     }
 
     fn processItemLanded(gui: *Gui, id: Id, start: Pos, hit: Pos) !void {
@@ -262,13 +264,16 @@ pub const Gui = struct {
     }
 
     fn processPickedUpItem(gui: *Gui, id: Id, item_id: Id, slot: items.InventorySlot) !void {
+        _ = gui;
         _ = id;
-        gui.state.inventory.placeSlot(item_id, slot);
+        _ = item_id;
+        _ = slot;
     }
 
     fn processDroppedItem(gui: *Gui, id: Id, slot: items.InventorySlot) !void {
+        _ = gui;
         _ = id;
-        gui.state.inventory.clearSlot(slot);
+        _ = slot;
     }
 
     fn processHit(gui: *Gui, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: items.WeaponType, attack_style: items.AttackStyle) !void {
@@ -838,7 +843,6 @@ pub const DisplayState = struct {
     turn_count: usize,
     console_log: ConsoleLog,
     effects: ArrayList(Effect),
-    inventory: items.Inventory,
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
@@ -848,7 +852,6 @@ pub const DisplayState = struct {
         state.turn_count = 0;
         state.console_log = ConsoleLog.init();
         state.effects = ArrayList(Effect).init(allocator);
-        state.inventory = items.Inventory{};
 
         comptime var names = entities.compNames(DisplayState);
         inline for (names) |field_name| {

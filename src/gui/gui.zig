@@ -423,6 +423,8 @@ pub const Gui = struct {
 
                 .khopesh => anim = gui.simpleAnimation("khopesh", id),
 
+                .axe => anim = gui.simpleAnimation("axe", id),
+
                 else => {
                     continue;
                 },

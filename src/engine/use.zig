@@ -103,6 +103,8 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 use_result = try useSpear(game);
             } else if (item == .khopesh) {
                 use_result = try useKhopesh(game);
+            } else if (item == .axe) {
+                use_result = try useAxe(game);
             } else {
                 @panic("Item not yet implemented for use-mode!");
             }
@@ -301,6 +303,36 @@ pub fn useKhopesh(game: *Game) !UseResult {
 
             use_dir.move_pos = move_pos;
             try use_dir.hit_positions.push(target_pos);
+
+            const dir_index = @enumToInt(dir);
+            use_result.use_dir[dir_index] = use_dir;
+        }
+    }
+
+    return use_result;
+}
+
+pub fn useAxe(game: *Game) !UseResult {
+    var use_result = UseResult.init();
+
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    for (Direction.directions()) |dir| {
+        const target_pos = dir.offsetPos(player_pos, 1);
+
+        const is_clear_path = blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null;
+        if (is_clear_path) {
+            var use_dir: UseDir = UseDir.init();
+
+            use_dir.move_pos = player_pos;
+
+            try use_dir.hit_positions.push(target_pos);
+
+            const left_pos = dir.clockwise().offsetPos(player_pos, 1);
+            try use_dir.hit_positions.push(left_pos);
+
+            const right_pos = dir.counterclockwise().offsetPos(player_pos, 1);
+            try use_dir.hit_positions.push(right_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;

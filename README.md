@@ -2,7 +2,7 @@
 
 This repository contains an incomplete re-write of the [Rust Roguelike](https://github.com/nsmryan/RustRoguelike) project in Zig.
 
-This is an attempt to rebuild the entire game logic with similar better visuals.
+This is an attempt to rebuild the entire game logic and visuals.
 
 
 == Some Zig/Rust Notes ==

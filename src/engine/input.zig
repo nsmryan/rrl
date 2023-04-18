@@ -251,6 +251,8 @@ pub const Input = struct {
                     if (self.direction != null) {
                         return InputAction.finalizeUse;
                     }
+                } else if (settings.mode.use.use_action == .interact) {
+                    return InputAction.pickup;
                 } else {
                     return InputAction.dropItem;
                 }
@@ -492,6 +494,7 @@ pub fn alphaUpToAction(chr: u8, shift: bool) InputAction {
         'p' => InputAction.regenerateMap,
         'j' => InputAction.skillMenu,
         'h' => InputAction.classMenu,
+        'b' => InputAction.interact,
         '/' =>
         // shift + / = ?
         if (shift) {

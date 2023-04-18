@@ -53,6 +53,7 @@ pub const InputAction = union(enum) {
     startUseItem: InventorySlot,
     startUseSkill: struct { index: usize, action: use.ActionMode },
     startUseTalent: usize,
+    interact,
     useDir: Direction,
     finalizeUse,
     abortUse,
@@ -133,6 +134,8 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
         .yell => try game.log.log(.yell, Entities.player_id),
 
+        .interact => try use.startInteract(game),
+
         // TODO for now esc exits, but when menus work only exit should exit the game.
         .esc => game.changeState(.exit),
         else => {},
@@ -159,11 +162,15 @@ pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
             try use.startUseTalent(game, index);
         },
 
+        .pickup => {
+            try game.log.log(.pickup, Entities.player_id);
+            game.changeState(.playing);
+        },
+
         .dropItem => {
             const slot = game.settings.mode.use.use_action.item;
             const item_id = game.level.entities.inventory.get(Entities.player_id).accessSlot(slot).?;
             try game.log.log(.dropItem, .{ Entities.player_id, item_id });
-            game.settings.mode = .playing;
             game.changeState(.playing);
         },
 

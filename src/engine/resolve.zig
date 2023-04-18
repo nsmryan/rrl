@@ -58,6 +58,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .itemThrow => |args| try resolveItemThrow(game, args.id, args.item_id, args.start, args.end, args.hard),
         .yell => |id| try resolveYell(game, id),
         .facing => |args| try resolveFacing(game, args.id, args.facing),
+        .interact => |args| try resolveInteract(game, args.id, args.interact_pos),
         else => {},
     }
 }
@@ -623,4 +624,26 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
     }
 
     try game.log.log(.itemLanded, .{ item_id, start, hit_pos });
+}
+
+fn resolveInteract(game: *Game, id: Id, interact_pos: Pos) !void {
+    const current_pos = game.level.entities.pos.get(id);
+
+    if (current_pos.distanceMaximum(interact_pos) <= 1) {
+        if (!current_pos.eql(interact_pos)) {
+            const dir = Direction.fromPositions(current_pos, interact_pos).?;
+            try game.log.now(.tryMove, .{ id, dir, 1 });
+        }
+
+        if (game.level.itemAtPos(interact_pos) != null) {
+            try game.log.log(.pickup, id);
+        }
+    } else {
+        //for (game.level.hasEntity(interact_pos)) |other_id| {
+        //    if (level.entities.trap.get(&other_id) != null) {
+        //        game.log.log(.armDisarmTrap, .{id, other_id});
+        //        break;
+        //    }
+        //}
+    }
 }

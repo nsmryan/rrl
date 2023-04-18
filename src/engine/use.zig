@@ -73,6 +73,32 @@ pub const UseAction = union(enum) {
     interact,
 };
 
+pub fn startInteract(game: *Game) !void {
+    var use_result = UseResult.init();
+
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    for (Direction.directions()) |dir| {
+        var use_dir: UseDir = UseDir.init();
+
+        const hit_pos = dir.offsetPos(player_pos, 1);
+        use_dir.move_pos = player_pos;
+        try use_dir.hit_positions.push(hit_pos);
+
+        const dir_index = @enumToInt(dir);
+        use_result.use_dir[dir_index] = use_dir;
+    }
+
+    game.settings.mode = Mode{ .use = .{
+        .pos = null,
+        .use_action = UseAction.interact,
+        .dir = null,
+        .use_result = use_result,
+    } };
+
+    game.changeState(.use);
+}
+
 pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
     // Check that there is an item in the requested slot. If not, ignore the action.
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
@@ -384,8 +410,17 @@ pub fn finalizeUse(game: *Game) !void {
             _ = talent;
         },
 
-        .interact => {},
+        .interact => {
+            try finalizeInteract(game);
+        },
     }
+}
+
+pub fn finalizeInteract(game: *Game) !void {
+    const dir = game.settings.mode.use.dir.?;
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+    const interact_pos = dir.offsetPos(player_pos, 1);
+    try game.log.log(.interact, .{ Entities.player_id, interact_pos });
 }
 
 pub fn finalizeUseSkill(skill: Skill, action_mode: ActionMode, game: *Game) !void {

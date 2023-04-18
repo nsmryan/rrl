@@ -9,6 +9,8 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 
+const utils = @import("utils");
+
 const core = @import("core");
 const fov = core.fov;
 const Level = core.level.Level;
@@ -149,12 +151,15 @@ pub const Game = struct {
         try spawn.spawnPlayer(&game.level.entities, &game.log, &game.config, game.allocator);
 
         // NOTE(remove) this is just for testing
-        //try spawn.spawnSword(&game.level.entities, &game.log, &game.config, game.allocator);
-        //try spawn.spawnStone(&game.level.entities, &game.log, &game.config, game.allocator);
-        //try spawn.spawnSeedOfStone(&game.level.entities, &game.log, &game.config, game.allocator);
-        //try spawn.spawnSmokeBomb(&game.level.entities, &game.log, &game.config, game.allocator);
-        //try spawn.spawnDagger(&game.level.entities, &game.log, &game.config, game.allocator);
-        try spawn.spawnShield(&game.level.entities, &game.log, &game.config, game.allocator);
+        var id: utils.comp.Id = undefined;
+        id = try spawn.spawnItem(&game.level.entities, .sword, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(1, 0) });
+        //try spawn.spawnItem(&game.level.entities, .stone, &game.log, &game.config, game.allocator);
+        //try spawn.spawnItem(&game.level.entities, .seedOfStone, &game.log, &game.config, game.allocator);
+        //try spawn.spawnItem(&game.level.entities, .smokeBomb, &game.log, &game.config, game.allocator);
+        //try spawn.spawnItem(&game.level.entities, .dagger, &game.log, &game.config, game.allocator);
+        //try spawn.spawnItem(&game.level.entities, .shield, &game.log, &game.config, game.allocator);
+        _ = try spawn.spawnItem(&game.level.entities, .spear, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});
     }

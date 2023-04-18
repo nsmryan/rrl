@@ -401,41 +401,25 @@ pub const Gui = struct {
                     anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
                 },
 
-                .smoke => {
-                    anim = gui.simpleAnimation("smoke", id);
-                },
+                .smoke => anim = gui.simpleAnimation("smoke", id),
 
-                .stone => {
-                    anim = gui.simpleAnimation("stone", id);
-                },
+                .stone => anim = gui.simpleAnimation("stone", id),
 
-                .smokeBomb => {
-                    anim = gui.simpleAnimation("smoke_bomb", id);
-                },
+                .smokeBomb => anim = gui.simpleAnimation("smoke_bomb", id),
 
-                .seedCache => {
-                    anim = gui.simpleAnimation("seed_pouch", id);
-                },
+                .seedCache => anim = gui.simpleAnimation("seed_pouch", id),
 
-                .seedOfStone => {
-                    anim = gui.simpleAnimation("seed", id);
-                },
+                .seedOfStone => anim = gui.simpleAnimation("seed", id),
 
-                .dagger => {
-                    anim = gui.simpleAnimation("dagger", id);
-                },
+                .dagger => anim = gui.simpleAnimation("dagger", id),
 
-                .sword => {
-                    anim = gui.simpleAnimation("sword", id);
-                },
+                .sword => anim = gui.simpleAnimation("sword", id),
 
-                .teleporter => {
-                    anim = gui.simpleAnimation("seed_pouch", id);
-                },
+                .teleporter => anim = gui.simpleAnimation("seed_pouch", id),
 
-                .shield => {
-                    anim = gui.simpleAnimation("shield", id);
-                },
+                .shield => anim = gui.simpleAnimation("shield", id),
+
+                .spear => anim = gui.simpleAnimation("spear", id),
 
                 else => {
                     continue;

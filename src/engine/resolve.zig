@@ -212,8 +212,13 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     //    const dir = Direction.fromPositions(original_pos, pos);
     //    game.log.now(.setFacing, .{id, dir});
     //}
-    if (Direction.fromPositions(start_pos, pos)) |dir| {
-        try game.log.now(.facing, .{ id, dir });
+
+    // For teleportations (blink) leave the current facing, and do not set facing for
+    // entities without a 'facing' component. Otherwise update facing after move.
+    if (move_type != MoveType.blink and game.level.entities.facing.has(id)) {
+        if (Direction.fromPositions(start_pos, pos)) |dir| {
+            try game.log.now(.facing, .{ id, dir });
+        }
     }
 
     // NOTE(implement) player steps out of visiblilty. Uses the entity message system right now,

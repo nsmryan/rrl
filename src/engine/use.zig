@@ -99,6 +99,8 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 use_result = try useDagger(game);
             } else if (item == .shield) {
                 use_result = try useShield(game);
+            } else if (item == .spear) {
+                use_result = try useSpear(game);
             } else {
                 @panic("Item not yet implemented for use-mode!");
             }
@@ -224,6 +226,58 @@ pub fn useShield(game: *Game) !UseResult {
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
+        }
+    }
+
+    return use_result;
+}
+
+pub fn useSpear(game: *Game) !UseResult {
+    var use_result = UseResult.init();
+
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+    const move_mode = game.level.entities.move_mode.get(Entities.player_id);
+
+    for (Direction.directions()) |dir| {
+        // If running, we can also attack an extra tile and move towards the golem.
+        if (move_mode == .run) {
+            // Move pos is where the entity will run to.
+            const move_pos = dir.offsetPos(player_pos, 2);
+
+            // Intermediate position between current and move pos.
+            const next_pos = dir.offsetPos(player_pos, 1);
+
+            // We can only spear if there is a clear path to the player's position.
+            const is_clear_path = blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null;
+            const is_clear_path_next = blocking.moveBlocked(&game.level.map, next_pos, dir, .move) == null;
+            if (is_clear_path and is_clear_path_next) {
+                var use_dir: UseDir = UseDir.init();
+                use_dir.move_pos = move_pos;
+
+                // the spear will hit both intervening positions.
+                const far_target_pos = dir.offsetPos(player_pos, 4);
+                try use_dir.hit_positions.push(far_target_pos);
+
+                const close_target_pos = dir.offsetPos(player_pos, 3);
+                try use_dir.hit_positions.push(close_target_pos);
+
+                const dir_index = @enumToInt(dir);
+                use_result.use_dir[dir_index] = use_dir;
+            }
+        } else {
+            const is_clear_path = blocking.moveBlocked(&game.level.map, player_pos, dir, .move) == null;
+            if (is_clear_path) {
+                var use_dir: UseDir = UseDir.init();
+
+                use_dir.move_pos = player_pos;
+
+                try use_dir.hit_positions.push(dir.offsetPos(player_pos, 2));
+
+                try use_dir.hit_positions.push(dir.offsetPos(player_pos, 3));
+
+                const dir_index = @enumToInt(dir);
+                use_result.use_dir[dir_index] = use_dir;
+            }
         }
     }
 

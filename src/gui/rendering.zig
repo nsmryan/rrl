@@ -345,7 +345,7 @@ fn renderOverlayUseMode(game: *Game, painter: *Painter) !void {
                         for (use_dir.hit_positions.constSlice()) |pos| {
                             try painter.drawcmds.append(DrawCmd.highlightTile(pos, attack_highlight_color));
                         }
-                        const arrow_pos = use_dir.move_pos;
+                        const arrow_pos = dir.offsetPos(game.level.entities.pos.get(Entities.player_id), 1);
                         const arrow_color = Color.white();
                         try renderArrow(painter, dir, arrow_pos, arrow_color);
                     }

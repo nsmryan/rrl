@@ -50,7 +50,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
 }
 
-pub fn spawnItem(entities: *Entities, item: Item, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+pub fn spawnItem(entities: *Entities, item: Item, log: *MsgLog, config: *const Config, allocator: Allocator) !Id {
     _ = config;
     _ = allocator;
 
@@ -63,34 +63,8 @@ pub fn spawnItem(entities: *Entities, item: Item, log: *MsgLog, config: *const C
 
     try log.log(.spawn, .{ id, name });
     try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
-}
 
-pub fn spawnSword(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .sword, log, config, allocator);
-}
-
-pub fn spawnDagger(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .dagger, log, config, allocator);
-}
-
-pub fn spawnShield(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .shield, log, config, allocator);
-}
-
-pub fn spawnStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .stone, log, config, allocator);
-}
-
-pub fn spawnSeedOfStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .seedOfStone, log, config, allocator);
-}
-
-pub fn spawnSmokeBomb(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .smokeBomb, log, config, allocator);
-}
-
-pub fn spawnTeleporter(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
-    try spawnItem(entities, .teleporter, log, config, allocator);
+    return id;
 }
 
 pub fn spawnGrass(entities: *Entities, log: *MsgLog) !Id {

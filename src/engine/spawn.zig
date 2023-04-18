@@ -73,6 +73,10 @@ pub fn spawnDagger(entities: *Entities, log: *MsgLog, config: *const Config, all
     try spawnItem(entities, .dagger, log, config, allocator);
 }
 
+pub fn spawnShield(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
+    try spawnItem(entities, .shield, log, config, allocator);
+}
+
 pub fn spawnStone(entities: *Entities, log: *MsgLog, config: *const Config, allocator: Allocator) !void {
     try spawnItem(entities, .stone, log, config, allocator);
 }

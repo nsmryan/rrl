@@ -370,9 +370,7 @@ pub const Gui = struct {
 
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
         for (gui.game.level.entities.name.ids.items) |id| {
-            if (gui.state.animation.getOrNull(id) != null) {
-                continue;
-            }
+            var anim: Animation = undefined;
 
             switch (gui.game.level.entities.name.get(id)) {
                 .player => {
@@ -398,52 +396,60 @@ pub const Gui = struct {
                     }
 
                     const pos = gui.game.level.entities.pos.get(id);
-                    var anim = try gui.display.animation(sheet_name, pos, gui.game.config.idle_speed);
+                    anim = try gui.display.animation(sheet_name, pos, gui.game.config.idle_speed);
                     anim.repeat = true;
                     anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
-
-                    if (gui.state.animation.getOrNull(id)) |prev_anim| {
-                        if (prev_anim.sprite_anim.sprite.eql(anim.sprite_anim.sprite))
-                            continue;
-                    }
-
-                    try gui.state.animation.insert(id, anim);
                 },
 
                 .smoke => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("smoke", id));
+                    anim = gui.simpleAnimation("smoke", id);
                 },
 
                 .stone => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("stone", id));
+                    anim = gui.simpleAnimation("stone", id);
                 },
 
                 .smokeBomb => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("smoke_bomb", id));
+                    anim = gui.simpleAnimation("smoke_bomb", id);
                 },
 
                 .seedCache => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("seed_pouch", id));
+                    anim = gui.simpleAnimation("seed_pouch", id);
                 },
 
                 .seedOfStone => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("seed", id));
+                    anim = gui.simpleAnimation("seed", id);
                 },
 
                 .dagger => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("dagger", id));
+                    anim = gui.simpleAnimation("dagger", id);
                 },
 
                 .sword => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("sword", id));
+                    anim = gui.simpleAnimation("sword", id);
                 },
 
                 .teleporter => {
-                    try gui.state.animation.insert(id, gui.simpleAnimation("seed_pouch", id));
+                    anim = gui.simpleAnimation("seed_pouch", id);
                 },
 
-                else => {},
+                .shield => {
+                    anim = gui.simpleAnimation("shield", id);
+                },
+
+                else => {
+                    continue;
+                },
             }
+
+            // Don't assign the animation if it is identical to the previous one.
+            if (gui.state.animation.getOrNull(id)) |prev_anim| {
+                if (prev_anim.sprite_anim.sprite.eql(anim.sprite_anim.sprite))
+                    continue;
+            }
+
+            // Apply the animation to the current entity.
+            try gui.state.animation.insert(id, anim);
         }
     }
 

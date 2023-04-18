@@ -57,6 +57,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
         .itemThrow => |args| try resolveItemThrow(game, args.id, args.item_id, args.start, args.end, args.hard),
         .yell => |id| try resolveYell(game, id),
+        .facing => |args| try resolveFacing(game, args.id, args.facing),
         else => {},
     }
 }
@@ -486,6 +487,10 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
     _ = id;
     _ = item_id;
     // NOTE(implement) eating herb.
+}
+
+fn resolveFacing(game: *Game, id: Id, facing: Direction) !void {
+    game.level.entities.facing.set(id, facing);
 }
 
 fn resolveYell(game: *Game, id: Id) !void {

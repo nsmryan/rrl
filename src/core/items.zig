@@ -95,7 +95,7 @@ pub const Item = enum {
     pub fn isThrowable(item: Item) bool {
         return item == .stone or item == .lantern or item == .seedOfStone or item == .seedCache or
             item == .herb or item == .glassEye or item == .smokeBomb or item == .lookingGlass or
-            item == .thumper;
+            item == .thumper or item == .teleporter;
     }
 };
 

@@ -438,6 +438,10 @@ pub const Gui = struct {
                     try gui.state.animation.insert(id, gui.simpleAnimation("sword", id));
                 },
 
+                .teleporter => {
+                    try gui.state.animation.insert(id, gui.simpleAnimation("seed_pouch", id));
+                },
+
                 else => {},
             }
         }

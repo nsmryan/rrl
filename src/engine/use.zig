@@ -105,6 +105,8 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 use_result = try useKhopesh(game);
             } else if (item == .axe) {
                 use_result = try useAxe(game);
+            } else if (item == .hammer) {
+                use_result = try useHammer(game);
             } else {
                 @panic("Item not yet implemented for use-mode!");
             }
@@ -337,6 +339,26 @@ pub fn useAxe(game: *Game) !UseResult {
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
         }
+    }
+
+    return use_result;
+}
+
+pub fn useHammer(game: *Game) !UseResult {
+    var use_result = UseResult.init();
+
+    const player_pos = game.level.entities.pos.get(Entities.player_id);
+
+    for (Direction.directions()) |dir| {
+        var use_dir: UseDir = UseDir.init();
+
+        const hit_pos = dir.offsetPos(player_pos, 1);
+        // Hammers can always be used in any direction.
+        use_dir.move_pos = player_pos;
+        try use_dir.hit_positions.push(hit_pos);
+
+        const dir_index = @enumToInt(dir);
+        use_result.use_dir[dir_index] = use_dir;
     }
 
     return use_result;

@@ -176,6 +176,9 @@ pub const Game = struct {
         id = try spawn.spawnItem(&game.level.entities, .axe, &game.log, &game.config, game.allocator);
         try game.log.log(.move, .{ id, .blink, .walk, Pos.init(8, 0) });
 
+        id = try spawn.spawnItem(&game.level.entities, .hammer, &game.log, &game.config, game.allocator);
+        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(0, 1) });
+
         _ = try spawn.spawnItem(&game.level.entities, .spear, &game.log, &game.config, game.allocator);
 
         try game.log.log(.startLevel, .{});

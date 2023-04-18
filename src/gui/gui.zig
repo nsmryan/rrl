@@ -425,6 +425,8 @@ pub const Gui = struct {
 
                 .axe => anim = gui.simpleAnimation("axe", id),
 
+                .hammer => anim = gui.simpleAnimation("hammer", id),
+
                 else => {
                     continue;
                 },

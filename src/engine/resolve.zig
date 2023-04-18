@@ -456,15 +456,14 @@ fn resolvePickup(game: *Game, id: Id) !void {
         // If there is an inventory slot available, or there is space to drop the currently held item, pick it up.
         const slot_available = game.level.entities.inventory.get(id).classAvailable(item.class());
         if (slot_available or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
-            const slot = game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
             const dropped = game.level.entities.pickUpItem(id, item_id);
 
             // If we dropped an item when picking this one up, log this action.
             if (dropped.id) |dropped_item_id| {
-                try game.log.now(.dropItem, .{ id, dropped_item_id, slot });
+                try game.log.now(.dropItem, .{ id, dropped_item_id, dropped.slot });
             }
 
-            try game.log.now(.pickedUp, .{ id, item_id, slot });
+            try game.log.now(.pickedUp, .{ id, item_id, dropped.slot });
         }
     }
 }

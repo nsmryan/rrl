@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
@@ -183,7 +184,8 @@ pub const Entities = struct {
         const item = entities.item.get(item_id);
         entities.active.set(item_id, false);
         entities.pos.set(item_id, Pos.init(-1, -1));
-        return inventory.addItem(item_id, item.class());
+        const dropped = inventory.addItem(item_id, item.class());
+        return dropped;
     }
 
     pub fn removeItem(entities: *Entities, id: Id, item_id: Id) void {

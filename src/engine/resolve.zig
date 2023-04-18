@@ -52,7 +52,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .startLevel => try resolveStartLevel(game),
         .endTurn => try resolveEndTurn(game),
         .pickup => |args| try resolvePickup(game, args),
-        .dropItem => |args| try resolveDropItem(game, args.id, args.item_id),
+        .dropItem => |args| try resolveDropItem(game, args.id, args.item_id, args.slot),
         .droppedItem => |args| try resolveDroppedItem(game, args.id, args.slot),
         .eatHerb => |args| try resolveEatHerb(game, args.id, args.item_id),
         .itemThrow => |args| try resolveItemThrow(game, args.id, args.item_id, args.start, args.end, args.hard),
@@ -456,14 +456,15 @@ fn resolvePickup(game: *Game, id: Id) !void {
         // If there is an inventory slot available, or there is space to drop the currently held item, pick it up.
         const slot_available = game.level.entities.inventory.get(id).classAvailable(item.class());
         if (slot_available or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
+            const slot = game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
             const dropped = game.level.entities.pickUpItem(id, item_id);
-
-            try game.log.now(.pickedUp, .{ id, item_id, dropped.slot });
 
             // If we dropped an item when picking this one up, log this action.
             if (dropped.id) |dropped_item_id| {
-                try game.log.now(.dropItem, .{ id, dropped_item_id });
+                try game.log.now(.dropItem, .{ id, dropped_item_id, slot });
             }
+
+            try game.log.now(.pickedUp, .{ id, item_id, slot });
         }
     }
 }
@@ -473,14 +474,11 @@ fn resolveDroppedItem(game: *Game, item_id: Id, slot: core.items.InventorySlot) 
     game.level.entities.active.set(item_id, true);
 }
 
-fn resolveDropItem(game: *Game, id: Id, item_id: Id) !void {
+fn resolveDropItem(game: *Game, id: Id, item_id: Id, slot: core.items.InventorySlot) !void {
     const pos = game.level.entities.pos.get(id);
-    const item = game.level.entities.item.get(item_id);
 
     // NOTE(perf) ensure using frame allocator.
     if (try game.level.searchForEmptyTile(pos, 10, game.allocator)) |empty_pos| {
-        const slot = game.level.entities.inventory.getPtr(id).drop(item_id, item.class());
-
         try game.log.log(.droppedItem, .{ item_id, slot });
         try game.log.log(.move, .{ item_id, .blink, .walk, empty_pos });
     } else {

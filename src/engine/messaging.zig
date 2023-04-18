@@ -44,7 +44,7 @@ pub const Msg = union(enum) {
     cursorMove: Pos,
     pickup: Id,
     pickedUp: struct { id: Id, item_id: Id, slot: items.InventorySlot },
-    dropItem: struct { id: Id, item_id: Id },
+    dropItem: struct { id: Id, item_id: Id, slot: items.InventorySlot },
     droppedItem: struct { id: Id, slot: items.InventorySlot },
     dropFailed: struct { id: Id, item_id: Id },
     eatHerb: struct { id: Id, item_id: Id },

@@ -157,6 +157,7 @@ pub const Level = struct {
     }
 
     pub fn entitiesAtPos(level: *const Level, pos: Pos, ids: *ArrayList(Id)) !void {
+        ids.clearRetainingCapacity();
         for (level.entities.ids.items) |id| {
             if (level.entities.pos.getOrNull(id)) |entity_pos| {
                 if (entity_pos.eql(pos)) {

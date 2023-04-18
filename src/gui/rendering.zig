@@ -703,7 +703,7 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
         var drawn_info = false;
 
         const player_id = Entities.player_id;
-        for (game.level.entities.ids.items) |obj_id| {
+        for (object_ids.items) |obj_id| {
             const entity_in_fov = try game.level.entityInFov(player_id, obj_id) == FovResult.inside;
 
             // Only display things in the player's FOV.

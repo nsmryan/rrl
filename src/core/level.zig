@@ -139,7 +139,7 @@ pub const Level = struct {
 
     pub fn entityInFov(level: *Level, id: Id, other: Id) FovError!FovResult {
         // Inactive entities are never in FoV.
-        if (!level.entities.active.get(other)) {
+        if (!level.entities.status.get(other).active) {
             return .outside;
         }
 
@@ -196,7 +196,7 @@ pub const Level = struct {
 
     pub fn entityNameAtPos(level: *const Level, pos: Pos, name: entities.Name) !?Id {
         for (level.entities.ids.items) |id| {
-            if (level.entities.active.get(id)) {
+            if (level.entities.status.get(id).active) {
                 if (level.entities.pos.getOrNull(id)) |entity_pos| {
                     if (entity_pos.eql(pos) and name == level.entities.name.get(id)) {
                         return id;
@@ -209,7 +209,7 @@ pub const Level = struct {
 
     pub fn blockingEntityAtPos(level: *const Level, pos: Pos) ?Id {
         for (level.entities.ids.items) |id| {
-            if (level.entities.active.get(id)) {
+            if (level.entities.status.get(id).active) {
                 if (level.entities.pos.getOrNull(id)) |entity_pos| {
                     if (entity_pos.eql(pos) and level.entities.blocking.get(id)) {
                         return id;

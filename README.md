@@ -51,4 +51,12 @@ at the moment.
 
 === Next Steps ===
 
+Get hammer working- need to wait a turn, and have a strong hit and make sure that this breaks walls into rubble.
+May need to make sure grass and rubble are possible in the world, or add them.
+
+AI
+
+Level generation
+
+Game as a sequence of levels
 

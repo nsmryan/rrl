@@ -78,6 +78,19 @@ pub const Turn = struct {
     }
 };
 
+pub const StatusEffect = struct {
+    frozen: usize = 0, // turns
+    soft_steps: usize = 0, // turns
+    extra_fov: usize = 0, // amount
+    blinked: bool = false,
+    active: bool = true,
+    alive: bool = true,
+    stone: usize = 0,
+    land_roll: bool = false,
+    hammer_raised: Direction = .right,
+    test_mode: bool = false,
+};
+
 pub const Entities = struct {
     pub const player_id = 0;
 
@@ -87,7 +100,6 @@ pub const Entities = struct {
     typ: Comp(Type),
     state: Comp(EntityState),
     name: Comp(Name),
-    active: Comp(bool),
     blocking: Comp(bool),
     move_mode: Comp(MoveMode),
     next_move_mode: Comp(MoveMode),
@@ -105,6 +117,7 @@ pub const Entities = struct {
     behavior: Comp(Behavior),
     inventory: Comp(Inventory),
     count_down: Comp(usize),
+    status: Comp(StatusEffect),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -159,7 +172,7 @@ pub const Entities = struct {
         try self.pos.insert(id, position);
         try self.typ.insert(id, typ);
         try self.name.insert(id, name);
-        try self.active.insert(id, true);
+        try self.status.insert(id, StatusEffect{});
         try self.blocking.insert(id, false);
         try self.turn.insert(id, Turn.init());
         try self.state.insert(id, .play);
@@ -175,21 +188,21 @@ pub const Entities = struct {
 
     pub fn markForRemoval(entities: *Entities, id: Id) void {
         entities.state.set(id, .remove);
-        entities.active.set(id, false);
+        entities.status.getPtr(id).active = false;
     }
 
     // Pick up an item, and return the dropped item if any.
     pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) items.InventoryDropped {
         var inventory = entities.inventory.getPtr(id);
         const item = entities.item.get(item_id);
-        entities.active.set(item_id, false);
+        entities.status.getPtr(item_id).active = false;
         entities.pos.set(item_id, Pos.init(-1, -1));
         const dropped = inventory.addItem(item_id, item.class());
         return dropped;
     }
 
     pub fn removeItem(entities: *Entities, id: Id, item_id: Id) void {
-        entities.active.set(item_id, true);
+        entities.status.getPtr(id).active = true;
         const item = entities.item.get(item_id);
         _ = entities.inventory.getPtr(id).drop(item_id, item.class());
     }

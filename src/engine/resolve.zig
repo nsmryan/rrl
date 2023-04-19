@@ -59,6 +59,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .yell => |id| try resolveYell(game, id),
         .facing => |args| try resolveFacing(game, args.id, args.facing),
         .interact => |args| try resolveInteract(game, args.id, args.interact_pos),
+        .hammerRaise => |args| try resolveHammerRaise(game, args.id, args.dir),
         else => {},
     }
 }
@@ -470,7 +471,7 @@ fn resolvePickup(game: *Game, id: Id) !void {
 
 fn resolveDroppedItem(game: *Game, item_id: Id, slot: core.items.InventorySlot) !void {
     _ = slot;
-    game.level.entities.active.set(item_id, true);
+    game.level.entities.status.getPtr(item_id).active = true;
 }
 
 fn resolveDropItem(game: *Game, id: Id, item_id: Id, slot: core.items.InventorySlot) !void {
@@ -478,6 +479,7 @@ fn resolveDropItem(game: *Game, id: Id, item_id: Id, slot: core.items.InventoryS
 
     // NOTE(perf) ensure using frame allocator.
     if (try game.level.searchForEmptyTile(pos, 10, game.allocator)) |empty_pos| {
+        game.level.entities.removeItem(id, item_id);
         try game.log.log(.droppedItem, .{ item_id, slot });
         try game.log.log(.move, .{ item_id, .blink, .walk, empty_pos });
     } else {
@@ -643,4 +645,9 @@ fn resolveInteract(game: *Game, id: Id, interact_pos: Pos) !void {
         //    }
         //}
     }
+}
+
+fn resolveHammerRaise(game: *Game, id: Id, direction: Direction) !void {
+    game.level.entities.status.getPtr(id).hammer_raised = direction;
+    game.level.entities.turn.getPtr(id).*.pass = true;
 }

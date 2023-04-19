@@ -100,7 +100,7 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
     // to be at the entities feet.
 
     for (painter.state.animation.ids.items) |id| {
-        if (game.level.entities.typ.get(id) == .item and game.level.entities.active.get(id)) {
+        if (game.level.entities.typ.get(id) == .item and game.level.entities.status.get(id).active) {
             if (painter.state.animation.get(id).draw()) |drawcmd| {
                 try painter.drawcmds.append(drawcmd);
             }
@@ -108,7 +108,7 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
     }
 
     for (painter.state.animation.ids.items) |id| {
-        if (game.level.entities.typ.get(id) != .item and game.level.entities.active.get(id)) {
+        if (game.level.entities.typ.get(id) != .item and game.level.entities.status.get(id).active) {
             if (painter.state.animation.get(id).draw()) |drawcmd| {
                 try painter.drawcmds.append(drawcmd);
             }

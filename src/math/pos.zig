@@ -122,6 +122,20 @@ pub const Pos = struct {
     pub fn eql(self: Pos, other: Pos) bool {
         return self.x == other.x and self.y == other.y;
     }
+
+    pub fn nextPos(pos: Pos, delta_pos: Pos) Pos {
+        var next_pos = pos.add(delta_pos);
+
+        if (delta_pos.x != 0) {
+            next_pos.x += std.math.sign(delta_pos.x);
+        }
+
+        if (delta_pos.y != 0) {
+            next_pos.y += std.math.sign(delta_pos.y);
+        }
+
+        return next_pos;
+    }
 };
 
 test "test in direction of" {

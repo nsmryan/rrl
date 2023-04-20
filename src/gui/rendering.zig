@@ -81,6 +81,8 @@ pub fn renderLevel(game: *Game, painter: *Painter) !void {
 
 fn renderMapLow(game: *Game, painter: *Painter) !void {
     const open_tile_sprite = painter.sprite("open_tile");
+    const grass_tile_sprite = painter.sprite("grass");
+    const rubble_tile_sprite = painter.sprite("rubble");
 
     var y: i32 = 0;
     while (y < game.level.map.height) : (y += 1) {
@@ -88,8 +90,12 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
         while (x < game.level.map.width) : (x += 1) {
             const pos = Pos.init(x, y);
             const tile = game.level.map.get(pos);
-            if (tile.center.material == Tile.Material.stone) {
-                try painter.drawcmds.append(DrawCmd.sprite(open_tile_sprite, Color.white(), pos));
+
+            try painter.drawcmds.append(DrawCmd.sprite(open_tile_sprite, Color.white(), pos));
+            if (tile.center.material == Tile.Material.rubble) {
+                try painter.drawcmds.append(DrawCmd.sprite(rubble_tile_sprite, Color.white(), pos));
+            } else if (tile.center.material == Tile.Material.grass) {
+                try painter.drawcmds.append(DrawCmd.sprite(grass_tile_sprite, Color.white(), pos));
             }
         }
     }
@@ -201,7 +207,7 @@ fn renderMapHigh(game: *Game, painter: *Painter) !void {
 
             const fov_result = try game.level.posInFov(Entities.player_id, pos);
 
-            // apply a FoW darkening to cells
+            // Apply a FoW darkening to cells.
             if (game.config.fog_of_war and fov_result != FovResult.inside) {
                 const is_in_fov_ext = fov_result == FovResult.edge;
 

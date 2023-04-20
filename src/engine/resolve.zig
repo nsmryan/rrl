@@ -14,6 +14,7 @@ const Material = board.tile.Tile.Material;
 const Height = board.tile.Tile.Height;
 const Wall = board.tile.Tile.Wall;
 const Tile = board.tile.Tile;
+const blocking = board.blocking;
 
 const core = @import("core");
 const Skill = core.skills.Skill;
@@ -60,6 +61,9 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .facing => |args| try resolveFacing(game, args.id, args.facing),
         .interact => |args| try resolveInteract(game, args.id, args.interact_pos),
         .hammerRaise => |args| try resolveHammerRaise(game, args.id, args.dir),
+        .hammerSwing => |args| try resolveHammerSwing(game, args.id, args.pos),
+        .hammerHitWall => |args| try resolveHammerHitWall(game, args.id, args.start_pos, args.end_pos, args.dir),
+        .crushed => |args| try resolveCrushed(game, args.id, args.pos),
         else => {},
     }
 }
@@ -174,18 +178,6 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     // NOTE(implement) triggering traps
     //if (start_pos != pos) {
     //    resolveTriggeredTraps(id, start_pos, game);
-    //}
-
-    // NOTE(implement) hammer swing
-    // check for passing turn while the hammer is raised
-    //if (move_type == MoveType.pass) {
-    //    if let Some((item_id, dir, turns)) = level.entities.status[&id].hammer_raised {
-    //        if turns == 0 {
-    //            let hit_pos = dir.offset_pos(start_pos, 1);
-    //            game.log.log(Msg::HammerSwing(id, item_id, hit_pos));
-    //            level.entities.status[&id].hammer_raised = None;
-    //        }
-    //    }
     //}
 
     // Check if we trampled any grass.
@@ -433,6 +425,14 @@ fn resolvePassTurn(id: Id, game: *Game) !void {
         try game.log.record(.stance, .{ id, new_stance });
         resolveStance(id, new_stance, game);
     }
+
+    // Check for passing turn while the hammer is raised.
+    if (game.level.entities.status.get(id).hammer_raised) |dir| {
+        const pos = game.level.entities.pos.get(id);
+        const hit_pos = dir.offsetPos(pos, 1);
+        try game.log.log(.hammerSwing, .{ id, hit_pos });
+        game.level.entities.status.getPtr(id).hammer_raised = null;
+    }
 }
 
 fn resolveStance(id: Id, stance: Stance, game: *Game) void {
@@ -446,6 +446,7 @@ fn resolveStartLevel(game: *Game) !void {
 
 fn resolveEndTurn(game: *Game) !void {
     game.level.entities.turn.getPtr(core.entities.Entities.player_id).* = core.entities.Turn.init();
+    try game.level.updateAllFov();
 }
 
 fn resolvePickup(game: *Game, id: Id) !void {
@@ -650,4 +651,100 @@ fn resolveInteract(game: *Game, id: Id, interact_pos: Pos) !void {
 fn resolveHammerRaise(game: *Game, id: Id, direction: Direction) !void {
     game.level.entities.status.getPtr(id).hammer_raised = direction;
     game.level.entities.turn.getPtr(id).*.pass = true;
+}
+
+fn resolveHammerSwing(game: *Game, id: Id, pos: Pos) !void {
+    const entity_pos = game.level.entities.pos.get(id);
+
+    try game.log.now(.blunt, .{ entity_pos, pos });
+
+    const dir = Direction.fromPositions(entity_pos, pos).?;
+    if (blocking.moveBlocked(&game.level.map, entity_pos, dir, .move)) |blocked| {
+        try game.log.now(.hammerHitWall, .{ id, blocked.start_pos, blocked.end_pos, blocked.direction });
+    } else if (game.level.blockingEntityAtPos(pos)) |hit_entity| {
+        // we hit another entity!
+        try game.log.now(.hammerHitEntity, .{ id, hit_entity });
+    }
+
+    game.level.entities.turn.getPtr(id).attack = true;
+}
+
+fn resolveHammerHitWall(game: *Game, id: Id, start_pos: Pos, end_pos: Pos, dir: Direction) !void {
+    // If hit water, do nothing.
+    if (game.level.map.get(end_pos).impassable) {
+        return;
+    }
+
+    if (game.level.map.get(end_pos).center.height != .empty) {
+        // Hammer hit a full tile wall.
+        if (game.level.map.getPtr(end_pos).center.material == .stone) {
+            game.level.map.getPtr(end_pos).center.material = .rubble;
+        }
+        game.level.map.getPtr(end_pos).center.height = .empty;
+
+        const diff = end_pos.sub(start_pos);
+        const next_pos = start_pos.nextPos(diff);
+        try game.log.now(.crushed, .{ id, next_pos });
+        try game.log.now(.sound, .{ id, end_pos, game.config.sound_radius_attack });
+    } else {
+        // hammer hit an inter-tile wall
+        var wall_loc: Pos = undefined;
+        var left_wall: bool = undefined;
+        if (dir == .left) {
+            wall_loc = start_pos;
+            left_wall = true;
+        } else if (dir == .right) {
+            wall_loc = end_pos;
+            left_wall = true;
+        } else if (dir == .down) {
+            wall_loc = start_pos;
+            left_wall = false;
+        } else if (dir == .up) {
+            wall_loc = end_pos;
+            left_wall = false;
+        } else {
+            std.debug.panic("Hammer direction was not up/down/left/right", .{});
+        }
+
+        if (left_wall) {
+            game.level.map.getPtr(wall_loc).left.height = .empty;
+        } else {
+            game.level.map.getPtr(wall_loc).down.height = .empty;
+        }
+
+        try game.log.now(.crushed, .{ id, end_pos });
+    }
+}
+
+fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
+    game.level.map.getPtr(pos).center.height = .empty;
+    game.level.map.getPtr(pos).center.material = .rubble;
+
+    // NOTE(perf) use frame allocator
+    var hit_entities: ArrayList(Id) = ArrayList(Id).init(game.allocator);
+    try game.level.entitiesAtPos(pos, &hit_entities);
+    for (hit_entities.items) |crushed_id| {
+        if (crushed_id == id) {
+            continue;
+        }
+
+        if (game.level.entities.typ.get(crushed_id) == .column) {
+            const entity_pos = game.level.entities.pos.get(id);
+            const diff = entity_pos.sub(pos);
+            const next_pos = entity_pos.nextPos(diff);
+
+            try game.log.now(.crushed, .{ crushed_id, next_pos });
+        }
+
+        if (game.level.entities.hp.getOrNull(crushed_id)) |hp| {
+            try game.log.log(.killed, .{ id, crushed_id, hp });
+        } else if (game.level.entities.item.getOrNull(crushed_id) == null and
+            game.level.entities.name.get(crushed_id) != .cursor)
+        {
+            // the entity will be removed, such as an item.
+            game.level.entities.markForRemoval(crushed_id);
+        }
+    }
+
+    try game.log.now(.sound, .{ id, pos, game.config.sound_radius_crushed });
 }

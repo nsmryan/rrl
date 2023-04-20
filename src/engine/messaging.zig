@@ -50,6 +50,7 @@ pub const Msg = union(enum) {
     eatHerb: struct { id: Id, item_id: Id },
     startUseItem: InventorySlot,
     hammerRaise: struct { id: Id, dir: Direction },
+    hammerSwing: struct { id: Id, pos: Pos },
     notEnoughEnergy: Id,
     placeTrap: struct { id: Id, pos: Pos, trap_id: Id },
     itemThrow: struct { id: Id, item_id: Id, start: Pos, end: Pos, hard: bool },
@@ -58,6 +59,11 @@ pub const Msg = union(enum) {
     yell: Id,
     remove: Id,
     interact: struct { id: Id, interact_pos: Pos },
+    blunt: struct { entity_pos: Pos, hit_pos: Pos },
+    hammerHitWall: struct { id: Id, start_pos: Pos, end_pos: Pos, dir: Direction },
+    hammerHitEntity: struct { id: Id, hit_entity: Id },
+    crushed: struct { id: Id, pos: Pos },
+    killed: struct { id: Id, crushed_id: Id, hp: usize },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

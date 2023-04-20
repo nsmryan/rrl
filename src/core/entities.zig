@@ -87,7 +87,7 @@ pub const StatusEffect = struct {
     alive: bool = true,
     stone: usize = 0,
     land_roll: bool = false,
-    hammer_raised: Direction = .right,
+    hammer_raised: ?Direction = null,
     test_mode: bool = false,
 };
 
@@ -300,7 +300,6 @@ pub const ExtraNames = enum {
     column,
     exit,
     gateTrigger,
-    mouse,
     cursor,
     energy,
     grass,

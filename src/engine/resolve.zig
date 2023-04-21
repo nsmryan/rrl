@@ -659,11 +659,18 @@ fn resolveHammerSwing(game: *Game, id: Id, pos: Pos) !void {
     try game.log.now(.blunt, .{ entity_pos, pos });
 
     const dir = Direction.fromPositions(entity_pos, pos).?;
+    var hit_something: bool = false;
     if (blocking.moveBlocked(&game.level.map, entity_pos, dir, .move)) |blocked| {
         try game.log.now(.hammerHitWall, .{ id, blocked.start_pos, blocked.end_pos, blocked.direction });
+        hit_something = true;
     } else if (game.level.blockingEntityAtPos(pos)) |hit_entity| {
         // we hit another entity!
         try game.log.now(.hammerHitEntity, .{ id, hit_entity });
+        hit_something = true;
+    }
+
+    if (hit_something) {
+        try game.log.log(.hit, .{ id, entity_pos, pos, .blunt, .strong });
     }
 
     game.level.entities.turn.getPtr(id).attack = true;

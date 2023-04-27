@@ -19,6 +19,7 @@ const Config = core.config.Config;
 const movement = core.movement;
 const Stance = core.entities.Stance;
 const Entities = core.entities.Entities;
+const items = core.items;
 
 const board = @import("board");
 const Map = board.map.Map;
@@ -152,37 +153,13 @@ pub const Game = struct {
 
         // NOTE(remove) this is just for testing
         var id: utils.comp.Id = undefined;
-        id = try spawn.spawnItem(&game.level.entities, .sword, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(1, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .stone, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(2, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .seedOfStone, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(3, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .smokeBomb, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(4, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .dagger, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(5, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .shield, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(6, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .khopesh, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(7, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .axe, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(8, 0) });
-
-        id = try spawn.spawnItem(&game.level.entities, .hammer, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(0, 1) });
-
-        id = try spawn.spawnItem(&game.level.entities, .sling, &game.log, &game.config, game.allocator);
-        try game.log.log(.move, .{ id, .blink, .walk, Pos.init(0, 2) });
-
-        _ = try spawn.spawnItem(&game.level.entities, .spear, &game.log, &game.config, game.allocator);
+        const spawn_items = [_]items.Item{ .sword, .stone, .hammer, .seedOfStone, .smokeBomb, .dagger, .shield, .khopesh, .axe, .sling, .spear };
+        var index: usize = 0;
+        for (spawn_items) |item| {
+            id = try spawn.spawnItem(&game.level.entities, item, &game.log, &game.config, game.allocator);
+            try game.log.log(.move, .{ id, .blink, .walk, Pos.init(@intCast(i32, index), 0) });
+            index += 1;
+        }
 
         try game.log.log(.startLevel, .{});
     }

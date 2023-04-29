@@ -406,6 +406,8 @@ pub const Gui = struct {
                     anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
                 },
 
+                .gol => anim = gui.simpleAnimation("gol_standing_right", id),
+
                 .smoke => anim = gui.simpleAnimation("smoke", id),
 
                 .stone => anim = gui.simpleAnimation("stone", id),

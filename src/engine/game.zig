@@ -160,6 +160,7 @@ pub const Game = struct {
             try game.log.log(.move, .{ id, .blink, .walk, Pos.init(@intCast(i32, index), 0) });
             index += 1;
         }
+        _ = try spawn.spawnGol(&game.level.entities, &game.config, Pos.init(1, 2), &game.log, game.allocator);
 
         try game.log.log(.startLevel, .{});
     }

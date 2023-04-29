@@ -83,12 +83,13 @@ pub fn spawnSmoke(entities: *Entities, config: *const Config, pos: Pos, amount: 
 
     try entities.fov_block.insert(id, core.fov.FovBlock{ .opaqu = amount });
     try entities.count_down.insert(id, config.smoke_turns);
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, pos });
     try log.log(.spawn, .{ id, .smoke });
 
     return id;
 }
 
-pub fn spawnGol(entities: *Entities, config: *const Config, pos: Pos, log: *MsgLog) !Id {
+pub fn spawnGol(entities: *Entities, config: *const Config, pos: Pos, log: *MsgLog, allocator: Allocator) !Id {
     const id = try entities.createEntity(pos, .gol, .enemy);
 
     entities.blocking.getPtr(id).* = true;
@@ -98,11 +99,13 @@ pub fn spawnGol(entities: *Entities, config: *const Config, pos: Pos, log: *MsgL
     try entities.hp.insert(id, @intCast(usize, config.golem_health));
     try entities.movement.insert(id, Reach{ .single = config.gol_move_distance });
     try entities.attack.insert(id, Reach{ .diag = config.gol_attack_distance });
+    try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
+    try entities.stance.insert(id, .standing);
 
-    try log.log(.spawn, .{ id, .gol });
-    try log.log(.stance, .{ id, entities.stance.get(id) });
     try log.log(.facing, .{ id, entities.facing.get(id) });
-    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
+    try log.log(.stance, .{ id, entities.stance.get(id) });
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, pos });
+    try log.log(.spawn, .{ id, .gol });
 
     return id;
 }

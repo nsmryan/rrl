@@ -30,6 +30,7 @@ pub const Config = struct {
     smoke_bomb_radius: usize,
     fog_of_war: bool,
     player_health: i32,
+    golem_health: i32,
     player_health_max: i32,
     player_stamina: u32,
     player_stamina_max: u32,
@@ -65,7 +66,7 @@ pub const Config = struct {
     overlay_directions: bool,
     overlay_player_fov: bool,
     overlay_floodfill: bool,
-    fov_radius_monster: i32,
+    fov_radius_golem: i32,
     fov_radius_player: i32,
     sound_radius_sneak: usize,
     sound_radius_walk: usize,
@@ -131,6 +132,9 @@ pub const Config = struct {
 
     map_window_edge: i32,
     map_window_dist: i32,
+
+    gol_move_distance: usize,
+    gol_attack_distance: usize,
 
     color_dark_brown: Color,
     color_medium_brown: Color,

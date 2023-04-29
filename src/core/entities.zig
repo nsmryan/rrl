@@ -27,6 +27,8 @@ const Inventory = items.Inventory;
 const ai = @import("ai.zig");
 const Behavior = ai.Behavior;
 
+const Reach = @import("movement.zig").Reach;
+
 pub const SkillClass = enum {
     body,
     grass,
@@ -118,6 +120,8 @@ pub const Entities = struct {
     inventory: Comp(Inventory),
     count_down: Comp(usize),
     status: Comp(StatusEffect),
+    movement: Comp(Reach),
+    attack: Comp(Reach),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

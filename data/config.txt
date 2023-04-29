@@ -73,6 +73,8 @@ sound_ease_out: linearInterpolation
 player_health: 3
 # max player health
 player_health_max: 6
+# initial golem health
+golem_health: 3
 
 # initial player stamina
 player_stamina: 3
@@ -126,7 +128,7 @@ overlay_directions: false
 overlay_player_fov: false
 overlay_floodfill: false
 
-fov_radius_monster: 4
+fov_radius_golem: 4
 fov_radius_player: 4
 
 # sound dampening per full-tile wall
@@ -249,6 +251,10 @@ map_window_edge: 2
 # Distance from the player to the edge of the map window.
 # For example, a value of 4 results in a 9x9 box, 4 cells to each size of the player.
 map_window_dist: 4
+
+# Golem configuration
+gol_attack_distance: 5
+gol_move_distance: 1
 
 # Color Palette
 color_dark_brown: 30 25 15 255

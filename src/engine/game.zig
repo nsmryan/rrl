@@ -18,6 +18,7 @@ const MoveMode = core.movement.MoveMode;
 const Config = core.config.Config;
 const movement = core.movement;
 const Stance = core.entities.Stance;
+const GolemName = core.entities.GolemName;
 const Entities = core.entities.Entities;
 const items = core.items;
 
@@ -160,7 +161,26 @@ pub const Game = struct {
             try game.log.log(.move, .{ id, .blink, .walk, Pos.init(@intCast(i32, index), 0) });
             index += 1;
         }
-        _ = try spawn.spawnGol(&game.level.entities, &game.config, Pos.init(1, 2), &game.log, game.allocator);
+
+        const golems = [_]GolemName{ .gol, .rook, .pawn };
+        var y: i32 = 3;
+        for (golems) |typ| {
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .right });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(2, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .downRight });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(3, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .down });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(4, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .downLeft });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(5, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .left });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(6, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .upLeft });
+            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(7, y), typ, &game.log, game.allocator);
+            try game.log.log(.facing, .{ id, .up });
+            y += 1;
+        }
 
         try game.log.log(.startLevel, .{});
     }

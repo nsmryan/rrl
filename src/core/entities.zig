@@ -261,7 +261,7 @@ pub const EntityState = enum {
 
 // Entity names combine items and remaining entities.
 pub const Name = blk: {
-    const numFields = @typeInfo(Item).Enum.fields.len + @typeInfo(ExtraNames).Enum.fields.len + @typeInfo(Golems).Enum.fields.len;
+    const numFields = @typeInfo(Item).Enum.fields.len + @typeInfo(ExtraNames).Enum.fields.len + @typeInfo(GolemName).Enum.fields.len;
     comptime var fields: [numFields]std.builtin.Type.EnumField = undefined;
 
     comptime var index = 0;
@@ -275,7 +275,7 @@ pub const Name = blk: {
         index += 1;
     }
 
-    for (std.meta.fields(Golems)) |field| {
+    for (std.meta.fields(GolemName)) |field| {
         fields[index] = std.builtin.Type.EnumField{ .name = field.name, .value = index };
         index += 1;
     }
@@ -291,7 +291,7 @@ pub const Name = blk: {
     break :blk @Type(std.builtin.Type{ .Enum = enumInfo });
 };
 
-pub const Golems = enum {
+pub const GolemName = enum {
     gol,
     pawn,
     rook,

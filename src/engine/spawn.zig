@@ -21,6 +21,7 @@ const MoveType = core.movement.MoveType;
 const Entities = core.entities.Entities;
 const Type = core.entities.Type;
 const Name = core.entities.Name;
+const GolemName = core.entities.GolemName;
 const Config = core.config.Config;
 const View = core.fov.View;
 const Inventory = core.items.Inventory;
@@ -89,8 +90,9 @@ pub fn spawnSmoke(entities: *Entities, config: *const Config, pos: Pos, amount: 
     return id;
 }
 
-pub fn spawnGol(entities: *Entities, config: *const Config, pos: Pos, log: *MsgLog, allocator: Allocator) !Id {
-    const id = try entities.createEntity(pos, .gol, .enemy);
+pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: GolemName, log: *MsgLog, allocator: Allocator) !Id {
+    const name = std.meta.stringToEnum(Name, @tagName(golem)).?;
+    const id = try entities.createEntity(pos, name, .enemy);
 
     entities.blocking.getPtr(id).* = true;
     try entities.fov_radius.insert(id, config.fov_radius_golem);

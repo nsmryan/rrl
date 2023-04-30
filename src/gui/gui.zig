@@ -406,7 +406,50 @@ pub const Gui = struct {
                     anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
                 },
 
-                .gol => anim = gui.simpleAnimation("gol_standing_right", id),
+                .pawn => {
+                    const facing = gui.game.level.entities.facing.get(id);
+                    switch (facing) {
+                        .left => anim = gui.simpleAnimation("pawn_standing_right", id),
+                        .right => anim = gui.simpleAnimation("pawn_standing_right", id),
+                        .up => anim = gui.simpleAnimation("pawn_standing_up", id),
+                        .down => anim = gui.simpleAnimation("pawn_standing_down", id),
+                        .downLeft => anim = gui.simpleAnimation("pawn_standing_downright", id),
+                        .downRight => anim = gui.simpleAnimation("pawn_standing_downright", id),
+                        .upLeft => anim = gui.simpleAnimation("pawn_standing_upright", id),
+                        .upRight => anim = gui.simpleAnimation("pawn_standing_upright", id),
+                    }
+                    anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
+                },
+
+                .rook => {
+                    const facing = gui.game.level.entities.facing.get(id);
+                    switch (facing) {
+                        .left => anim = gui.simpleAnimation("rook_standing_right", id),
+                        .right => anim = gui.simpleAnimation("rook_standing_right", id),
+                        .up => anim = gui.simpleAnimation("rook_standing_up", id),
+                        .down => anim = gui.simpleAnimation("rook_standing_down", id),
+                        .downLeft => anim = gui.simpleAnimation("rook_standing_downright", id),
+                        .downRight => anim = gui.simpleAnimation("rook_standing_downright", id),
+                        .upLeft => anim = gui.simpleAnimation("rook_standing_upright", id),
+                        .upRight => anim = gui.simpleAnimation("rook_standing_upright", id),
+                    }
+                    anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
+                },
+
+                .gol => {
+                    const facing = gui.game.level.entities.facing.get(id);
+                    switch (facing) {
+                        .left => anim = gui.simpleAnimation("gol_standing_right", id),
+                        .right => anim = gui.simpleAnimation("gol_standing_right", id),
+                        .up => anim = gui.simpleAnimation("gol_standing_up", id),
+                        .down => anim = gui.simpleAnimation("gol_standing_down", id),
+                        .downLeft => anim = gui.simpleAnimation("gol_standing_downright", id),
+                        .downRight => anim = gui.simpleAnimation("gol_standing_downright", id),
+                        .upLeft => anim = gui.simpleAnimation("gol_standing_upright", id),
+                        .upRight => anim = gui.simpleAnimation("gol_standing_upright", id),
+                    }
+                    anim.sprite_anim.sprite.flip_horiz = needsFlipHoriz(facing);
+                },
 
                 .smoke => anim = gui.simpleAnimation("smoke", id),
 

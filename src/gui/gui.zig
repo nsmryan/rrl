@@ -150,6 +150,11 @@ pub const Gui = struct {
         while (sdl2.SDL_PollEvent(&event) != 0) {
             if (keyboard.translateEvent(event)) |input_event| {
                 try gui.inputEvent(input_event, ticks);
+
+                // Process all generated messages for display changes.
+                for (gui.game.log.all.items) |msg| {
+                    try gui.resolveMessage(msg);
+                }
             }
         }
         prof.end();

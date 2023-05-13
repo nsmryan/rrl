@@ -34,6 +34,15 @@ pub fn Array(comptime Elem: type, comptime n: usize) type {
                 buffer.used += 1;
             }
         }
+
+        pub fn contains(buffer: *const @This(), elem: Elem) bool {
+            for (buffer.mem) |cur| {
+                if (std.meta.eql(cur, elem)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     };
 }
 

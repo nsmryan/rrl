@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 
 const board = @import("board");
@@ -78,12 +79,8 @@ pub const Reach = union(enum) {
     diag: usize,
     horiz: usize,
 
-    pub fn new() Reach {
-        return Reach{ .single = 1 };
-    }
-
     pub fn single(dist: usize) Reach {
-        return Reach.single(dist);
+        return Reach{ .single = dist };
     }
 
     pub fn diag(dist: usize) Reach {
@@ -198,10 +195,10 @@ pub const Reach = union(enum) {
     }
 
     pub fn reachables(self: Reach, start: Pos) !Array(Pos, 8) {
-        const offs = self.offsets();
+        const offs = try self.offsets();
 
         var reachable: Array(Pos, 8) = Array(Pos, 8).init();
-        for (offs.mem) |offset| {
+        for (offs.constSlice()) |offset| {
             try reachable.push(start.add(offset));
         }
 
@@ -209,7 +206,7 @@ pub const Reach = union(enum) {
     }
 
     pub fn offsets(self: Reach) !Array(Pos, 8) {
-        const end_points: Array(Pos, 8) = Array(Pos, 8).init();
+        var end_points: Array(Pos, 8) = Array(Pos, 8).init();
 
         switch (self) {
             .single => |reach_dist| {
@@ -227,7 +224,7 @@ pub const Reach = union(enum) {
             .horiz => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
                 var index: usize = 1;
-                while (index <= dist) {
+                while (index <= dist) : (index += 1) {
                     try end_points.push(Pos.init(dist, 0));
                     try end_points.push(Pos.init(0, dist));
                     try end_points.push(Pos.init(-1 * dist, 0));
@@ -238,7 +235,7 @@ pub const Reach = union(enum) {
             .diag => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
                 var index: usize = 1;
-                while (index <= dist) {
+                while (index <= dist) : (index += 1) {
                     try end_points.push(Pos.init(dist, dist));
                     try end_points.push(Pos.init(-1 * dist, dist));
                     try end_points.push(Pos.init(dist, -1 * dist));
@@ -247,77 +244,48 @@ pub const Reach = union(enum) {
             },
         }
 
-        var offs = Array(Pos, 8).init();
-        for (end_points.mem) |end| {
-            var line = Line.init(Pos.init(0, 0), end, true);
-            while (line.next()) |pos| {
-                if (!offs.contains(pos)) {
-                    try offs.push(pos);
-                }
-            }
-        }
-
-        return offsets;
+        return end_points;
     }
 };
 
 test "test reach offsets horiz" {
     const horiz = Reach.horiz(1);
-    const offsets = horiz.offsets();
+    const offsets = try horiz.offsets();
 
     const expected_pos = [_]Pos{ Pos.init(1, 0), Pos.init(-1, 0), Pos.init(0, 1), Pos.init(0, -1) };
-    for (offsets.mem) |pos| {
-        var found = false;
-        for (expected_pos.mem) |other| {
-            if (pos.eql(other)) {
-                found = true;
-                break;
-            }
-        }
-        std.debug.assert(found);
+    for (expected_pos) |other| {
+        std.debug.assert(offsets.contains(other));
     }
+    std.debug.assert(expected_pos.len == offsets.used);
 }
 
 test "test reach offsets diag" {
-    const horiz = Reach.diag(1);
-    const offsets = horiz.offsets();
+    const diag = Reach.diag(1);
+    const offsets = try diag.offsets();
 
-    const expected_pos = [_]Pos{ Pos.init(-1, -1), Pos.init(-1, -1), Pos.init(-1, -1), Pos.init(-1, -1) };
-    for (offsets.mem) |pos| {
-        var found = false;
-        for (expected_pos.mem) |other| {
-            if (pos.eql(other)) {
-                found = true;
-                break;
-            }
-        }
-        std.debug.assert(found);
+    const expected_pos = [_]Pos{ Pos.init(-1, -1), Pos.init(1, -1), Pos.init(-1, 1), Pos.init(1, 1) };
+    for (expected_pos) |other| {
+        std.debug.assert(offsets.contains(other));
     }
+    std.debug.assert(expected_pos.len == offsets.used);
 }
 
 test "test reach offsets single" {
-    const horiz = Reach.single(1);
-    const offsets = horiz.offsets();
+    const single = Reach.single(1);
+    const offsets = try single.offsets();
 
     const expected_pos = [_]Pos{ Pos.init(1, 0), Pos.init(0, 1), Pos.init(-1, 0), Pos.init(0, -1), Pos.init(1, 1), Pos.init(-1, 1), Pos.init(1, -1), Pos.init(-1, -1) };
-
-    for (offsets.mem) |pos| {
-        var found = false;
-        for (expected_pos.mem) |other| {
-            if (pos.eql(other)) {
-                found = true;
-                break;
-            }
-        }
-        std.debug.assert(found);
+    for (expected_pos) |other| {
+        std.debug.assert(offsets.contains(other));
     }
+    std.debug.assert(expected_pos.len == offsets.used);
 }
 
 test "test reach reachables" {
     const single = Reach.single(1);
-    const offsets = single.offsets();
-    std.debug.assert(8, offsets.mem.len);
+    const offsets = try single.offsets();
+    std.debug.assert(8 == offsets.used);
 
-    const positions = single.reachables(Pos.init(5, 5));
-    std.debug.assert(8, positions.mem.len);
+    const positions = try single.reachables(Pos.init(5, 5));
+    std.debug.assert(8 == positions.used);
 }

@@ -78,6 +78,16 @@ pub const Game = struct {
         game.log.deinit();
     }
 
+    pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
+        try game.inputEvent(input_event, ticks);
+        try game.resolveMessages();
+
+        // NOTE AI implementation:
+        // if the player took a turn, look for active entities that are not frozen and have a behavior.
+        // previous code loops until took turn or no messages. maybe try to pass if nothing to do.
+        // previous code cleared ai messages after processing the ai
+    }
+
     pub fn inputEvent(game: *Game, input_event: InputEvent, ticks: u64) !void {
         game.log.clear();
         const input_action = try game.input.handleEvent(input_event, &game.settings, ticks);
@@ -162,25 +172,8 @@ pub const Game = struct {
             index += 1;
         }
 
-        const golems = [_]GolemName{ .gol, .rook, .pawn };
-        var y: i32 = 3;
-        for (golems) |typ| {
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .right });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(2, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .downRight });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(3, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .down });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(4, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .downLeft });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(5, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .left });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(6, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .upLeft });
-            id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(7, y), typ, &game.log, game.allocator);
-            try game.log.log(.facing, .{ id, .up });
-            y += 1;
-        }
+        id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, 3), .gol, &game.log, game.allocator);
+        try game.log.log(.facing, .{ id, .right });
 
         try game.log.log(.startLevel, .{});
     }

@@ -165,8 +165,7 @@ pub const Gui = struct {
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
-        try gui.game.inputEvent(input_event, ticks);
-        try gui.resolveMessages();
+        try gui.game.step(input_event, ticks);
     }
 
     pub fn resolveMessages(gui: *Gui) !void {

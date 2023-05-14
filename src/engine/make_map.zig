@@ -20,7 +20,7 @@ pub fn ensureGrass(game: *Game, pos: Pos) !Id {
     game.level.map.getPtr(pos).center.material = .grass;
 
     var id: Id = undefined;
-    if (try game.level.entityNameAtPos(pos, .grass)) |grass_id| {
+    if (game.level.entityNameAtPos(pos, .grass)) |grass_id| {
         id = grass_id;
     } else {
         id = try spawn.spawnGrass(&game.level.entities, &game.log);

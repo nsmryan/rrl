@@ -102,6 +102,7 @@ pub const Level = struct {
         prof.scope("fov");
         defer prof.end();
 
+        // NOTE this is probably not necessary- we only calculate FoV for entities with a 'view' anyway.
         // Only calculate FoV for the player and enemies.
         if (!(level.entities.typ.get(id) == .player or level.entities.typ.get(id) == .enemy)) {
             return;
@@ -194,7 +195,20 @@ pub const Level = struct {
         return hit_pos;
     }
 
-    pub fn entityNameAtPos(level: *const Level, pos: Pos, name: entities.Name) !?Id {
+    pub fn firstEntityTypeAtPos(level: *const Level, pos: Pos, typ: entities.Type) ?Id {
+        for (level.entities.ids.items) |id| {
+            if (level.entities.status.get(id).active) {
+                if (level.entities.pos.getOrNull(id)) |entity_pos| {
+                    if (entity_pos.eql(pos) and typ == level.entities.typ.get(id)) {
+                        return id;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    pub fn entityNameAtPos(level: *const Level, pos: Pos, name: entities.Name) ?Id {
         for (level.entities.ids.items) |id| {
             if (level.entities.status.get(id).active) {
                 if (level.entities.pos.getOrNull(id)) |entity_pos| {
@@ -240,6 +254,7 @@ pub const Level = struct {
 
         const start_pos = level.entities.pos.get(id);
         const fov_radius = level.entities.fov_radius.get(id);
+        // If in Fov, determine if inside or on edge of view using FoV radius.
         if (in_fov) {
             return FovResult.fromPositions(start_pos, other_pos, fov_radius);
         } else {

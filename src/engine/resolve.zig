@@ -33,6 +33,8 @@ const MsgType = messaging.MsgType;
 const g = @import("game.zig");
 const Game = g.Game;
 
+const ai = @import("ai.zig");
+
 const spawn = @import("spawn.zig");
 const make_map = @import("make_map.zig");
 
@@ -64,6 +66,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .hammerSwing => |args| try resolveHammerSwing(game, args.id, args.pos),
         .hammerHitWall => |args| try resolveHammerHitWall(game, args.id, args.start_pos, args.end_pos, args.dir),
         .crushed => |args| try resolveCrushed(game, args.id, args.pos),
+        .aiStep => |args| try resolveAiStep(game, args),
         else => {},
     }
 }
@@ -754,4 +757,8 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
     }
 
     try game.log.now(.sound, .{ id, pos, game.config.sound_radius_crushed });
+}
+
+fn resolveAiStep(game: *Game, id: Id) !void {
+    try ai.stepAi(game, id);
 }

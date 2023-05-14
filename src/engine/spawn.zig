@@ -103,6 +103,7 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.attack.insert(id, Reach{ .diag = config.gol_attack_distance });
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
     try entities.stance.insert(id, .standing);
+    try entities.percept.insert(id, .none);
 
     try log.log(.facing, .{ id, entities.facing.get(id) });
     try log.log(.stance, .{ id, entities.stance.get(id) });

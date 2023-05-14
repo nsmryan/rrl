@@ -6,7 +6,6 @@ pub const talents = @import("talents.zig");
 pub const movement = @import("movement.zig");
 pub const config = @import("config.zig");
 pub const fov = @import("fov.zig");
-pub const ai = @import("ai.zig");
 
 comptime {
     if (@import("builtin").is_test) {

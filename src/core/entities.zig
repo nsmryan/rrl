@@ -24,9 +24,6 @@ const items = @import("items.zig");
 const Item = items.Item;
 const Inventory = items.Inventory;
 
-const ai = @import("ai.zig");
-const Behavior = ai.Behavior;
-
 const Reach = @import("movement.zig").Reach;
 
 pub const SkillClass = enum {
@@ -34,6 +31,18 @@ pub const SkillClass = enum {
     grass,
     monolith,
     wind,
+};
+
+pub const Behavior = union(enum) {
+    idle,
+    alert: Pos,
+    investigating: Pos,
+    attacking: Id,
+    armed: usize, // countdown
+
+    pub fn isAware(behavior: Behavior) bool {
+        return behavior == .attacking;
+    }
 };
 
 pub const Stance = enum {
@@ -54,6 +63,13 @@ pub const Stance = enum {
             .standing, .running => .high,
         };
     }
+};
+
+pub const Percept = union(enum) {
+    hit: Pos,
+    sound: Pos,
+    attacked: Id,
+    none,
 };
 
 pub const Turn = struct {
@@ -122,6 +138,7 @@ pub const Entities = struct {
     status: Comp(StatusEffect),
     movement: Comp(Reach),
     attack: Comp(Reach),
+    percept: Comp(Percept),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

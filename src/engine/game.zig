@@ -83,9 +83,25 @@ pub const Game = struct {
         try game.resolveMessages();
 
         // NOTE AI implementation:
-        // if the player took a turn, look for active entities that are not frozen and have a behavior.
-        // previous code loops until took turn or no messages. maybe try to pass if nothing to do.
-        // previous code cleared ai messages after processing the ai
+        // start implementing idle, and add sophistication as needed to implement other states.
+        for (game.level.entities.ids.items) |id| {
+            // Only step entities that:
+            //   have a behavior
+            //   are currently active
+            //   are in the play state
+            //   are not currently frozen
+            if (game.level.entities.behavior.getOrNull(id) != null and
+                game.level.entities.status.get(id).active and
+                game.level.entities.state.get(id) == .play and
+                game.level.entities.status.get(id).frozen == 0)
+            {
+                try game.log.log(.aiStep, id);
+                try game.resolveMessages();
+
+                // Clear perception - the golem has already acted on this perception at this point.
+                game.level.entities.percept.getPtr(id).* = .none;
+            }
+        }
     }
 
     pub fn inputEvent(game: *Game, input_event: InputEvent, ticks: u64) !void {
@@ -117,7 +133,7 @@ pub const Game = struct {
 
     pub fn fullyHandleInputAction(game: *Game, input_action: InputAction) !void {
         try game.handleInputAction(input_action);
-        while (try game.resolveMessage() != null) {}
+        try game.resolveMessages();
     }
 
     pub fn resolveMessage(game: *Game) !?Msg {

@@ -7,6 +7,7 @@ pub const game = @import("game.zig");
 pub const spawn = @import("spawn.zig");
 pub const use = @import("use.zig");
 pub const make_map = @import("make_map.zig");
+pub const ai = @import("ai.zig");
 
 comptime {
     if (@import("builtin").is_test) {

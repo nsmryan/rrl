@@ -17,6 +17,7 @@ const InventorySlot = core.items.InventorySlot;
 const MoveMode = core.movement.MoveMode;
 const MoveType = core.movement.MoveType;
 const Stance = core.entities.Stance;
+const Behavior = core.entities.Behavior;
 const Name = core.entities.Name;
 const Entities = core.entities.Entities;
 const items = core.items;
@@ -64,6 +65,8 @@ pub const Msg = union(enum) {
     hammerHitEntity: struct { id: Id, hit_entity: Id },
     crushed: struct { id: Id, pos: Pos },
     killed: struct { id: Id, crushed_id: Id, hp: usize },
+    aiStep: Id,
+    behaviorChange: struct { id: Id, behavior: Behavior },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

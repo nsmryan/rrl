@@ -500,6 +500,7 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
 
 fn resolveFacing(game: *Game, id: Id, facing: Direction) !void {
     game.level.entities.facing.set(id, facing);
+    try game.level.updateFov(id);
 }
 
 fn resolveYell(game: *Game, id: Id) !void {

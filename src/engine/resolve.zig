@@ -23,6 +23,7 @@ const ItemClass = core.items.ItemClass;
 const MoveMode = core.movement.MoveMode;
 const Level = core.level.Level;
 const Stance = core.entities.Stance;
+const Behavior = core.entities.Behavior;
 const Type = core.entities.Type;
 const MoveType = core.movement.MoveType;
 
@@ -67,6 +68,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .hammerHitWall => |args| try resolveHammerHitWall(game, args.id, args.start_pos, args.end_pos, args.dir),
         .crushed => |args| try resolveCrushed(game, args.id, args.pos),
         .aiStep => |args| try resolveAiStep(game, args),
+        .behaviorChange => |args| resolveBehaviorChange(game, args.id, args.behavior),
         else => {},
     }
 }
@@ -762,4 +764,8 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
 
 fn resolveAiStep(game: *Game, id: Id) !void {
     try ai.stepAi(game, id);
+}
+
+fn resolveBehaviorChange(game: *Game, id: Id, behavior: Behavior) void {
+    game.level.entities.behavior.getPtr(id).* = behavior;
 }

@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
@@ -84,14 +85,13 @@ pub const Game = struct {
 
         // NOTE AI implementation:
         // start implementing idle, and add sophistication as needed to implement other states.
-        for (game.level.entities.ids.items) |id| {
+        for (game.level.entities.behavior.ids.items) |id| {
             // Only step entities that:
             //   have a behavior
             //   are currently active
             //   are in the play state
             //   are not currently frozen
-            if (game.level.entities.behavior.getOrNull(id) != null and
-                game.level.entities.status.get(id).active and
+            if (game.level.entities.status.get(id).active and
                 game.level.entities.state.get(id) == .play and
                 game.level.entities.status.get(id).frozen == 0)
             {

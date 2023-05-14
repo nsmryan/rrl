@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const core = @import("core");
 const Behavior = core.entities.Behavior;
 const Entities = core.entities.Entities;
@@ -17,7 +19,7 @@ pub fn stepAi(game: *Game, id: Id) !void {
         },
 
         .alert => |pos| {
-            _ = pos;
+            try stepAiAlert(game, id, pos);
         },
 
         .investigating => |pos| {
@@ -39,9 +41,9 @@ fn stepAiIdle(game: *Game, id: Id) !void {
     const player_pos = game.level.entities.pos.get(player_id);
     const entity_pos = game.level.entities.pos.get(id);
 
-    // NOTE(generality) this could use the view.pov.visible.iterator
-    // and look for entities in FoV if golems need to see other entities
-    // besides the player.
+    // NOTE(generality) this could use the view.pov.visible.iterator and look
+    // for entities in FoV if golems need to see other entities besides the
+    // player.
     const fov_result = try game.level.isInFov(id, player_pos, .high);
 
     if (fov_result == .inside) {
@@ -101,5 +103,23 @@ fn stepAiIdle(game: *Game, id: Id) !void {
                 game.level.entities.turn.getPtr(id).pass = true;
             },
         }
+    }
+}
+
+pub fn stepAiAlert(game: *Game, id: Id, pos: Pos) !void {
+    const player_id = Entities.player_id;
+    const player_pos = game.level.entities.pos.get(player_id);
+    const can_see_target = try game.level.posInFov(id, player_pos) == .inside;
+
+    if (can_see_target) {
+        // Can see target- attack
+        try game.log.log(.behaviorChange, .{ id, Behavior{ .attacking = player_id } });
+        try game.log.log(.aiStep, id);
+    } else {
+        // NOTE(design) in the Rust version this used player_pos. This may have been to allow golems
+        // to investigate the current player position even if they leave FoV?
+        // Can't see target- investigate their last position.
+        try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = pos } });
+        try game.log.log(.aiStep, id);
     }
 }

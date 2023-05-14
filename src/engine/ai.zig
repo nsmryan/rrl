@@ -37,6 +37,8 @@ pub fn stepAi(game: *Game, id: Id) !void {
 fn stepAiIdle(game: *Game, id: Id) !void {
     const player_id = Entities.player_id;
     const player_pos = game.level.entities.pos.get(player_id);
+    const entity_pos = game.level.entities.pos.get(id);
+
     // NOTE(generality) this could use the view.pov.visible.iterator
     // and look for entities in FoV if golems need to see other entities
     // besides the player.
@@ -56,7 +58,6 @@ fn stepAiIdle(game: *Game, id: Id) !void {
         // Check entity perception for an event to react to.
         switch (game.level.entities.percept.get(id)) {
             .attacked => |attacker_id| {
-                const entity_pos = game.level.entities.pos.get(id);
                 try game.log.log(.faceTowards, .{ id, entity_pos });
 
                 if (game.level.entities.attack.getOrNull(id) != null) {
@@ -83,9 +84,16 @@ fn stepAiIdle(game: *Game, id: Id) !void {
                         try game.log.log(.aiStep, id);
                     }
                 } else {
-                    // If we can't see the location of the sound, face towards it.
-                    try game.log.log(.faceTowards, .{ id, sound_pos });
-                    try game.log.log(.aiStep, id);
+                    if (game.level.entities.facing.get(id).isFacingPos(entity_pos, sound_pos)) {
+                        // We are facing a sound we can't see- start investigating.
+                        try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = sound_pos } });
+                        try game.log.log(.aiStep, id);
+                    } else {
+                        // If we can't see the location of the sound and we aren't even facing it, face towards it
+                        // and try again. If we still can't see it we will then enter the other brance of this 'if'.
+                        try game.log.log(.faceTowards, .{ id, sound_pos });
+                        try game.log.log(.aiStep, id);
+                    }
                 }
             },
 

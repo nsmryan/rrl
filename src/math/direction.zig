@@ -141,6 +141,10 @@ pub const Direction = enum {
             .upRight => return .up,
         }
     }
+
+    pub fn isFacingPos(self: Direction, start: Pos, end: Pos) bool {
+        return self == Direction.fromPositions(start, end);
+    }
 };
 
 test "test direction turn amount" {

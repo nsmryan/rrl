@@ -10,12 +10,13 @@ const Pos = math.pos.Pos;
 const Line = math.line.Line;
 const Direction = math.direction.Direction;
 
-const blocking = @import("blocking.zig");
+const board = @import("board");
+const blocking = board.blocking;
 const Blocked = blocking.Blocked;
 const BlockedType = blocking.BlockedType;
 
-const Map = @import("map.zig").Map;
-const tile = @import("tile.zig");
+const Map = board.map.Map;
+const tile = board.tile;
 
 // multiplier used to scale costs up in astar, allowing small
 // adjustments of costs even though they are integers.

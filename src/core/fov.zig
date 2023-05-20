@@ -7,12 +7,15 @@ const math = @import("math");
 const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Dims = math.utils.Dims;
+const Line = math.line.Line;
 
 const board = @import("board");
 const FovResult = board.blocking.FovResult;
 const Blocked = board.blocking.Blocked;
+const blocking = board.blocking;
 
 const pathing = board.pathing;
+const BlockedType = board.blocking.BlockedType;
 
 const Map = board.map.Map;
 const Height = board.tile.Tile.Height;
@@ -90,11 +93,39 @@ pub const View = struct {
 //    }
 //}
 
+pub fn pathBlockedFov(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
+    return pathBlocked(map, start_pos, end_pos, BlockedType.fov);
+}
+
+pub fn pathBlockedFovLow(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
+    return pathBlocked(map, start_pos, end_pos, BlockedType.fovLow);
+}
+
+pub fn pathBlockedMove(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
+    return pathBlocked(map, start_pos, end_pos, BlockedType.move);
+}
+
+pub fn pathBlocked(map: Map, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) ?Blocked {
+    var line = Line.init(start_pos, end_pos, false);
+
+    var last_pos = start_pos;
+    while (line.next()) |target_pos| {
+        const dir = Direction.fromPositions(last_pos, target_pos);
+        const blocked = blocking.moveBlocked(&map, last_pos, dir.?, blocked_type);
+        if (blocked != null) {
+            return blocked;
+        }
+        last_pos = target_pos;
+    }
+
+    return null;
+}
+
 pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, view_height: ViewHeight) FovError!bool {
     // Make sure there is a clear path, but include walls (blocking position is the end_pos tile).
     var path_fov: ?Blocked = switch (view_height) {
-        .low => pathing.pathBlockedFovLow(map, start_pos, end_pos),
-        .high => pathing.pathBlockedFov(map, start_pos, end_pos),
+        .low => pathBlockedFovLow(map, start_pos, end_pos),
+        .high => pathBlockedFov(map, start_pos, end_pos),
     };
 
     if (path_fov) |blocked| {

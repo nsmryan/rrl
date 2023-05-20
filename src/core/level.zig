@@ -81,6 +81,13 @@ pub const Level = struct {
         return false;
     }
 
+    pub fn posBlockedMove(level: *const Level, pos: Pos) bool {
+        const in_map = level.map.isWithinBounds(pos);
+        const blocked_by_entity = level.blockingEntityAtPos(pos) != null;
+        const blocked_by_map = BlockedType.move.tileBlocks(level.map.get(pos)) == .empty;
+        return in_map or blocked_by_entity or blocked_by_map;
+    }
+
     pub fn itemAtPos(level: *const Level, pos: Pos) ?Id {
         for (level.entities.ids.items) |id| {
             if (level.entities.pos.getOrNull(id)) |entity_pos| {

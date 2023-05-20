@@ -14,5 +14,5 @@ rebuild:
 	find src/* -name "*.zig" | entr -c zig build
 
 retest:
-	find src/* -name "*.zig" | entr -c zig test
+	find src/* -name "*.zig" | entr -c zig build test
 

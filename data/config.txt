@@ -256,6 +256,9 @@ map_window_dist: 4
 gol_attack_distance: 5
 gol_move_distance: 1
 
+# Number of turns before armil explodes
+armil_turns_armed: 1
+
 # Color Palette
 color_dark_brown: 30 25 15 255
 color_medium_brown: 110 90 80 255

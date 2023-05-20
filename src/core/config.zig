@@ -136,6 +136,8 @@ pub const Config = struct {
     gol_move_distance: usize,
     gol_attack_distance: usize,
 
+    armil_turns_armed: usize,
+
     color_dark_brown: Color,
     color_medium_brown: Color,
     color_light_green: Color,

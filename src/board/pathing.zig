@@ -92,6 +92,7 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*cons
 // if a path exists.
 pub fn astarNextPos(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32) !?Pos {
     const next_positions = try astarPath(map, start, end, max_dist, cost_fn);
+    defer next_positions.deinit();
 
     if (next_positions.items.len > 0) {
         return next_positions.items[0];

@@ -23,7 +23,7 @@ pub fn stepAi(game: *Game, id: Id) !void {
         },
 
         .investigating => |pos| {
-            _ = pos;
+            try stepAiInvestigate(game, id, pos);
         },
 
         .attacking => |target_id| {
@@ -122,4 +122,115 @@ pub fn stepAiAlert(game: *Game, id: Id, pos: Pos) !void {
         try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = pos } });
         try game.log.log(.aiStep, id);
     }
+}
+
+fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
+    const player_id = Entities.player_id;
+
+    const entity_pos = game.level.entities.pos.get(id);
+
+    const player_pos = game.level.entities.pos.get(player_id);
+    const player_in_fov = try game.level.isInFov(id, player_pos, .high) == .inside;
+
+    if (player_in_fov) {
+        try game.log.log(.faceTowards, .{ id, player_pos });
+
+        if (game.level.entities.attack.getOrNull(id) != null) {
+            try game.log.log(.behaviorChange, .{ id, Behavior{ .attacking = player_id } });
+        } else {
+            // NOTE(design) is this even used? what golem can see the player but not attack?
+            // if the golem cannot attack, just keep walking towards the target.
+            aiMoveTowardsTarget(game, player_pos, id);
+
+            game.level.entities.turn.getPtr(id).pass = true;
+            try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = player_pos } });
+        }
+    } else {
+        // Golem cannot see the player- investigate the given position 'target_pos'.
+
+        // Handle Armils separately. They can never see the player so we always get here.
+        if (game.level.entities.name.get(id) == .armil) {
+            // If next to the player, arm to explode.
+            if (player_pos.distance(entity_pos) == 1) {
+                game.level.entities.turn.getPtr(id).pass = true;
+                try game.log.log(.behaviorChange, .{ id, Behavior{ .armed = game.config.armil_turns_armed } });
+            } else {
+                // Otherwise move to the player.j
+                aiMoveTowardsTarget(game, player_pos, id);
+            }
+        } else {
+            // Other golems react to perceptions.
+            // If no perceptions this turn, just walk towards target.
+            // NOTE(design) if hit or attacked, do we take 1 or 2 turns to react?
+            switch (game.level.entities.percept.get(id)) {
+                .attacked => {
+                    // Just face towards the attacker. We can act on this on the next turn.
+                    try game.log.log(.faceTowards, .{ id, entity_pos });
+
+                    // NOTE Removed so we only face towards the attacker.
+                    //if game.level.entities.attack.get(&monster_id).is_some() {
+                    //    msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
+                    //} else {
+                    //    msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
+                    //}
+                },
+
+                .hit => |origin_pos| {
+                    try game.log.log(.faceTowards, .{ id, origin_pos });
+                    try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = origin_pos } });
+                },
+
+                .sound => |sound_pos| {
+                    const can_see = try game.level.posInFov(id, sound_pos) == .inside;
+
+                    const caused_by_golem = game.level.firstEntityTypeAtPos(sound_pos, .enemy) != null;
+                    const needs_investigation = !(can_see and caused_by_golem);
+
+                    // Only investigate if: we can't see the tile, or we can see it and there is not
+                    // already a golem there.
+                    // This prevents golems from following each other around when they should realize
+                    // that a sound is caued by another golem
+                    if (needs_investigation) {
+                        try game.log.log(.faceTowards, .{ id, sound_pos });
+                        try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = sound_pos } });
+                    }
+                },
+
+                .none => {
+                    // If the golem reached the target, they become idle.
+                    // If they are next to the target, and it is occupied, they also become idle,
+                    // but face towards the target in case they aren't already.
+                    // Otherwise they attempt to step towards the target position.
+                    const nearly_reached_target = target_pos.distance(entity_pos) == 1 and game.level.posBlockedMove(target_pos);
+                    const reached_target = target_pos.eql(entity_pos);
+                    if (reached_target or nearly_reached_target) {
+                        if (nearly_reached_target) {
+                            try game.log.log(.faceTowards, .{ id, target_pos });
+                        }
+
+                        // Golem reached their target position
+                        game.level.entities.turn.getPtr(id).pass = true;
+                        try game.log.log(.behaviorChange, .{ id, Behavior.idle });
+                    } else {
+                        aiMoveTowardsTarget(game, target_pos, id);
+                    }
+                },
+            }
+        }
+    }
+}
+
+fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) void {
+    _ = game;
+    _ = target_pos;
+    _ = id;
+    // NOTE we want to generate a tryMove in a particular direction.
+    // This comes from an astar pathing towards the target position.
+    // We just take the first position generated, get the direction
+    // towards it, and move.
+    // Previously this used level.path_between, blocked by traps, and using
+    // a custom cost function.
+    // This cost function just makes armed traps unreachable- we already set that
+    // traps block, but perhaps they shouldn't and we should handled only armed
+    // traps using the cost function.
 }

@@ -168,7 +168,7 @@ const pkgs = struct {
     const utils = std.build.Pkg{
         .name = "utils",
         .source = .{ .path = "src/utils/utils.zig" },
-        .dependencies = &[_]std.build.Pkg{},
+        .dependencies = &[_]std.build.Pkg{math},
     };
 
     const prof = std.build.Pkg{

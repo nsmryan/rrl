@@ -140,6 +140,7 @@ pub const Entities = struct {
     attack: Comp(Reach),
     percept: Comp(Percept),
     trap: Comp(Trap),
+    armed: Comp(bool),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

@@ -4,12 +4,14 @@ const core = @import("core");
 const Behavior = core.entities.Behavior;
 const Entities = core.entities.Entities;
 const Level = core.level.Level;
+const astarPath = core.pathing.astarPath;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
+const Direction = math.direction.Direction;
 
 const Game = @import("game.zig").Game;
 
@@ -141,7 +143,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
         } else {
             // NOTE(design) is this even used? what golem can see the player but not attack?
             // if the golem cannot attack, just keep walking towards the target.
-            aiMoveTowardsTarget(game, player_pos, id);
+            try aiMoveTowardsTarget(game, player_pos, id);
 
             game.level.entities.turn.getPtr(id).pass = true;
             try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = player_pos } });
@@ -157,7 +159,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
                 try game.log.log(.behaviorChange, .{ id, Behavior{ .armed = game.config.armil_turns_armed } });
             } else {
                 // Otherwise move to the player.j
-                aiMoveTowardsTarget(game, player_pos, id);
+                try aiMoveTowardsTarget(game, player_pos, id);
             }
         } else {
             // Other golems react to perceptions.
@@ -213,7 +215,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
                         game.level.entities.turn.getPtr(id).pass = true;
                         try game.log.log(.behaviorChange, .{ id, Behavior.idle });
                     } else {
-                        aiMoveTowardsTarget(game, target_pos, id);
+                        try aiMoveTowardsTarget(game, target_pos, id);
                     }
                 },
             }
@@ -230,22 +232,21 @@ fn aiMoveCostFunction(level: *const Level, current_pos: Pos, start_pos: Pos) ?i3
         if (level.entities.trap.has(item_id) and level.entities.armed.get(item_id)) {
             return null;
         }
-    } else {
-        return 0;
     }
+    return 0;
 }
 
-fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) void {
-    _ = game;
-    _ = target_pos;
-    _ = id;
-    // NOTE we want to generate a tryMove in a particular direction.
-    // This comes from an astar pathing towards the target position.
-    // We just take the first position generated, get the direction
-    // towards it, and move.
-    // Previously this used level.path_between, blocked by traps, and using
-    // a custom cost function.
-    // This cost function just makes armed traps unreachable- we already set that
-    // traps block, but perhaps they shouldn't and we should handled only armed
-    // traps using the cost function.
+fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
+    const entity_pos = game.level.entities.pos.get(id);
+    const reach = game.level.entities.movement.get(id);
+
+    // NOTE(perf) make sure to use frame allocator here.
+    const next_positions = try astarPath(&game.level, entity_pos, target_pos, reach, aiMoveCostFunction, game.allocator);
+    defer next_positions.deinit();
+
+    if (next_positions.items.len > 0) {
+        const move_pos = next_positions.items[0];
+        const dir = Direction.fromPositions(entity_pos, move_pos).?;
+        try game.log.log(.tryMove, .{ id, dir, 1 });
+    }
 }

@@ -18,43 +18,18 @@ const BlockedType = blocking.BlockedType;
 const Map = board.map.Map;
 const tile = board.tile;
 
+const Entities = @import("entities.zig").Entities;
+const Level = @import("level.zig").Level;
+
 // multiplier used to scale costs up in astar, allowing small
 // adjustments of costs even though they are integers.
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
-
-pub fn pathBlockedFov(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
-    return pathBlocked(map, start_pos, end_pos, BlockedType.fov);
-}
-
-pub fn pathBlockedFovLow(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
-    return pathBlocked(map, start_pos, end_pos, BlockedType.fovLow);
-}
-
-pub fn pathBlockedMove(map: Map, start_pos: Pos, end_pos: Pos) ?Blocked {
-    return pathBlocked(map, start_pos, end_pos, BlockedType.move);
-}
-
-pub fn pathBlocked(map: Map, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) ?Blocked {
-    var line = Line.init(start_pos, end_pos, false);
-
-    var last_pos = start_pos;
-    while (line.next()) |target_pos| {
-        const dir = Direction.fromPositions(last_pos, target_pos);
-        const blocked = blocking.moveBlocked(&map, last_pos, dir.?, blocked_type);
-        if (blocked != null) {
-            return blocked;
-        }
-        last_pos = target_pos;
-    }
-
-    return null;
-}
 
 pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
     return @intCast(usize, Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER);
 }
 
-pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*const fn (Pos, Pos, Map) i32, allocator: Allocator) !ArrayList(Pos) {
+pub fn astarPath(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*const fn (Pos, Pos, *const Level) i32, allocator: Allocator) !ArrayList(Pos) {
     const PathFinder = astar.Astar(pathFindDistance);
 
     var finder = PathFinder.init(start, allocator);
@@ -74,10 +49,10 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*cons
 
         const position = result.neighbors;
 
-        try astarNeighbors(map, start, position, max_dist, &neighbors);
+        try astarNeighbors(&level.map, start, position, max_dist, &neighbors);
         for (neighbors.items) |near_pos| {
             if (cost_fn) |cost| {
-                try pairs.append(astar.WeighedPos.init(near_pos, cost(near_pos, start, map) * ASTAR_COST_MULTIPLIER));
+                try pairs.append(astar.WeighedPos.init(near_pos, cost(near_pos, start, level) * ASTAR_COST_MULTIPLIER));
             } else {
                 try pairs.append(astar.WeighedPos.init(near_pos, @intCast(i32, pathFindDistance(near_pos, end))));
             }
@@ -91,8 +66,8 @@ pub fn astarPath(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*cons
 
 // Perform an AStar search from 'start' to 'end' and return the first move to take along this path,
 // if a path exists.
-pub fn astarNextPos(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, Map) i32) !?Pos {
-    const next_positions = try astarPath(map, start, end, max_dist, cost_fn);
+pub fn astarNextPos(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, *const Level) i32) !?Pos {
+    const next_positions = try astarPath(level, start, end, max_dist, cost_fn);
     defer next_positions.deinit();
 
     if (next_positions.items.len > 0) {
@@ -104,28 +79,30 @@ pub fn astarNextPos(map: Map, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn
 
 // Fill the given array list with the positions of tiles that can be reached with a single move
 // from the given tile. The provided positions do not block when moving from 'start' to their location.
-pub fn astarNeighbors(map: Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors: *ArrayList(Pos)) !void {
+pub fn astarNeighbors(map: *const Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors: *ArrayList(Pos)) !void {
     neighbors.clearRetainingCapacity();
 
     if (max_dist != null and Line.distance(start, pos, true) > max_dist.?) {
         return;
     }
 
-    try blocking.reachableNeighbors(&map, pos, BlockedType.move, neighbors);
+    try blocking.reachableNeighbors(map, pos, BlockedType.move, neighbors);
 }
 
 test "path finding" {
     var allocator = std.testing.allocator;
 
     var map = try Map.fromDims(3, 3, allocator);
-    defer map.deinit();
+    var ents = Entities.init(allocator);
+    var level = Level.init(map, ents);
+    defer level.deinit();
 
     const start = Pos.init(0, 0);
     const end = Pos.init(2, 2);
-    map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
-    map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
+    level.map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
+    level.map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
 
-    const path = try astarPath(map, start, end, null, null, allocator);
+    const path = try astarPath(&level, start, end, null, null, allocator);
     defer path.deinit();
 
     try std.testing.expectEqual(Pos.init(0, 0), path.items[0]);

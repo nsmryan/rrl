@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const print = std.debug.print;
 
 const utils = @import("utils");
 const astar = utils.astar;
@@ -20,16 +21,19 @@ const tile = board.tile;
 
 const Entities = @import("entities.zig").Entities;
 const Level = @import("level.zig").Level;
+const Reach = @import("movement.zig").Reach;
 
 // multiplier used to scale costs up in astar, allowing small
 // adjustments of costs even though they are integers.
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
+pub const CostFn = fn (Pos, Pos, *const Level) i32;
+
 pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
     return @intCast(usize, Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER);
 }
 
-pub fn astarPath(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?*const fn (Pos, Pos, *const Level) i32, allocator: Allocator) !ArrayList(Pos) {
+pub fn astarPath(level: *const Level, start: Pos, end: Pos, reach: Reach, cost_fn: ?*const CostFn, allocator: Allocator) !ArrayList(Pos) {
     const PathFinder = astar.Astar(pathFindDistance);
 
     var finder = PathFinder.init(start, allocator);
@@ -49,13 +53,16 @@ pub fn astarPath(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost
 
         const position = result.neighbors;
 
-        try astarNeighbors(&level.map, start, position, max_dist, &neighbors);
+        try astarNeighbors(level, position, reach, &neighbors);
         for (neighbors.items) |near_pos| {
-            if (cost_fn) |cost| {
-                try pairs.append(astar.WeighedPos.init(near_pos, cost(near_pos, start, level) * ASTAR_COST_MULTIPLIER));
-            } else {
-                try pairs.append(astar.WeighedPos.init(near_pos, @intCast(i32, pathFindDistance(near_pos, end))));
+            var cost = @intCast(i32, pathFindDistance(near_pos, end));
+
+            // NOTE(design) the cost function is used here as an addon to the distance to the target.
+            // This seems more often useful then allowing the caller to decide the full cost.
+            if (cost_fn) |cost_function| {
+                cost += cost_function(near_pos, start, level) * ASTAR_COST_MULTIPLIER;
             }
+            try pairs.append(astar.WeighedPos.init(near_pos, cost));
         }
 
         result = try finder.step(pairs.items);
@@ -66,8 +73,8 @@ pub fn astarPath(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost
 
 // Perform an AStar search from 'start' to 'end' and return the first move to take along this path,
 // if a path exists.
-pub fn astarNextPos(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, cost_fn: ?fn (Pos, Pos, *const Level) i32) !?Pos {
-    const next_positions = try astarPath(level, start, end, max_dist, cost_fn);
+pub fn astarNextPos(level: *const Level, start: Pos, end: Pos, cost_fn: ?fn (Pos, Pos, *const Level) i32) !?Pos {
+    const next_positions = try astarPath(level, start, end, cost_fn);
     defer next_positions.deinit();
 
     if (next_positions.items.len > 0) {
@@ -79,14 +86,36 @@ pub fn astarNextPos(level: *const Level, start: Pos, end: Pos, max_dist: ?i32, c
 
 // Fill the given array list with the positions of tiles that can be reached with a single move
 // from the given tile. The provided positions do not block when moving from 'start' to their location.
-pub fn astarNeighbors(map: *const Map, start: Pos, pos: Pos, max_dist: ?i32, neighbors: *ArrayList(Pos)) !void {
+pub fn astarNeighbors(level: *const Level, pos: Pos, reach: Reach, neighbors: *ArrayList(Pos)) !void {
     neighbors.clearRetainingCapacity();
 
-    if (max_dist != null and Line.distance(start, pos, true) > max_dist.?) {
-        return;
-    }
+    const reachablePositions = try reach.reachables(pos);
+    reachables: for (reachablePositions.constSlice()) |target_pos| {
+        // If end position not on the map, move to next position.
+        if (!level.map.isWithinBounds(target_pos)) {
+            continue;
+        }
 
-    try blocking.reachableNeighbors(map, pos, BlockedType.move, neighbors);
+        // Otherwise, draw a line from the start position to the reachable target position and
+        // check whether there are obstacles when moving on each file.
+        var line = Line.init(pos, target_pos, true);
+        while (line.next()) |walk_pos| {
+            // We check from starting tile to end whether movement towards the target is valid.
+            // If we are at the target, there is no next tile to check validity for.
+            if (walk_pos.eql(target_pos)) {
+                break;
+            }
+
+            const dir = Direction.fromPositions(walk_pos, target_pos).?;
+            const collision = level.checkCollision(walk_pos, dir);
+            if (collision.hit()) {
+                // If any intermediate position, including the last position, is blocked then just
+                // continue searching with the next reachable position.
+                continue :reachables;
+            }
+        }
+        try neighbors.append(target_pos);
+    }
 }
 
 test "path finding" {
@@ -102,7 +131,9 @@ test "path finding" {
     level.map.getPtr(Pos.init(1, 0)).center = tile.Tile.Wall.tall();
     level.map.getPtr(Pos.init(1, 1)).center = tile.Tile.Wall.tall();
 
-    const path = try astarPath(&level, start, end, null, null, allocator);
+    const reach = Reach.single(1);
+
+    const path = try astarPath(&level, start, end, reach, null, allocator);
     defer path.deinit();
 
     try std.testing.expectEqual(Pos.init(0, 0), path.items[0]);

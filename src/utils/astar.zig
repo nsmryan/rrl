@@ -86,6 +86,10 @@ pub fn Astar(comptime distance: fn (Pos, Pos) usize) type {
         }
 
         pub fn step(self: *Self, neighbors: []WeighedPos) !Result {
+            if (neighbors.len == 0) {
+                std.debug.panic("Astar does not work if a tile has no neighbors!", .{});
+            }
+
             if (self.next_q.len == 0) {
                 return Result.no_path;
             }

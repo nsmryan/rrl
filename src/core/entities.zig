@@ -139,6 +139,7 @@ pub const Entities = struct {
     movement: Comp(Reach),
     attack: Comp(Reach),
     percept: Comp(Percept),
+    trap: Comp(Trap),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -306,6 +307,13 @@ pub const Name = blk: {
     };
 
     break :blk @Type(std.builtin.Type{ .Enum = enumInfo });
+};
+
+pub const Trap = enum {
+    spikes,
+    sound,
+    blink,
+    freeze,
 };
 
 pub const GolemName = enum {

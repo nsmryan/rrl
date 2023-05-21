@@ -751,7 +751,7 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
 
         if (game.level.entities.hp.getOrNull(crushed_id)) |hp| {
             try game.log.log(.killed, .{ id, crushed_id, hp });
-        } else if (game.level.entities.item.getOrNull(crushed_id) == null and
+        } else if (game.level.entities.item.has(crushed_id) and
             game.level.entities.name.get(crushed_id) != .cursor)
         {
             // the entity will be removed, such as an item.

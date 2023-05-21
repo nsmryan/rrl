@@ -86,10 +86,6 @@ pub fn Astar(comptime distance: fn (Pos, Pos) usize) type {
         }
 
         pub fn step(self: *Self, neighbors: []WeighedPos) !Result {
-            if (neighbors.len == 0) {
-                std.debug.panic("Astar does not work if a tile has no neighbors!", .{});
-            }
-
             if (self.next_q.len == 0) {
                 return Result.no_path;
             }
@@ -127,6 +123,12 @@ pub fn Astar(comptime distance: fn (Pos, Pos) usize) type {
             }
 
             best.deinit();
+
+            // If there was a previous best in next_q, but no neighbors where provided, and
+            // next_q is now empty, there is no path to the target position.
+            if (self.next_q.len == 0) {
+                return Result.no_path;
+            }
 
             const new_best = self.next_q.peek() orelse unreachable;
 

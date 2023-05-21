@@ -3,6 +3,7 @@ const std = @import("std");
 const core = @import("core");
 const Behavior = core.entities.Behavior;
 const Entities = core.entities.Entities;
+const Level = core.level.Level;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
@@ -50,7 +51,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
         try game.log.log(.faceTowards, .{ id, player_pos });
 
         // NOTE(design) should this be moved to Alert behavior? That way even armils would spend an alert turn.
-        if (game.level.entities.attack.getOrNull(id) != null) {
+        if (game.level.entities.attack.has(id)) {
             try game.log.log(.behaviorChange, .{ id, Behavior{ .alert = player_pos } });
             game.level.entities.turn.getPtr(id).pass = true;
         } else {
@@ -62,7 +63,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
             .attacked => |attacker_id| {
                 try game.log.log(.faceTowards, .{ id, entity_pos });
 
-                if (game.level.entities.attack.getOrNull(id) != null) {
+                if (game.level.entities.attack.has(id)) {
                     try game.log.log(.behaviorChange, .{ id, Behavior{ .attacking = attacker_id } });
                 } else {
                     try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = entity_pos } });
@@ -135,7 +136,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
     if (player_in_fov) {
         try game.log.log(.faceTowards, .{ id, player_pos });
 
-        if (game.level.entities.attack.getOrNull(id) != null) {
+        if (game.level.entities.attack.has(id)) {
             try game.log.log(.behaviorChange, .{ id, Behavior{ .attacking = player_id } });
         } else {
             // NOTE(design) is this even used? what golem can see the player but not attack?
@@ -217,6 +218,20 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
                 },
             }
         }
+    }
+}
+
+fn aiMoveCostFunction(level: *const Level, current_pos: Pos, start_pos: Pos) ?i32 {
+    _ = start_pos;
+
+    // If the tile has an item, which is a trap, which is armed, then return null to indicate
+    // that this move is not allowed.
+    if (level.itemAtPos(current_pos)) |item_id| {
+        if (level.entities.trap.has(item_id) and level.entities.armed.get(item_id)) {
+            return null;
+        }
+    } else {
+        return 0;
     }
 }
 

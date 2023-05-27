@@ -27,6 +27,7 @@ const board = @import("board");
 const Map = board.map.Map;
 const Tile = board.tile.Tile;
 const FovResult = board.blocking.FovResult;
+const FloodFill = board.floodfill.FloodFill;
 
 pub const actions = @import("actions.zig");
 pub const input = @import("input.zig");
@@ -196,6 +197,15 @@ pub const Game = struct {
 
     pub fn reloadConfig(game: *Game) void {
         game.config = Config.fromFile(CONFIG_PATH[0..]) catch return;
+    }
+
+    pub fn sound(game: Game, pos: Pos, amount: usize) !FloodFill {
+        var floodfill = FloodFill.init(game.allocator);
+        floodfill.dampen_tile_blocked = game.config.dampen_blocked_tile;
+        floodfill.dampen_short_wall = game.config.dampen_short_wall;
+        floodfill.dampen_tall_wall = game.config.dampen_tall_wall;
+        try floodfill.fill(&game.level.map, pos, amount);
+        return floodfill;
     }
 };
 

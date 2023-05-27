@@ -237,11 +237,7 @@ pub const Gui = struct {
 
     fn soundEffect(gui: *Gui, delay: f32, pos: Pos, amount: usize) !void {
         // Animate the sound of the item landing after the item lands
-        var floodfill = FloodFill.init(gui.allocator);
-        floodfill.dampen_tile_blocked = gui.game.config.dampen_blocked_tile;
-        floodfill.dampen_short_wall = gui.game.config.dampen_short_wall;
-        floodfill.dampen_tall_wall = gui.game.config.dampen_tall_wall;
-        try floodfill.fill(&gui.game.level.map, pos, amount);
+        var floodfill = try gui.game.sound(pos, amount);
 
         const initial_delay = @floatToInt(u64, delay * 1000);
         const fade_half_duration: f32 = 0.25;

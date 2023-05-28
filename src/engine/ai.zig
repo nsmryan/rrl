@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const core = @import("core");
 const Behavior = core.entities.Behavior;
@@ -244,8 +245,8 @@ fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
     const next_positions = try astarPath(&game.level, entity_pos, target_pos, reach, aiMoveCostFunction, game.allocator);
     defer next_positions.deinit();
 
-    if (next_positions.items.len > 0) {
-        const move_pos = next_positions.items[0];
+    if (next_positions.items.len > 1) {
+        const move_pos = next_positions.items[1];
         const dir = Direction.fromPositions(entity_pos, move_pos).?;
         try game.log.log(.tryMove, .{ id, dir, 1 });
     }

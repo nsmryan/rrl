@@ -66,10 +66,18 @@ pub const Stance = enum {
 };
 
 pub const Percept = union(enum) {
-    hit: Pos,
-    sound: Pos,
-    attacked: Id,
     none,
+    sound: Pos,
+    hit: Pos,
+    attacked: Id,
+
+    pub fn perceive(percept: Percept, new_percept: Percept) Percept {
+        if (@enumToInt(percept) < @enumToInt(new_percept)) {
+            return new_percept;
+        } else {
+            return percept;
+        }
+    }
 };
 
 pub const Turn = struct {

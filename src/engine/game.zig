@@ -84,24 +84,31 @@ pub const Game = struct {
         try game.inputEvent(input_event, ticks);
         try game.resolveMessages();
 
-        // NOTE AI implementation:
-        // start implementing idle, and add sophistication as needed to implement other states.
-        for (game.level.entities.behavior.ids.items) |id| {
-            // Only step entities that:
-            //   have a behavior
-            //   are currently active
-            //   are in the play state
-            //   are not currently frozen
-            if (game.level.entities.status.get(id).active and
-                game.level.entities.state.get(id) == .play and
-                game.level.entities.status.get(id).frozen == 0)
-            {
-                try game.log.log(.aiStep, id);
-                try game.resolveMessages();
+        // If there are no new messages, and the player took their turn,
+        // log the end turn message and resolve it, return this message as the result.
+        // The next call to this function will return null, indicating the end of the messages.
+        const player_took_turn = game.level.entities.turn.get(Entities.player_id).any();
+        if (player_took_turn) {
+            for (game.level.entities.behavior.ids.items) |id| {
+                // Only step entities that:
+                //   have a behavior
+                //   are currently active
+                //   are in the play state
+                //   are not currently frozen
+                if (game.level.entities.status.get(id).active and
+                    game.level.entities.state.get(id) == .play and
+                    game.level.entities.status.get(id).frozen == 0)
+                {
+                    try game.log.log(.aiStep, id);
+                    try game.resolveMessages();
 
-                // Clear perception - the golem has already acted on this perception at this point.
-                game.level.entities.percept.getPtr(id).* = .none;
+                    // Clear perception - the golem has already acted on this perception at this point.
+                    game.level.entities.percept.getPtr(id).* = .none;
+                }
             }
+
+            try game.log.log(.endTurn, .{});
+            try game.resolveMessages();
         }
     }
 
@@ -141,18 +148,6 @@ pub const Game = struct {
         if (try game.log.pop()) |msg| {
             try resolve.resolveMsg(game, msg);
             return msg;
-        } else {
-            // If there are no new messages, and the player took their turn,
-            // log the end turn message and resolve it, return this message as the result.
-            // The next call to this function will return null, indicating the end of the messages.
-            const player_took_turn = game.level.entities.turn.get(Entities.player_id).any();
-            if (player_took_turn) {
-                try game.log.log(.endTurn, .{});
-                const maybe_msg = try game.log.pop();
-                const msg = maybe_msg.?;
-                try resolve.resolveMsg(game, msg);
-                return msg;
-            }
         }
 
         return null;

@@ -24,6 +24,7 @@ const MoveMode = core.movement.MoveMode;
 const Level = core.level.Level;
 const Stance = core.entities.Stance;
 const Behavior = core.entities.Behavior;
+const Percept = core.entities.Percept;
 const Type = core.entities.Type;
 const MoveType = core.movement.MoveType;
 
@@ -69,6 +70,8 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .crushed => |args| try resolveCrushed(game, args.id, args.pos),
         .aiStep => |args| try resolveAiStep(game, args),
         .behaviorChange => |args| resolveBehaviorChange(game, args.id, args.behavior),
+        .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
+        .faceTowards => |args| resolveFaceTowards(game, args.id, args.pos),
         else => {},
     }
 }
@@ -123,7 +126,7 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
     const start_pos = game.level.entities.pos.get(id);
 
     game.level.entities.pos.set(id, pos);
-    try game.level.updateFov(id);
+    try game.level.updateAllFov();
     const changed_pos = !std.meta.eql(start_pos, pos);
 
     if (move_mode == MoveMode.run) {
@@ -502,11 +505,12 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
 
 fn resolveFacing(game: *Game, id: Id, facing: Direction) !void {
     game.level.entities.facing.set(id, facing);
-    try game.level.updateFov(id);
+    try game.level.updateAllFov();
 }
 
 fn resolveYell(game: *Game, id: Id) !void {
     const position = game.level.entities.pos.get(id);
+    game.level.entities.turn.getPtr(id).pass = true;
     try game.log.now(.sound, .{ id, position, game.config.yell_radius });
 }
 
@@ -768,4 +772,29 @@ fn resolveAiStep(game: *Game, id: Id) !void {
 
 fn resolveBehaviorChange(game: *Game, id: Id, behavior: Behavior) void {
     game.level.entities.behavior.getPtr(id).* = behavior;
+}
+
+fn resolveSound(game: *Game, id: Id, pos: Pos, amount: usize) !void {
+    _ = id;
+    var floodfill = try game.sound(pos, amount);
+
+    for (floodfill.flood.items) |hit_pos| {
+        for (game.level.entities.ids.items) |entity_id| {
+            if ((game.level.entities.status.get(entity_id).active) and
+                (game.level.entities.pos.get(entity_id).eql(hit_pos.pos)) and
+                (game.level.entities.typ.get(entity_id) == .enemy))
+            {
+                // Provide the perception of sound to the entity.
+                const percept = game.level.entities.percept.get(entity_id);
+                game.level.entities.percept.getPtr(entity_id).* = percept.perceive(Percept{ .sound = pos });
+            }
+        }
+    }
+}
+
+fn resolveFaceTowards(game: *Game, id: Id, pos: Pos) void {
+    const entity_pos = game.level.entities.pos.get(id);
+    if (Direction.fromPositions(entity_pos, pos)) |dir| {
+        game.level.entities.facing.set(id, dir);
+    }
 }

@@ -30,7 +30,7 @@ pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 pub const CostFn = fn (*const Level, Pos, Pos) ?i32;
 
 pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
-    return @intCast(usize, Line.distance(next_pos, end, true) * ASTAR_COST_MULTIPLIER);
+    return @intCast(usize, next_pos.distanceMaximum(end) * ASTAR_COST_MULTIPLIER);
 }
 
 pub fn astarPath(level: *const Level, start: Pos, end: Pos, reach: Reach, cost_fn: ?*const CostFn, allocator: Allocator) !ArrayList(Pos) {
@@ -53,7 +53,7 @@ pub fn astarPath(level: *const Level, start: Pos, end: Pos, reach: Reach, cost_f
 
         const position = result.neighbors;
 
-        try astarNeighbors(level, position, reach, &neighbors);
+        try astarNeighbors(level, position, end, reach, &neighbors);
         for (neighbors.items) |near_pos| {
             var cost = @intCast(i32, pathFindDistance(near_pos, end));
 
@@ -91,7 +91,7 @@ pub fn astarNextPos(level: *const Level, start: Pos, end: Pos, cost_fn: ?fn (Pos
 
 // Fill the given array list with the positions of tiles that can be reached with a single move
 // from the given tile. The provided positions do not block when moving from 'start' to their location.
-pub fn astarNeighbors(level: *const Level, pos: Pos, reach: Reach, neighbors: *ArrayList(Pos)) !void {
+pub fn astarNeighbors(level: *const Level, pos: Pos, end_pos: Pos, reach: Reach, neighbors: *ArrayList(Pos)) !void {
     neighbors.clearRetainingCapacity();
 
     const reachablePositions = try reach.reachables(pos);
@@ -101,22 +101,26 @@ pub fn astarNeighbors(level: *const Level, pos: Pos, reach: Reach, neighbors: *A
             continue;
         }
 
-        // Otherwise, draw a line from the start position to the reachable target position and
-        // check whether there are obstacles when moving on each file.
-        var line = Line.init(pos, target_pos, true);
-        while (line.next()) |walk_pos| {
-            // We check from starting tile to end whether movement towards the target is valid.
-            // If we are at the target, there is no next tile to check validity for.
-            if (walk_pos.eql(target_pos)) {
-                break;
-            }
+        // If we haven't reached the final target position, check that we can make each step along the way
+        // to the given target position. If we have reached the final target, always accept it.
+        if (!target_pos.eql(end_pos)) {
+            // Otherwise, draw a line from the start position to the reachable target position and
+            // check whether there are obstacles when moving on each file.
+            var line = Line.init(pos, target_pos, true);
+            while (line.next()) |walk_pos| {
+                // We check from starting tile to end whether movement towards the target is valid.
+                // If we are at the target, there is no next tile to check validity for.
+                if (walk_pos.eql(target_pos)) {
+                    break;
+                }
 
-            const dir = Direction.fromPositions(walk_pos, target_pos).?;
-            const collision = level.checkCollision(walk_pos, dir);
-            if (collision.hit()) {
-                // If any intermediate position, including the last position, is blocked then just
-                // continue searching with the next reachable position.
-                continue :reachables;
+                const dir = Direction.fromPositions(walk_pos, target_pos).?;
+                const collision = level.checkCollision(walk_pos, dir);
+                if (collision.hit()) {
+                    // If any intermediate position, including the last position, is blocked then just
+                    // continue searching with the next reachable position.
+                    continue :reachables;
+                }
             }
         }
         try neighbors.append(target_pos);

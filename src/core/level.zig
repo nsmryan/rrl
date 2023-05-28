@@ -109,12 +109,6 @@ pub const Level = struct {
         prof.scope("fov");
         defer prof.end();
 
-        // NOTE this is probably not necessary- we only calculate FoV for entities with a 'view' anyway.
-        // Only calculate FoV for the player and enemies.
-        if (!(level.entities.typ.get(id) == .player or level.entities.typ.get(id) == .enemy)) {
-            return;
-        }
-
         const start_pos = level.entities.pos.get(id);
 
         var view_ptr = level.entities.view.getPtr(id);

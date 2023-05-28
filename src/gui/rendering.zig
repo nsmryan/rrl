@@ -312,6 +312,7 @@ fn renderOverlays(game: *Game, painter: *Painter) !void {
     try renderOverlayCursor(game, painter);
     try renderOverlayUseMode(game, painter);
     try renderOverlayEffects(painter);
+    try renderOverlayEntityFov(game, painter);
 }
 
 fn renderOverlayEffects(painter: *Painter) !void {
@@ -332,6 +333,37 @@ fn renderOverlayCursor(game: *Game, painter: *Painter) !void {
             }
         }
         _ = anim.step(painter.dt);
+    }
+}
+
+fn renderOverlayEntityFov(game: *Game, painter: *Painter) !void {
+    const highlight_color = Color.init(0xcd, 0xb4, 0x96, 255);
+
+    if (game.settings.mode == .cursor) {
+        const cursor_pos = game.settings.mode.cursor.pos;
+        if (game.level.firstEntityTypeAtPos(cursor_pos, .enemy)) |id| {
+            const entity_in_player_fov = try game.level.entityInFov(Entities.player_id, id);
+            if (entity_in_player_fov == .inside) {
+                const facing = game.level.entities.facing.get(id);
+                const entity_pos = game.level.entities.pos.get(id);
+                try renderArrow(painter, facing, entity_pos, highlight_color);
+                var y: i32 = 0;
+                while (y < game.level.map.height) : (y += 1) {
+                    var x: i32 = 0;
+                    while (x < game.level.map.width) : (x += 1) {
+                        const pos = Pos.init(x, y);
+                        const is_in_fov = try game.level.isInFov(id, pos, .high);
+                        if (is_in_fov == .inside) {
+                            try renderOutline(painter, pos, highlight_color);
+
+                            if (math.visibleInDirection(entity_pos, pos, facing)) {
+                                try renderOutline(painter, pos, game.config.color_red);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -860,4 +892,8 @@ fn renderArrow(painter: *Painter, dir: Direction, pos: Pos, color: Color) !void 
     var arrow_sprite = painter.sprite(arrow_name);
     arrow_sprite.rotation = rotation;
     try painter.drawcmds.append(DrawCmd.sprite(arrow_sprite, color, pos));
+}
+
+fn renderOutline(painter: *Painter, pos: Pos, color: Color) !void {
+    try painter.drawcmds.append(DrawCmd.outlineTile(pos, color));
 }

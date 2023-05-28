@@ -37,7 +37,7 @@ pub const Dims = struct {
     }
 
     pub fn isWithinBounds(dims: *const Dims, position: Pos) bool {
-        return position.x >= 0 and position.y >= 0 and position.x < dims.width and position.height < dims.height;
+        return position.x >= 0 and position.y >= 0 and position.x < dims.width and position.y < dims.height;
     }
 
     pub fn toIndex(dims: *const Dims, position: Pos) usize {

@@ -135,6 +135,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
 
     const player_pos = game.level.entities.pos.get(player_id);
     const player_in_fov = try game.level.isInFov(id, player_pos, .high) == .inside;
+    print("player_in_fov = {}\n", .{player_in_fov});
 
     if (player_in_fov) {
         try game.log.log(.faceTowards, .{ id, player_pos });
@@ -249,5 +250,6 @@ fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
         const move_pos = next_positions.items[1];
         const dir = Direction.fromPositions(entity_pos, move_pos).?;
         try game.log.log(.tryMove, .{ id, dir, 1 });
+        try game.log.log(.faceTowards, .{ id, target_pos });
     }
 }

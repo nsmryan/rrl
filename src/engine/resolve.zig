@@ -71,7 +71,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .aiStep => |args| try resolveAiStep(game, args),
         .behaviorChange => |args| resolveBehaviorChange(game, args.id, args.behavior),
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
-        .faceTowards => |args| resolveFaceTowards(game, args.id, args.pos),
+        .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         else => {},
     }
 }
@@ -777,6 +777,7 @@ fn resolveBehaviorChange(game: *Game, id: Id, behavior: Behavior) void {
 fn resolveSound(game: *Game, id: Id, pos: Pos, amount: usize) !void {
     _ = id;
     var floodfill = try game.sound(pos, amount);
+    defer floodfill.deinit();
 
     for (floodfill.flood.items) |hit_pos| {
         for (game.level.entities.ids.items) |entity_id| {
@@ -792,9 +793,9 @@ fn resolveSound(game: *Game, id: Id, pos: Pos, amount: usize) !void {
     }
 }
 
-fn resolveFaceTowards(game: *Game, id: Id, pos: Pos) void {
+fn resolveFaceTowards(game: *Game, id: Id, pos: Pos) !void {
     const entity_pos = game.level.entities.pos.get(id);
     if (Direction.fromPositions(entity_pos, pos)) |dir| {
-        game.level.entities.facing.set(id, dir);
+        try resolveFacing(game, id, dir);
     }
 }

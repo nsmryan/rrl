@@ -35,7 +35,7 @@ test "sort by distance" {
 
 pub fn visibleInDirection(start: pos.Pos, end: pos.Pos, dir: direction.Direction) bool {
     const pos_diff = end.sub(start);
-    const view_dir = dir.offsetPos(start, 1);
+    const view_dir = dir.offsetPos(start, 1).sub(start);
     return view_dir.dot(pos_diff) >= 0;
 }
 
@@ -59,6 +59,21 @@ test "test visible in direction" {
             current_dir = current_dir.clockwise();
         }
     }
+}
+
+test "test visible same location" {
+    const start_pos = pos.Pos.init(0, 0);
+    const dirs = direction.Direction.directions();
+    for (dirs) |dir| {
+        try std.testing.expect(visibleInDirection(start_pos, start_pos, dir));
+    }
+}
+
+test "test visible direction examples" {
+    const start_pos = pos.Pos.init(1, 3);
+
+    try std.testing.expect(visibleInDirection(start_pos, pos.Pos.init(1, 2), .up));
+    try std.testing.expect(!visibleInDirection(start_pos, pos.Pos.init(1, 4), .up));
 }
 
 pub fn randomOffset(rng: std.rand.Random, radius: i32) pos.Pos {

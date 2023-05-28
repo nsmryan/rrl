@@ -149,10 +149,7 @@ pub fn isInFov(map: Map, start_pos: Pos, end_pos: Pos, view_height: ViewHeight) 
 //}
 
 pub fn isInFovDirection(map: Map, start_pos: Pos, end_pos: Pos, dir: Direction, view_height: ViewHeight) FovError!bool {
-    // TODO unit test whether we need this first case.
-    if (start_pos.eql(end_pos)) {
-        return true;
-    } else if (math.visibleInDirection(start_pos, end_pos, dir)) {
+    if (math.visibleInDirection(start_pos, end_pos, dir)) {
         return try isInFov(map, start_pos, end_pos, view_height);
     } else {
         return false;

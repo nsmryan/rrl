@@ -65,10 +65,19 @@ pub const Stance = enum {
     }
 };
 
+pub const Passive = struct {
+    stone_thrower: bool = false,
+    whet_stone: bool = false,
+    soft_shoes: bool = false,
+    light_touch: bool = false,
+    sure_footed: bool = false,
+    quick_reflexes: bool = false,
+};
+
 pub const Percept = union(enum) {
     none,
     sound: Pos,
-    hit: Pos,
+    hit: Pos, // this is used when an item is thrown onto an entity.
     attacked: Id,
 
     pub fn perceive(percept: Percept, new_percept: Percept) Percept {
@@ -105,7 +114,7 @@ pub const Turn = struct {
 };
 
 pub const StatusEffect = struct {
-    frozen: usize = 0, // turns
+    stunned: usize = 0, // turns
     soft_steps: usize = 0, // turns
     extra_fov: usize = 0, // amount
     blinked: bool = false,
@@ -144,6 +153,7 @@ pub const Entities = struct {
     inventory: Comp(Inventory),
     count_down: Comp(usize),
     status: Comp(StatusEffect),
+    passive: Comp(Passive),
     movement: Comp(Reach),
     attack: Comp(Reach),
     percept: Comp(Percept),

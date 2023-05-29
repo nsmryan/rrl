@@ -2,7 +2,7 @@ const std = @import("std");
 
 const entities = @import("entities.zig");
 const EntityName = entities.EntityName;
-const Config = @import("config.zig").config.Config;
+const Config = @import("config.zig").Config;
 
 const utils = @import("utils");
 const comp = utils.comp;
@@ -85,11 +85,11 @@ pub const Item = enum {
     }
 
     pub fn throwStunTurns(item: Item, config: *Config) usize {
-        switch (item) {
+        return switch (item) {
             .stone => config.stun_turns_throw_stone,
             .spear => config.stun_turns_throw_spear,
             else => config.stun_turns_throw_default,
-        }
+        };
     }
 
     pub fn isThrowable(item: Item) bool {

@@ -97,7 +97,7 @@ pub const Game = struct {
                 //   are not currently frozen
                 if (game.level.entities.status.get(id).active and
                     game.level.entities.state.get(id) == .play and
-                    game.level.entities.status.get(id).frozen == 0)
+                    game.level.entities.status.get(id).stunned == 0)
                 {
                     try game.log.log(.aiStep, id);
                     try game.resolveMessages();

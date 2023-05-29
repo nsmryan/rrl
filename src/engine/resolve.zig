@@ -20,6 +20,8 @@ const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
+const WeaponType = core.items.WeaponType;
+const AttackStyle = core.items.AttackStyle;
 const MoveMode = core.movement.MoveMode;
 const Level = core.level.Level;
 const Stance = core.entities.Stance;
@@ -72,6 +74,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .behaviorChange => |args| resolveBehaviorChange(game, args.id, args.behavior),
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
+        .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
         else => {},
     }
 }
@@ -515,7 +518,6 @@ fn resolveYell(game: *Game, id: Id) !void {
 }
 
 fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard: bool) !void {
-    _ = hard;
     if (start.eql(end)) {
         @panic("Is it possible to throw an item and have it end where it started? Apparently yes");
     }
@@ -529,25 +531,26 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
     // If we hit an entity, stop on the entities tile and resolve stunning it.
     if (game.level.blockingEntityAtPos(hit_pos)) |hit_entity| {
         if (game.level.entities.typ.get(hit_entity) == .enemy) {
-            @panic("Message passing to entities has not been implemented yet!");
-            //var stun_turns = game.level.entities.item.get(item_id).throwStunTurns(&game.config);
+            var stun_turns = game.level.entities.item.get(item_id).throwStunTurns(&game.config);
 
-            //// Account for modifiers.
-            //if (game.level.entities.passive.get(id).stone_thrower) {
-            //    stun_turns += 1;
-            //}
+            // Account for modifiers.
+            if (game.level.entities.passive.get(id).stone_thrower) {
+                stun_turns += 1;
+            }
 
-            //if (hard) {
-            //    stun_turns += 1;
-            //}
+            if (hard) {
+                stun_turns += 1;
+            }
 
-            //if (stun_turns > 0) {
+            if (stun_turns > 0) {
+                // Stun the entity for a given number of turns.
+                try game.log.log(.stun, .{ hit_entity, stun_turns });
+            }
 
-            //    game.log.log(.froze, .{ hit_entity, stun_turns });
-            //}
-
-            //const player_pos = game.level.entities.pos.get(id);
-            //game.level.entities.message.getPtr(hit_entity).push(Message.hit(player_pos));
+            // The entity perceives having been hit by something.
+            const player_pos = game.level.entities.pos.get(hit_entity);
+            const percept = game.level.entities.percept.get(hit_entity);
+            game.level.entities.percept.getPtr(hit_entity).* = percept.perceive(Percept{ .hit = player_pos });
         }
     }
 
@@ -798,4 +801,73 @@ fn resolveFaceTowards(game: *Game, id: Id, pos: Pos) !void {
     if (Direction.fromPositions(entity_pos, pos)) |dir| {
         try resolveFacing(game, id, dir);
     }
+}
+
+fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle) !void {
+    _ = id;
+    _ = start_pos;
+    _ = weapon_type;
+    _ = attack_style;
+    _ = hit_pos;
+    _ = game;
+    // TODO translate, and ensure that attack percept is in there.
+    // This is the version of attacking from the Rust version.
+    //if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |other_id| {
+    //    const percept = game.level.entities.percept.get(other_id);
+    //    game.level.entities.percept.getPtr(other_id).* = percept.perceive(Percept{ .hit = hit_pos });
+    //}
+    //// Hitting always takes a turn currently.
+    //level.entities.took_turn[&entity_id] |= Turn::Attack.turn();
+
+    //let entity_pos = level.entities.pos[&entity_id];
+
+    //if let Some(hit_entity) = level.has_blocking_entity(hit_pos) {
+    //    if level.entities.typ[&hit_entity] == EntityType::Column {
+    //        // if we hit a column, and this is a strong, blunt hit, then
+    //        // push the column over.
+    //        if weapon_type == WeaponType::Blunt && attack_style == AttackStyle::Strong {
+    //            let dir = Direction::from_positions(entity_pos, hit_pos).unwrap();
+    //            msg_log.log(Msg::Pushed(entity_id, hit_entity, dir, 1, false));
+    //        }
+    //    } else {
+    //        // if we hit an enemy, stun them and make a sound.
+    //        if level.entities.typ[&hit_entity] == EntityType::Enemy {
+    //            let mut hit_sound_radius = weapon_type.sound_radius(config);
+    //            let mut stun_turns = weapon_type.stun_turns(config);
+
+    //            // whet stone passive adds to sharp weapon stun turns
+    //            if level.entities.passive[&entity_id].whet_stone && weapon_type.sharp() {
+    //                   stun_turns += 1;
+    //            }
+
+    //            if attack_style == AttackStyle::Strong {
+    //                hit_sound_radius += config.sound_radius_extra;
+    //                stun_turns += config.stun_turns_extra;
+    //            }
+
+    //            msg_log.log(Msg::Froze(hit_entity, stun_turns));
+    //            msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius));
+    //        }
+    //    }
+    //} else {
+    //    // no entity- check for a wall. if blunt and strong, crush the wall.
+    //    // TODO message for hitting a wall, use for hammer as well
+    //}
+
+    //match weapon_type {
+    //    WeaponType::Blunt => {
+    //        msg_log.log(Msg::Blunt(entity_pos, hit_pos));
+    //    },
+
+    //    WeaponType::Pierce => {
+    //        msg_log.log(Msg::Pierce(entity_pos, hit_pos));
+    //    },
+
+    //    WeaponType::Slash => {
+    //        msg_log.log(Msg::Slash(entity_pos, hit_pos));
+    //    },
+    //}
+
+    // TODO maybe a UsedItem message for this, although only one per use.
+    //reduce_item_durability(level, entity_id, item_id);
 }

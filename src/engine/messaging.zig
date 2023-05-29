@@ -67,6 +67,7 @@ pub const Msg = union(enum) {
     killed: struct { id: Id, crushed_id: Id, hp: usize },
     aiStep: Id,
     behaviorChange: struct { id: Id, behavior: Behavior },
+    stun: struct { id: Id, num_turns: usize },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

@@ -21,6 +21,8 @@ const MoveType = core.movement.MoveType;
 const Entities = core.entities.Entities;
 const Type = core.entities.Type;
 const Name = core.entities.Name;
+const StatusEffect = core.entities.StatusEffect;
+const Passive = core.entities.Passive;
 const GolemName = core.entities.GolemName;
 const Config = core.config.Config;
 const View = core.fov.View;
@@ -45,6 +47,8 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
     try entities.hp.insert(id, @intCast(usize, config.player_health));
     try entities.inventory.insert(id, Inventory{});
+    try entities.status.insert(id, StatusEffect{});
+    try entities.passive.insert(id, Passive{});
 
     try log.log(.spawn, .{ id, Name.player });
     try log.log(.stance, .{ id, entities.stance.get(id) });

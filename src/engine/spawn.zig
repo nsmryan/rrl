@@ -110,6 +110,7 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.percept.insert(id, .none);
     try entities.move_mode.insert(id, MoveMode.walk);
     try entities.next_move_mode.insert(id, MoveMode.walk);
+    try entities.status.insert(id, StatusEffect{});
 
     try log.log(.facing, .{ id, entities.facing.get(id) });
     try log.log(.stance, .{ id, entities.stance.get(id) });

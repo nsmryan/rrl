@@ -24,6 +24,10 @@ pub const WeaponType = enum {
     pierce,
     slash,
     blunt,
+
+    pub fn sharp(weapon_type: WeaponType) bool {
+        return weapon_type == .slash or weapon_type == .pierce;
+    }
 };
 
 pub const Item = enum {

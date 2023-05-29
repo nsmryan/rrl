@@ -804,70 +804,73 @@ fn resolveFaceTowards(game: *Game, id: Id, pos: Pos) !void {
 }
 
 fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle) !void {
-    _ = id;
     _ = start_pos;
-    _ = weapon_type;
-    _ = attack_style;
-    _ = hit_pos;
-    _ = game;
-    // TODO translate, and ensure that attack percept is in there.
-    // This is the version of attacking from the Rust version.
-    //if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |other_id| {
-    //    const percept = game.level.entities.percept.get(other_id);
-    //    game.level.entities.percept.getPtr(other_id).* = percept.perceive(Percept{ .hit = hit_pos });
-    //}
-    //// Hitting always takes a turn currently.
-    //level.entities.took_turn[&entity_id] |= Turn::Attack.turn();
 
-    //let entity_pos = level.entities.pos[&entity_id];
+    // Hitting always takes a turn currently.
+    game.level.entities.turn.getPtr(id).attack = true;
 
-    //if let Some(hit_entity) = level.has_blocking_entity(hit_pos) {
-    //    if level.entities.typ[&hit_entity] == EntityType::Column {
-    //        // if we hit a column, and this is a strong, blunt hit, then
-    //        // push the column over.
-    //        if weapon_type == WeaponType::Blunt && attack_style == AttackStyle::Strong {
-    //            let dir = Direction::from_positions(entity_pos, hit_pos).unwrap();
-    //            msg_log.log(Msg::Pushed(entity_id, hit_entity, dir, 1, false));
-    //        }
-    //    } else {
-    //        // if we hit an enemy, stun them and make a sound.
-    //        if level.entities.typ[&hit_entity] == EntityType::Enemy {
-    //            let mut hit_sound_radius = weapon_type.sound_radius(config);
-    //            let mut stun_turns = weapon_type.stun_turns(config);
+    const entity_pos = game.level.entities.pos.get(id);
 
-    //            // whet stone passive adds to sharp weapon stun turns
-    //            if level.entities.passive[&entity_id].whet_stone && weapon_type.sharp() {
-    //                   stun_turns += 1;
-    //            }
+    if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |hit_entity| {
+        const percept = game.level.entities.percept.get(hit_entity);
+        game.level.entities.percept.getPtr(hit_entity).* = percept.perceive(Percept{ .attacked = id });
 
-    //            if attack_style == AttackStyle::Strong {
-    //                hit_sound_radius += config.sound_radius_extra;
-    //                stun_turns += config.stun_turns_extra;
-    //            }
+        if (game.level.entities.typ.get(hit_entity) == .column) {
+            // if we hit a column, and this is a strong, blunt hit, then
+            // push the column over.
+            if (weapon_type == .blunt and attack_style == .strong) {
+                const dir = Direction.fromPositions(entity_pos, hit_pos).?;
+                try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
+            }
+        } else {
+            // if we hit an enemy, stun them and make a sound.
+            if (game.level.entities.typ.get(hit_entity) == .enemy) {
+                var hit_sound_radius: usize = 0;
+                var stun_turns: usize = 0;
+                switch (weapon_type) {
+                    .pierce => {
+                        hit_sound_radius = game.config.sound_radius_pierce;
+                        stun_turns = game.config.stun_turns_pierce;
+                    },
 
-    //            msg_log.log(Msg::Froze(hit_entity, stun_turns));
-    //            msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius));
-    //        }
-    //    }
-    //} else {
-    //    // no entity- check for a wall. if blunt and strong, crush the wall.
-    //    // TODO message for hitting a wall, use for hammer as well
-    //}
+                    .slash => {
+                        hit_sound_radius = game.config.sound_radius_slash;
+                        stun_turns = game.config.stun_turns_slash;
+                    },
 
-    //match weapon_type {
-    //    WeaponType::Blunt => {
-    //        msg_log.log(Msg::Blunt(entity_pos, hit_pos));
-    //    },
+                    .blunt => {
+                        hit_sound_radius = game.config.sound_radius_blunt;
+                        stun_turns = game.config.stun_turns_blunt;
+                    },
+                }
 
-    //    WeaponType::Pierce => {
-    //        msg_log.log(Msg::Pierce(entity_pos, hit_pos));
-    //    },
+                // whet stone passive adds to sharp weapon stun turns
+                if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
+                    stun_turns += 1;
+                }
 
-    //    WeaponType::Slash => {
-    //        msg_log.log(Msg::Slash(entity_pos, hit_pos));
-    //    },
-    //}
+                if (attack_style == .strong) {
+                    hit_sound_radius += game.config.sound_radius_extra;
+                    stun_turns += game.config.stun_turns_extra;
+                }
 
-    // TODO maybe a UsedItem message for this, although only one per use.
-    //reduce_item_durability(level, entity_id, item_id);
+                try game.log.log(.stun, .{ hit_entity, stun_turns });
+                try game.log.log(.sound, .{ id, hit_pos, hit_sound_radius });
+            }
+        }
+    }
+
+    switch (weapon_type) {
+        .blunt => {
+            try game.log.log(.blunt, .{ entity_pos, hit_pos });
+        },
+
+        .pierce => {
+            try game.log.log(.pierce, .{ entity_pos, hit_pos });
+        },
+
+        .slash => {
+            try game.log.log(.slash, .{ entity_pos, hit_pos });
+        },
+    }
 }

@@ -60,7 +60,6 @@ pub const Msg = union(enum) {
     yell: Id,
     remove: Id,
     interact: struct { id: Id, interact_pos: Pos },
-    blunt: struct { entity_pos: Pos, hit_pos: Pos },
     hammerHitWall: struct { id: Id, start_pos: Pos, end_pos: Pos, dir: Direction },
     hammerHitEntity: struct { id: Id, hit_entity: Id },
     crushed: struct { id: Id, pos: Pos },
@@ -68,6 +67,10 @@ pub const Msg = union(enum) {
     aiStep: Id,
     behaviorChange: struct { id: Id, behavior: Behavior },
     stun: struct { id: Id, num_turns: usize },
+    pushed: struct { attacker: Id, attacked: Id, dir: Direction, amount: usize },
+    pierce: struct { origin_pos: Pos, hit_pos: Pos },
+    slash: struct { origin_pos: Pos, hit_pos: Pos },
+    blunt: struct { origin_pos: Pos, hit_pos: Pos },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

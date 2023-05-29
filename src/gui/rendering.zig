@@ -313,6 +313,7 @@ fn renderOverlays(game: *Game, painter: *Painter) !void {
     try renderOverlayUseMode(game, painter);
     try renderOverlayEffects(painter);
     try renderOverlayEntityFov(game, painter);
+    try renderOverlayAlertness(game, painter);
 }
 
 fn renderOverlayEffects(painter: *Painter) !void {
@@ -397,6 +398,39 @@ fn renderOverlayUseMode(game: *Game, painter: *Painter) !void {
     //if (display_state.player_ghost) |player_ghost_pos| {
     //    render_entity_ghost(panel, player_id, player_ghost_pos, &config, display_state, sprites);
     //}
+}
+
+fn renderOverlayAlertness(game: *Game, painter: *Painter) !void {
+    const scale = 1.0;
+    const alertness_color = game.config.color_pink;
+
+    for (game.level.entities.behavior.ids.items) |id| {
+        const pos = game.level.entities.pos.get(id);
+
+        switch (game.level.entities.behavior.get(id)) {
+            .idle => {},
+
+            .alert => {
+                const sprite = painter.sprite("exclamation_mark");
+                try painter.drawcmds.append(DrawCmd.spriteScaled(sprite, scale, .upRight, alertness_color, pos));
+            },
+
+            .investigating => {
+                const sprite = painter.sprite("question_mark");
+                try painter.drawcmds.append(DrawCmd.spriteScaled(sprite, scale, .upRight, alertness_color, pos));
+            },
+
+            .attacking => {
+                const sprite = painter.sprite("stunned_mark");
+                try painter.drawcmds.append(DrawCmd.spriteScaled(sprite, scale, .upRight, alertness_color, pos));
+            },
+
+            .armed => {
+                const sprite = painter.sprite("stunned_mark");
+                try painter.drawcmds.append(DrawCmd.spriteScaled(sprite, scale, .upRight, alertness_color, pos));
+            },
+        }
+    }
 }
 
 pub fn renderPips(game: *Game, painter: *Painter) !void {

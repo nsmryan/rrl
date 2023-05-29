@@ -314,6 +314,7 @@ fn renderOverlays(game: *Game, painter: *Painter) !void {
     try renderOverlayEffects(game, painter);
     try renderOverlayEntityFov(game, painter);
     try renderOverlayAlertness(game, painter);
+    try renderOverlayParticles(painter);
 }
 
 fn renderOverlayEffects(game: *Game, painter: *Painter) !void {
@@ -438,6 +439,16 @@ fn renderOverlayAlertness(game: *Game, painter: *Painter) !void {
                 try painter.drawcmds.append(DrawCmd.spriteScaled(sprite, scale, .upRight, alertness_color, pos));
             },
         }
+    }
+}
+
+fn renderOverlayParticles(painter: *Painter) !void {
+    for (painter.state.particles.items) |particle| {
+        const percent = (@intToFloat(f32, particle.time) / @intToFloat(f32, particle.duration));
+        const x = particle.start_x + ((particle.end_x - particle.start_x) * percent);
+        var color = Color.white();
+        color.a = @floatToInt(u8, 255.0 * (1.0 - percent));
+        try painter.drawcmds.append(DrawCmd.spriteFloat(particle.sprite, color, x, particle.y, 0.1, 0.1));
     }
 }
 

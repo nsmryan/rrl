@@ -15,7 +15,6 @@ pub const Effect = union(enum) {
     animation: Animation,
     highlight: struct { pos: Pos, color: Color, alpha: Tween, delay: u64 },
     outline: struct { pos: Pos, color: Color, alpha: Tween, delay: u64 },
-    particle: struct { start_x: f32, end_x: f32, y: f32, duration: u64, time: u64, sprite: Sprite },
 
     pub fn animationEffect(animation_field: Animation) Effect {
         return Effect{ .animation = animation_field };
@@ -57,11 +56,6 @@ pub const Effect = union(enum) {
                     return true;
                 }
             },
-
-            .particle => |*args| {
-                args.time += dt;
-                return args.time <= args.duration;
-            },
         }
     }
 
@@ -86,15 +80,8 @@ pub const Effect = union(enum) {
                     return DrawCmd.outlineTile(args.pos, color);
                 }
             },
-
-            .particle => |args| {
-                const percent = (@intToFloat(f32, args.time) / @intToFloat(f32, args.duration));
-                const x = args.start_x + ((args.end_x - args.start_x) * percent);
-                var color = Color.white();
-                color.a = @floatToInt(u8, 255.0 * (1.0 - percent));
-                return DrawCmd.spriteFloat(args.sprite, color, x, args.y, 0.1, 0.1);
-            },
         }
+
         return null;
     }
 };

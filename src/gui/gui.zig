@@ -161,11 +161,7 @@ pub const Gui = struct {
 
         gui.ticks = ticks;
 
-        if (gui.game.config.particles_enabled and
-            math.rand.rngTrial(gui.game.rng.random(), gui.game.config.particle_prob))
-        {
-            try gui.spawnParticle();
-        }
+        try gui.updateParticles(delta_ticks);
 
         // Draw whether or not there is an event to update animations, effects, etc.
         prof.scope("draw");
@@ -173,6 +169,25 @@ pub const Gui = struct {
         defer prof.end();
 
         return gui.game.settings.state != GameState.exit;
+    }
+
+    fn updateParticles(gui: *Gui, dt: u64) !void {
+        if (gui.game.config.particles_enabled and
+            math.rand.rngTrial(gui.game.rng.random(), gui.game.config.particle_prob))
+        {
+            try gui.spawnParticle();
+        }
+
+        var index: usize = 0;
+        while (index < gui.state.particles.items.len) {
+            var particle = &gui.state.particles.items[index];
+            particle.time += dt;
+            if (particle.time > particle.duration) {
+                _ = gui.state.particles.swapRemove(index);
+            } else {
+                index += 1;
+            }
+        }
     }
 
     fn spawnParticle(gui: *Gui) !void {
@@ -191,14 +206,14 @@ pub const Gui = struct {
         x = @min(x, end_x);
 
         const tile_sprite = try gui.display.getSprite("white_filled");
-        try gui.state.effects.append(Effect{ .particle = .{
+        try gui.state.particles.append(Particle{
             .start_x = x,
             .y = y,
             .end_x = end_x,
             .duration = duration,
             .time = 0.0,
             .sprite = tile_sprite,
-        } });
+        });
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
@@ -354,6 +369,7 @@ pub const Gui = struct {
         gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
         gui.state.console_log.clear();
         gui.state.effects.clearRetainingCapacity();
+        gui.state.particles.clearRetainingCapacity();
     }
 
     fn endTurn(gui: *Gui) !void {
@@ -923,6 +939,7 @@ pub const DisplayState = struct {
     turn_count: usize,
     console_log: ConsoleLog,
     effects: ArrayList(Effect),
+    particles: ArrayList(Particle),
 
     pub fn init(allocator: Allocator) DisplayState {
         var state: DisplayState = undefined;
@@ -932,6 +949,7 @@ pub const DisplayState = struct {
         state.turn_count = 0;
         state.console_log = ConsoleLog.init();
         state.effects = ArrayList(Effect).init(allocator);
+        state.particles = ArrayList(Particle).init(allocator);
 
         comptime var names = entities.compNames(DisplayState);
         inline for (names) |field_name| {
@@ -982,6 +1000,15 @@ fn getSheetStance(stance: Stance) Stance {
         return stance;
     }
 }
+
+const Particle = struct {
+    start_x: f32,
+    end_x: f32,
+    y: f32,
+    duration: u64,
+    time: u64,
+    sprite: Sprite,
+};
 
 comptime {
     if (@import("builtin").is_test) {

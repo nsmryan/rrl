@@ -311,15 +311,18 @@ fn renderWallShadow(pos: Pos, game: *Game, painter: *Painter) !void {
 fn renderOverlays(game: *Game, painter: *Painter) !void {
     try renderOverlayCursor(game, painter);
     try renderOverlayUseMode(game, painter);
-    try renderOverlayEffects(painter);
+    try renderOverlayEffects(game, painter);
     try renderOverlayEntityFov(game, painter);
     try renderOverlayAlertness(game, painter);
 }
 
-fn renderOverlayEffects(painter: *Painter) !void {
+fn renderOverlayEffects(game: *Game, painter: *Painter) !void {
     for (painter.state.effects.items) |animation| {
         if (animation.draw()) |drawcmd| {
-            try painter.drawcmds.append(drawcmd);
+            const is_in_fov = try game.level.posInFov(Entities.player_id, drawcmd.pos());
+            if (is_in_fov == .inside) {
+                try painter.drawcmds.append(drawcmd);
+            }
         }
     }
 }
@@ -406,6 +409,11 @@ fn renderOverlayAlertness(game: *Game, painter: *Painter) !void {
 
     for (game.level.entities.behavior.ids.items) |id| {
         const pos = game.level.entities.pos.get(id);
+
+        const in_fov = try game.level.entityInFov(Entities.player_id, id);
+        if (in_fov != .inside) {
+            continue;
+        }
 
         switch (game.level.entities.behavior.get(id)) {
             .idle => {},

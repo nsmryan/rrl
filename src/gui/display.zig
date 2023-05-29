@@ -19,6 +19,7 @@ const SpriteAnimation = drawing.sprite.SpriteAnimation;
 const DrawCmd = drawing.drawcmd.DrawCmd;
 const Panel = drawing.panel.Panel;
 const SpriteSheet = sprite.SpriteSheet;
+const Sprite = sprite.Sprite;
 const Animation = drawing.animation.Animation;
 
 const utils = @import("utils");
@@ -290,6 +291,11 @@ pub const Display = struct {
 
     pub fn lookupSpritekey(self: *Display, name: []const u8) !Str {
         return self.strings.toKey(name);
+    }
+
+    pub fn getSprite(self: *Display, name: []const u8) !Sprite {
+        const key = try self.lookupSpritekey(name);
+        return self.sprites.fromKey(key).sprite();
     }
 
     pub fn numSprites(self: *Display, name: []const u8) !usize {

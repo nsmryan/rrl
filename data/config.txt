@@ -169,9 +169,11 @@ stun_turns_extra: 2
 ghost_alpha: 125
 
 # particle effect settings
-particle_duration: 4.0
-particle_speed: 1.0
-max_particles: 40
+particles_enabled: true
+particle_prob: 0.5
+particle_max_length: 4
+particle_duration_min: 3.0
+particle_duration_max: 5.0
 
 attack_animation_speed: 25.0
 cursor_fade_seconds: 0.25

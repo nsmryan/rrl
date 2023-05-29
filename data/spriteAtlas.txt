@@ -154,3 +154,4 @@ sword 16 80 16 16
 great_ax 32 80 16 16
 spear 48 80 16 16
 hammer 64 80 16 16
+white_filled 80 80 16 16

@@ -83,3 +83,4 @@
 83 great_ax
 84 spear
 85 hammer
+86 white_filled

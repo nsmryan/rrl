@@ -161,12 +161,44 @@ pub const Gui = struct {
 
         gui.ticks = ticks;
 
+        if (gui.game.config.particles_enabled and
+            math.rand.rngTrial(gui.game.rng.random(), gui.game.config.particle_prob))
+        {
+            try gui.spawnParticle();
+        }
+
         // Draw whether or not there is an event to update animations, effects, etc.
         prof.scope("draw");
         try gui.draw(delta_ticks);
         defer prof.end();
 
         return gui.game.settings.state != GameState.exit;
+    }
+
+    fn spawnParticle(gui: *Gui) !void {
+        const rng = gui.game.rng.random();
+
+        const min_duration = gui.game.config.particle_duration_min;
+        const max_duration = gui.game.config.particle_duration_max;
+        const duration = @floatToInt(u64, math.rand.rngRange(rng, min_duration, max_duration) * 1000);
+        const width = @intToFloat(f32, gui.game.level.map.width);
+        const height = @intToFloat(f32, gui.game.level.map.height);
+        var x = math.rand.rngRange(rng, 0.0, width);
+        const y = math.rand.rngRange(rng, 0.0, height);
+        const max_length = @intToFloat(f32, gui.game.config.particle_max_length);
+        var end_x = x + max_length;
+        end_x = @min(@intToFloat(f32, gui.game.level.map.width) - 0.01, end_x);
+        x = @min(x, end_x);
+
+        const tile_sprite = try gui.display.getSprite("white_filled");
+        try gui.state.effects.append(Effect{ .particle = .{
+            .start_x = x,
+            .y = y,
+            .end_x = end_x,
+            .duration = duration,
+            .time = 0.0,
+            .sprite = tile_sprite,
+        } });
     }
 
     pub fn inputEvent(gui: *Gui, input_event: InputEvent, ticks: u64) !void {
@@ -321,6 +353,7 @@ pub const Gui = struct {
         try gui.assignAllIdleAnimations();
         gui.state.map_window_center = gui.game.level.entities.pos.get(entities.Entities.player_id);
         gui.state.console_log.clear();
+        gui.state.effects.clearRetainingCapacity();
     }
 
     fn endTurn(gui: *Gui) !void {

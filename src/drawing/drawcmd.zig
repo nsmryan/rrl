@@ -42,8 +42,8 @@ pub const DrawCmd = union(enum) {
         return self.* != .spriteFloat and self.* != .textFloat;
     }
 
-    pub fn pos(self: *DrawCmd) Pos {
-        switch (self.*) {
+    pub fn pos(self: DrawCmd) Pos {
+        switch (self) {
             .sprite => |draw_cmd| return draw_cmd.pos,
             .spriteScaled => |draw_cmd| return draw_cmd.pos,
             .highlightTile => |draw_cmd| return draw_cmd.pos,

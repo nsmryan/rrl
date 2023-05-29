@@ -402,7 +402,9 @@ pub fn processOutlineTile(canvas: Canvas, params: drawing.drawcmd.DrawOutlineTil
 pub fn processFillCmd(canvas: Canvas, params: drawing.drawcmd.DrawFill) void {
     const cell_dims = canvas.panel.cellDims();
     _ = sdl2.SDL_SetRenderDrawColor(canvas.renderer, params.color.r, params.color.g, params.color.b, params.color.a);
-    var src_rect = Rect.initAt(@intCast(usize, params.pos.x) * cell_dims.width, @intCast(usize, params.pos.y) * cell_dims.height, @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
+    const x = @intCast(usize, params.pos.x);
+    const y = @intCast(usize, params.pos.y);
+    var src_rect = Rect.initAt(x * cell_dims.width, y * cell_dims.height, @intCast(u32, cell_dims.width), @intCast(u32, cell_dims.height));
     var sdl2_rect = Sdl2Rect(src_rect);
     _ = sdl2.SDL_RenderFillRect(canvas.renderer, &sdl2_rect);
 }

@@ -29,6 +29,7 @@ const Behavior = core.entities.Behavior;
 const Percept = core.entities.Percept;
 const Type = core.entities.Type;
 const MoveType = core.movement.MoveType;
+const Attack = core.movement.Attack;
 
 const messaging = @import("messaging.zig");
 const Msg = messaging.Msg;
@@ -75,6 +76,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
+        .attack => |args| try aiAttack(game, args.id, args.target_id),
         else => {},
     }
 }
@@ -874,3 +876,115 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
         },
     }
 }
+
+fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
+    const entity_pos = game.level.entities.pos.get(id);
+    const target_pos = game.level.entities.pos.get(target_id);
+
+    const attack_reach = game.level.entities.attack[id];
+    const can_hit_target =
+        ai.aiCanHitTarget(game, id, target_pos, attack_reach);
+
+    if (game.level.entities.state(target_id) == .remove) {
+        // If the target is no longer in play, return to idle.
+        game.level.entities.turn.getPtr(id).pass = true;
+        try game.log.log(.stateChange, .{ id, Behavior{.idle} });
+    } else if (can_hit_target) {
+        // If the entity can hit its target,
+        var can_attack = true;
+        // If the quick reflexes has quick reflexes they may dodge the attack.
+        if (game.level.entities.passive.getOrNull(target_id)) |passives| {
+            if (passives.quick_reflexes and
+                math.rand.rngTrial(game.rng.random(), game.config.skill_quick_reflexes_percent))
+            {
+                can_attack = false;
+                try game.log.log(.dodged, target_id);
+            }
+        }
+
+        if (can_attack) {
+            // NOTE Golem hits are piercing attacks even though they shoot a beam.
+            try game.log.log(.hit, .{ id, entity_pos, target_pos, WeaponType.pierce, AttackStyle.normal });
+        }
+    } else if (game.level.isInFov(id, target_id) != .inside) {
+        // If the target disappeared, change to idle- there is no need to
+        // pursue their last position if we saw them blink away.
+        if (game.level.entities.target_disappeared(id) != null) {
+            try game.log.log(.stateChange, .{ id, .idle });
+        } else {
+            // If we lose the target, end the turn and investigate their current position.
+            // This allows the golem to 'see' a player move behind a wall and still investigate
+            // them instead of losing track of their position.
+            game.level.entities.turn.getPtr(id).pass = true;
+            const current_target_pos = game.level.entities.pos.get(target_id);
+            try game.log.log(.stateChange, .{ id, Behavior{ .investigating = current_target_pos } });
+        }
+    } else {
+        // Can see target, but can't hit them. try to move to a position where we can hit them
+        const maybe_pos = ai.aiMoveToAttackPos(game, id, target_id);
+        if (maybe_pos) |move_pos| {
+            // Try to move in the given direction.
+            const direction = Direction.fromPositions(entity_pos, move_pos).?;
+            try game.log.log(.tryMove, .{ id, direction, 1, .walk });
+        } else {
+            // If we can't move anywhere, we just end our turn.
+            game.level.entities.turn.getPtr(id).pass = true;
+        }
+    }
+}
+
+// TODO this needs to be merged with the concept of attacking, perhaps by merging into 'hit' message?
+// Ideally this would be merged into the attack type concept, so a strong blunt attack always does the same
+// thing whether its a hammer or not.
+// Shield attacks would turn into push messages where the push logic would be in the message handler.
+// Golem attacks might need their own attack type, like beam or energy.
+//pub fn attack(entity: EntityId, target: EntityId, data: &mut Level, msg_log: &mut MsgLog) {
+//    if data.using(entity, Item::Hammer).is_some() {
+//        data.entities.status[&target].alive = false;
+//        data.entities.blocks[&target] = false;
+//
+//        data.entities.take_damage(target, HAMMER_DAMAGE);
+//        data.entities.messages[&target].push(Message::Attack(entity));
+//
+//        // NOTE assumes that this kills the enemy
+//        msg_log.log(Msg::Killed(entity, target, HAMMER_DAMAGE));
+//
+//        let hit_pos = data.entities.pos[&target];
+//        // NOTE this creates rubble even if the player somehow is hit by a hammer...
+//        if data.map[hit_pos].surface == Surface::Floor {
+//            data.map[hit_pos].surface = Surface::Rubble;
+//        }
+//    } else if data.using(target, Item::Shield).is_some() {
+//        let pos = data.entities.pos[&entity];
+//        let other_pos = data.entities.pos[&target];
+//        let diff = sub_pos(other_pos, pos);
+//
+//        let x_diff = diff.x.signum();
+//        let y_diff = diff.y.signum();
+//
+//        let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
+//
+//        if !data.map.path_blocked_move(other_pos, Pos::new(x_diff, y_diff)).is_some() &&
+//           !data.has_blocking_entity(past_pos).is_some() {
+//            data.entities.set_pos(target, past_pos);
+//            data.entities.set_pos(entity, other_pos);
+//
+//            data.entities.messages[&target].push(Message::Attack(entity));
+//        }
+//    } else if data.using(entity, Item::Sword).is_some() {
+//        msg_log.log(Msg::Attack(entity, target, SWORD_DAMAGE));
+//        msg_log.log(Msg::Killed(entity, target, SWORD_DAMAGE));
+//    } else {
+//        // NOTE could add another section for the sword- currently the same as normal attacks
+//        let damage = 1;
+//        if data.entities.take_damage(target, damage) {
+//            msg_log.log(Msg::Attack(entity, target, damage));
+//            // TODO consider moving this to the Attack msg
+//            if data.entities.hp[&target].hp <= 0 {
+//                msg_log.log(Msg::Killed(entity, target, damage));
+//            }
+//
+//            data.entities.messages[&target].push(Message::Attack(entity));
+//        }
+//    }
+//}

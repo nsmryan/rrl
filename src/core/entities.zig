@@ -14,6 +14,7 @@ const Direction = math.direction.Direction;
 
 const movement = @import("movement.zig");
 const MoveMode = movement.MoveMode;
+const AttackType = movement.AttackType;
 
 const fov = @import("fov.zig");
 const FovBlock = fov.FovBlock;
@@ -159,6 +160,7 @@ pub const Entities = struct {
     percept: Comp(Percept),
     trap: Comp(Trap),
     armed: Comp(bool),
+    attack_type: Comp(AttackType),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;

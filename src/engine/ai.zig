@@ -31,7 +31,7 @@ pub fn stepAi(game: *Game, id: Id) !void {
         },
 
         .attacking => |target_id| {
-            _ = target_id;
+            try stepAiAttack(game, id, target_id);
         },
 
         .armed => |countdown| {
@@ -252,4 +252,142 @@ fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
         try game.log.log(.tryMove, .{ id, dir, 1 });
         try game.log.log(.faceTowards, .{ id, target_pos });
     }
+}
+
+fn stepAiAttack(game: *Game, id: Id, target_id: Id) !void {
+    try game.log.log(.aiAttack, .{ id, target_id });
+}
+
+fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) bool {
+    var hit_pos = None;
+    const entity_pos = game.level.entities.pos.get(id);
+
+    // Don't allow hitting from the same tile...
+    if (target_pos == entity_pos) {
+        return false;
+    }
+
+    // We don't use is_in_fov here because the other checks already cover blocked movement.
+    const within_fov = game.level.posInFov(monster_id, target_pos);
+
+    const traps_block = false;
+
+    // Both clear_path_up_to and path_blocked_move are used here because
+    // clear_path_up_to checks for entities, not including the target pos
+    // which contains the player, while path_blocked_move only checks the map
+    // up to and including the player pos.
+    const clear_path = game.level.clearPathUpTo(entity_pos, target_pos, traps_block);
+    const clear_map = game.level.entities.attackType.get(id) == .ranged or
+                      game.level.map.pathBlockedMove(entity_pos, target_pos) == null;
+
+    if (within_fov and clear_path and clear_map) {
+        // Look through attack positions, in case one hits the target
+        for (reach.reachables.mem) |pos| {
+            if (target_pos.eql(pos)) {
+                hit_pos = pos;
+                break;
+            }
+        }
+    }
+
+    return hit_pos;
+}
+
+fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
+    const entity_pos = game.level.entities.pos.get(id);
+
+    const old_dir = level.entities.facing.get(id);
+
+    var new_pos = entity_pos;
+
+    var potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, level, config);
+
+    // Sort by distance to monster to we consider closer positions first, allowing us to
+    // skip far away paths we won't take anyway.
+    sortByDistanceTo(entity_pos, potential_move_targets);
+    const potential_move_targets = potential_move_targets;
+
+    // path_solutions contains the path length, the amount of turning (absolute value), and the
+    // next position to go to for this solution.
+    var path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+
+    // look through all potential positions for the shortest path
+    var lowest_cost = std::usize::MAX;
+    for target in potential_move_targets {
+        const maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, level, config);
+
+        if const Some((cost, next_pos)) = maybe_cost {
+            const turn_dir = level.entities.face_to(monster_id, next_pos);
+            const turn_amount = old_dir.turn_amount(turn_dir);
+
+            path_solutions.push(((cost, turn_amount.abs()), next_pos));
+
+            lowest_cost = std::cmp::min(lowest_cost, cost);
+        }
+    }
+
+    // if there is a solution, get the best one and use it
+    if const Some(best_sol) = path_solutions.iter().min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()) {
+        new_pos = best_sol.1;
+    }
+
+    // step towards the closest location that const us hit the target
+    const maybe_pos = ai_attempt_step(monster_id, new_pos, &level);
+    return maybe_pos;
+}
+
+pub fn aiTargetPosCost(game: *Game,
+                       id: Id,
+                       target_id: Id,
+                       check_pos: Pos,
+                       lowest_cost: usize) ?(usize, Pos) {
+    const entity_pos = game.level.entities.pos.get(id);
+    const target_pos = game.level.entities.pos.get(target_id);
+    const movement = game.level.entities.movement.get(id);
+
+    var cost: usize = 0;
+
+    cost += aiFovCost(game, id, check_pos, target_pos);
+
+    // if the current cost is already higher then the lowest cost found so far,
+    // there is no reason to consider this path
+    if (cost > lowest_cost) {
+        return null;
+    }
+    // if the current cost (FOV cost), plus distance (the shortest possible path)
+    // if *already* more then the best path so far, this cannot possibly be the best
+    // path to take, so skip it
+    if (cost + @intCast(usize, distance(entity_pos, check_pos)) > lowest_cost) {
+        return null;
+    }
+
+    const must_reach = true;
+    const traps_block = true;
+    const path = game.level.pathBetween(entity_pos, check_pos, movement, must_reach, traps_block, null);
+
+    // Paths contain the starting square, so less than 2 is no path at all
+    if (path.len < 2) {
+        return null;
+    }
+
+    cost += path.len;
+
+    const next_pos = path[1];
+
+    return (cost, next_pos);
+}
+
+pub fn aiAttemptStep(game: *Game, id: EntityId, new_pos: Pos) ?Pos {
+    const entity_pos = game.level.entities.pos.get(id);
+
+    const pos_offset = aiTakeAstarStep(game, id, new_pos, true);
+
+    const step_pos;
+    if (posMag(pos_offset) > 0) {
+        step_pos = entity_pos.add(pos_offset);
+    } else {
+        step_pos = null;
+    }
+
+    return step_pos;
 }

@@ -12,6 +12,9 @@ const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 const Line = math.line.Line;
 
+const utils = @import("utils");
+const Id = utils.comp.Id;
+
 pub const HitWall = struct {
     height: Height,
     blocked_tile: bool,
@@ -34,6 +37,18 @@ pub const Collision = struct {
     pub fn hit(collision: Collision) bool {
         return collision.entity or collision.wall != null;
     }
+};
+
+pub const Attack = union(enum) {
+    attack: Id, // target_id
+    push: struct { id: Id, dir: Direction, amount: usize }, //target_id, direction, amount
+    stab: struct { id: Id, move_into_space: bool }, // target_id, move into space
+};
+
+pub const AttackType = enum {
+    melee,
+    ranged,
+    push,
 };
 
 pub const MoveMode = enum {

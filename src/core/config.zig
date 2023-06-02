@@ -28,6 +28,7 @@ pub const Config = struct {
     ping_sound_radius: usize,
     seed_cache_radius: usize,
     smoke_bomb_radius: usize,
+    skill_quick_reflexes_percent: f32,
     fog_of_war: bool,
     player_health: i32,
     golem_health: i32,

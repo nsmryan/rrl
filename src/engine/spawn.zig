@@ -49,6 +49,7 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.inventory.insert(id, Inventory{});
     try entities.status.insert(id, StatusEffect{});
     try entities.passive.insert(id, Passive{});
+    try entities.attack_type.insert(id, .melee);
 
     try log.log(.spawn, .{ id, Name.player });
     try log.log(.stance, .{ id, entities.stance.get(id) });
@@ -111,6 +112,14 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.move_mode.insert(id, MoveMode.walk);
     try entities.next_move_mode.insert(id, MoveMode.walk);
     try entities.status.insert(id, StatusEffect{});
+
+    switch (golem) {
+        .gol => try entities.attack_type.insert(id, .ranged),
+        .pawn => try entities.attack_type.insert(id, .melee),
+        .rook => try entities.attack_type.insert(id, .melee),
+        .spire => try entities.attack_type.insert(id, .melee),
+        .armil => try entities.attack_type.insert(id, .push),
+    }
 
     try log.log(.facing, .{ id, entities.facing.get(id) });
     try log.log(.stance, .{ id, entities.stance.get(id) });

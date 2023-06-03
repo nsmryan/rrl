@@ -89,11 +89,9 @@ pub const Level = struct {
     }
 
     pub fn itemAtPos(level: *const Level, pos: Pos) ?Id {
-        for (level.entities.ids.items) |id| {
-            if (level.entities.pos.getOrNull(id)) |entity_pos| {
-                if (entity_pos.eql(pos) and level.entities.typ.get(id) == .item) {
-                    return id;
-                }
+        for (level.entities.item.ids.items) |id| {
+            if (level.entities.status.get(id).active and level.entities.pos.get(id).eql(pos)) {
+                return id;
             }
         }
         return null;

@@ -75,6 +75,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
+        .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
         else => {},
     }
 }
@@ -466,19 +467,25 @@ fn resolvePickup(game: *Game, id: Id) !void {
     if (game.level.itemAtPos(pos)) |item_id| {
         const item = game.level.entities.item.get(item_id);
 
+        game.level.entities.status.getPtr(item_id).active = false;
+
         // If there is an inventory slot available, or there is space to drop the currently held item, pick it up.
-        const slot_available = game.level.entities.inventory.get(id).classAvailable(item.class());
-        if (slot_available or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
-            const dropped = game.level.entities.pickUpItem(id, item_id);
-
+        const access = game.level.entities.inventory.get(id).accessByClass(item.class());
+        if (access.id == null or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
             // If we dropped an item when picking this one up, log this action.
-            if (dropped.id) |dropped_item_id| {
-                try game.log.now(.dropItem, .{ id, dropped_item_id, dropped.slot });
+            if (access.id) |dropped_item_id| {
+                try game.log.now(.dropItem, .{ id, dropped_item_id, access.slot });
             }
-
-            try game.log.now(.pickedUp, .{ id, item_id, dropped.slot });
+            try game.log.now(.pickedUp, .{ id, item_id, access.slot });
+        } else {
+            // Reactivate item if we aren't going to use it.
+            game.level.entities.status.getPtr(item_id).active = true;
         }
     }
+}
+
+fn resolvePickedUp(game: *Game, id: Id, item_id: Id) void {
+    _ = game.level.entities.pickUpItem(id, item_id);
 }
 
 fn resolveDroppedItem(game: *Game, item_id: Id, slot: core.items.InventorySlot) !void {

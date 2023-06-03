@@ -118,17 +118,27 @@ pub const Level = struct {
 
         try shadowcasting.computeFov(start_pos, level.map, &view_ptr.map);
 
+        const fov_radius = level.entities.fov_radius.get(id);
+
         var bit_iter = view_ptr.map.visible.iterator(.{});
         while (bit_iter.next()) |index| {
             const visible_pos = level.map.fromIndex(index);
-            if (try fov.fovCheck(level, id, visible_pos, .high)) {
-                view_ptr.high.markVisible(visible_pos);
-            }
+            const dist = start_pos.distanceMaximum(visible_pos);
 
-            if (try fov.fovCheck(level, id, visible_pos, .low)) {
-                view_ptr.low.markVisible(visible_pos);
+            // Include a check for distances 1 greater then the fov radius so we can
+            // know when a tile is on the edge of the FoV.
+            // NOTE(perf) filtering out tiles here is a huge optimization.
+            if (dist <= fov_radius + 1) {
+                if (try fov.fovCheck(level, id, visible_pos, .high)) {
+                    view_ptr.high.markVisible(visible_pos);
+                }
+
+                if (try fov.fovCheck(level, id, visible_pos, .low)) {
+                    view_ptr.low.markVisible(visible_pos);
+                }
             }
         }
+
         // Determine which Pov to use based on stance, and update 'explored' to include new tiles.
         if (level.entities.stance.get(id) == .crouching) {
             view_ptr.explored.setUnion(view_ptr.low.visible);

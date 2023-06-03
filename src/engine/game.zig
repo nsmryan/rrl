@@ -57,8 +57,9 @@ pub const Game = struct {
     settings: Settings,
     log: MsgLog,
     allocator: Allocator,
+    frame_allocator: Allocator,
 
-    pub fn init(seed: u64, allocator: Allocator) !Game {
+    pub fn init(seed: u64, allocator: Allocator, frame_allocator: Allocator) !Game {
         var rng = RndGen.init(seed);
         const config = try Config.fromFile(CONFIG_PATH[0..]);
         var level = Level.empty(allocator);
@@ -72,6 +73,7 @@ pub const Game = struct {
             .settings = Settings.init(),
             .log = log,
             .allocator = allocator,
+            .frame_allocator = frame_allocator,
         };
     }
 

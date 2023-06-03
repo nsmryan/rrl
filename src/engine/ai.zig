@@ -242,8 +242,7 @@ fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
     const entity_pos = game.level.entities.pos.get(id);
     const reach = game.level.entities.movement.get(id);
 
-    // NOTE(perf) make sure to use frame allocator here.
-    const next_positions = try astarPath(&game.level, entity_pos, target_pos, reach, aiMoveCostFunction, game.allocator);
+    const next_positions = try astarPath(&game.level, entity_pos, target_pos, reach, aiMoveCostFunction, game.frame_allocator);
     defer next_positions.deinit();
 
     if (next_positions.items.len > 1) {

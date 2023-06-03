@@ -734,6 +734,7 @@ fn shouldHighlightItem(game: *const Game, use_action: UseAction) bool {
 
 fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offset: f32, game: *const Game, painter: *Painter, allocator: Allocator) !void {
     _ = allocator;
+
     const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
     const highlight_ui_color = Color.init(0, 0, 0, 255);
 
@@ -756,8 +757,70 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
     const text_y_offset = y_offset + game.config.ui_inv_name_y_offset;
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
         const item = game.level.entities.item.get(item_id);
-        const item_text = utils.baseName(@tagName(item));
-        try painter.drawcmds.append(DrawCmd.textFloat(item_text, text_x_offset, text_y_offset, text_color, game.config.ui_inv_name_scale));
+        //const item_text = try utils.lowerCamelToSpaced(@tagName(item), allocator);
+        var item_text = utils.baseName(@tagName(item));
+        var second_part_item_text: []const u8 = "";
+        switch (item) {
+            .greatSword => {
+                item_text = "great";
+                second_part_item_text = "sword";
+            },
+
+            .seedOfStone => {
+                item_text = "seed of";
+                second_part_item_text = "stone";
+            },
+
+            .seedCache => {
+                item_text = "seed";
+                second_part_item_text = "cache";
+            },
+
+            .smokeBomb => {
+                item_text = "smoke";
+                second_part_item_text = "bomb";
+            },
+
+            .lookingGlass => {
+                item_text = "looking";
+                second_part_item_text = "glass";
+            },
+
+            .glassEye => {
+                item_text = "glass";
+                second_part_item_text = "eye";
+            },
+
+            .spikeTrap => {
+                item_text = "spike";
+                second_part_item_text = "trap";
+            },
+
+            .soundTrap => {
+                item_text = "sound";
+                second_part_item_text = "trap";
+            },
+
+            .blinkTrap => {
+                item_text = "blink";
+                second_part_item_text = "trap";
+            },
+
+            .freezeTrap => {
+                item_text = "freeze";
+                second_part_item_text = "trap";
+            },
+
+            else => {},
+        }
+        if (second_part_item_text.len > 0) {
+            const name_x_offset = game.config.ui_inv_name_second_x_offset;
+            const name_y_offset = game.config.ui_inv_name_second_y_offset;
+            try painter.drawcmds.append(DrawCmd.textFloat(item_text, text_x_offset - name_x_offset, text_y_offset - name_y_offset, .center, text_color, game.config.ui_inv_name_scale));
+            try painter.drawcmds.append(DrawCmd.textFloat(second_part_item_text, text_x_offset + name_x_offset, text_y_offset + name_y_offset, .center, text_color, game.config.ui_inv_name_scale));
+        } else {
+            try painter.drawcmds.append(DrawCmd.textFloat(item_text, text_x_offset, text_y_offset, .center, text_color, game.config.ui_inv_name_scale));
+        }
     }
 }
 

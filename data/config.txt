@@ -222,8 +222,10 @@ move_tiles_sneak: 1
 move_tiles_walk: 1
 move_tiles_run: 2
 
-ui_inv_name_x_offset: 2.3
+ui_inv_name_x_offset: 2.35
 ui_inv_name_y_offset: 0.3
+ui_inv_name_second_x_offset: 0.04
+ui_inv_name_second_y_offset: 0.35
 ui_inv_name_scale: 0.9
 
 ui_inv_name_0_x_offset: 3.2

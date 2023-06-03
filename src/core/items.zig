@@ -110,7 +110,7 @@ pub const InventorySlot = enum(u8) {
     artifact1,
 };
 
-pub const InventoryDropped = struct {
+pub const InventoryAccess = struct {
     id: ?Id = null,
     slot: InventorySlot = InventorySlot.weapon,
 };
@@ -129,42 +129,42 @@ pub const Inventory = struct {
         }
     }
 
-    pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) InventoryDropped {
-        var dropped: InventoryDropped = InventoryDropped{};
+    pub fn addItem(inventory: *Inventory, item_id: Id, class: ItemClass) InventoryAccess {
+        var access: InventoryAccess = InventoryAccess{};
         switch (class) {
             .primary => {
-                dropped.id = inventory.weapon;
-                dropped.slot = InventorySlot.weapon;
+                access.id = inventory.weapon;
+                access.slot = InventorySlot.weapon;
                 inventory.weapon = item_id;
             },
 
             .consumable => {
-                dropped.id = inventory.throwing;
-                dropped.slot = InventorySlot.throwing;
+                access.id = inventory.throwing;
+                access.slot = InventorySlot.throwing;
                 inventory.throwing = item_id;
             },
 
             .misc => {
                 if (inventory.artifacts[0] == null) {
                     // If nothing in first artifact slot, use it.
-                    dropped.id = inventory.artifacts[0];
-                    dropped.slot = InventorySlot.artifact0;
+                    access.id = inventory.artifacts[0];
+                    access.slot = InventorySlot.artifact0;
                     inventory.artifacts[0] = item_id;
                 } else if (inventory.artifacts[1] == null) {
                     // If nothing in second artifact slot, use it.
-                    dropped.id = inventory.artifacts[1];
-                    dropped.slot = InventorySlot.artifact1;
+                    access.id = inventory.artifacts[1];
+                    access.slot = InventorySlot.artifact1;
                     inventory.artifacts[1] = item_id;
                 } else {
                     // Otherwise displace second artifact.
-                    dropped.id = inventory.artifacts[1];
-                    dropped.slot = InventorySlot.artifact1;
+                    access.id = inventory.artifacts[1];
+                    access.slot = InventorySlot.artifact1;
                     inventory.artifacts[1] = item_id;
                 }
             },
         }
 
-        return dropped;
+        return access;
     }
 
     pub fn drop(inventory: *Inventory, item_id: Id, class: ItemClass) InventorySlot {
@@ -211,11 +211,36 @@ pub const Inventory = struct {
     }
 
     /// Check whether there is a open slot for an item of the given class.
-    pub fn classAvailable(inventory: *const Inventory, item_class: ItemClass) bool {
+    pub fn accessByClass(inventory: *const Inventory, item_class: ItemClass) InventoryAccess {
+        var access: InventoryAccess = InventoryAccess{};
         switch (item_class) {
-            .primary => return inventory.weapon == null,
-            .consumable => return inventory.throwing == null,
-            .misc => return inventory.artifacts[0] == null or inventory.artifacts[1] == null,
+            .primary => {
+                access.id = inventory.weapon;
+                access.slot = InventorySlot.weapon;
+            },
+
+            .consumable => {
+                access.id = inventory.throwing;
+                access.slot = InventorySlot.throwing;
+            },
+
+            .misc => {
+                if (inventory.artifacts[0] == null) {
+                    // If nothing in first artifact slot, use it.
+                    access.id = inventory.artifacts[0];
+                    access.slot = InventorySlot.artifact0;
+                } else if (inventory.artifacts[1] == null) {
+                    // If nothing in second artifact slot, use it.
+                    access.id = inventory.artifacts[1];
+                    access.slot = InventorySlot.artifact1;
+                } else {
+                    // Otherwise displace second artifact.
+                    access.id = inventory.artifacts[1];
+                    access.slot = InventorySlot.artifact1;
+                }
+            },
         }
+
+        return access;
     }
 };

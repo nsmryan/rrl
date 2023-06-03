@@ -232,10 +232,25 @@ pub fn processTextFloat(canvas: Canvas, params: drawing.drawcmd.DrawTextFloat) v
     const cell_dims = canvas.panel.cellDims();
 
     const char_width_unscaled = (cell_dims.height * canvas.ascii_texture.char_width) / canvas.ascii_texture.char_height;
-    const char_width = @floatToInt(u32, @intToFloat(f32, char_width_unscaled) * params.scale);
+    const char_width = @floatToInt(i32, @intToFloat(f32, char_width_unscaled) * params.scale);
     const text_pixel_width = @intCast(i32, params.len) * @intCast(i32, char_width);
 
-    const x_offset = @floatToInt(i32, params.x * @intToFloat(f32, cell_dims.width)) - @divFloor(text_pixel_width, 2);
+    const pixel_width = cell_dims.width;
+
+    var x_offset = @floatToInt(i32, params.x * @intToFloat(f32, cell_dims.width));
+    switch (params.justify) {
+        .right => {
+            x_offset += @intCast(i32, pixel_width) - char_width * @intCast(i32, params.len);
+        },
+
+        .center => {
+            x_offset -= @divFloor(text_pixel_width, 2);
+        },
+
+        // left is the default above.
+        .left => {},
+    }
+
     const y_offset = @floatToInt(i32, params.y * @intToFloat(f32, cell_dims.height));
     processTextGeneric(canvas, params.text, params.len, params.color, Pos.init(x_offset, y_offset), params.scale);
 }

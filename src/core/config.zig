@@ -116,6 +116,8 @@ pub const Config = struct {
     ui_inv_name_x_offset: f32,
     ui_inv_name_y_offset: f32,
     ui_inv_name_scale: f32,
+    ui_inv_name_second_x_offset: f32,
+    ui_inv_name_second_y_offset: f32,
 
     ui_inv_name_0_x_offset: f32,
     ui_inv_name_0_y_offset: f32,

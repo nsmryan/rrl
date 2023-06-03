@@ -235,7 +235,7 @@ pub const Entities = struct {
     }
 
     // Pick up an item, and return the dropped item if any.
-    pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) items.InventoryDropped {
+    pub fn pickUpItem(entities: *Entities, id: Id, item_id: Id) items.InventoryAccess {
         var inventory = entities.inventory.getPtr(id);
         const item = entities.item.get(item_id);
         entities.status.getPtr(item_id).active = false;

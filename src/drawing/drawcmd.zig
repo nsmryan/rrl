@@ -19,7 +19,7 @@ pub const DrawSpriteFloat = struct { sprite: Sprite, color: Color, x: f32, y: f3
 pub const DrawHighlightTile = struct { color: Color, pos: Pos };
 pub const DrawOutlineTile = struct { color: Color, pos: Pos };
 pub const DrawText = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, color: Color, pos: Pos, scale: f32 };
-pub const DrawTextFloat = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, color: Color, x: f32, y: f32, scale: f32 };
+pub const DrawTextFloat = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, x: f32, y: f32, scale: f32 };
 pub const DrawTextJustify = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, bg_color: Color, pos: Pos, width: u32, scale: f32 };
 pub const DrawRect = struct { pos: Pos, width: u32, height: u32, offset_percent: f32, filled: bool, color: Color };
 pub const DrawRectFloat = struct { x: f32, y: f32, width: f32, height: f32, filled: bool, color: Color };
@@ -84,8 +84,8 @@ pub const DrawCmd = union(enum) {
         return textCmd;
     }
 
-    pub fn textFloat(txt: []const u8, x: f32, y: f32, color: Color, scale: f32) DrawCmd {
-        var textCmd = DrawCmd{ .textFloat = DrawTextFloat{ .len = txt.len, .color = color, .x = x, .y = y, .scale = scale } };
+    pub fn textFloat(txt: []const u8, x: f32, y: f32, justify: Justify, color: Color, scale: f32) DrawCmd {
+        var textCmd = DrawCmd{ .textFloat = DrawTextFloat{ .len = txt.len, .justify = justify, .color = color, .x = x, .y = y, .scale = scale } };
         std.mem.copy(u8, textCmd.textFloat.text[0..txt.len], txt);
         return textCmd;
     }

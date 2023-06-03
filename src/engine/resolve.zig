@@ -471,7 +471,7 @@ fn resolvePickup(game: *Game, id: Id) !void {
 
         // If there is an inventory slot available, or there is space to drop the currently held item, pick it up.
         const access = game.level.entities.inventory.get(id).accessByClass(item.class());
-        if (access.id == null or try game.level.searchForEmptyTile(pos, 10, game.allocator) != null) {
+        if (access.id == null or try game.level.searchForEmptyTile(pos, 10, game.frame_allocator) != null) {
             // If we dropped an item when picking this one up, log this action.
             if (access.id) |dropped_item_id| {
                 try game.log.now(.dropItem, .{ id, dropped_item_id, access.slot });
@@ -496,8 +496,7 @@ fn resolveDroppedItem(game: *Game, item_id: Id, slot: core.items.InventorySlot) 
 fn resolveDropItem(game: *Game, id: Id, item_id: Id, slot: core.items.InventorySlot) !void {
     const pos = game.level.entities.pos.get(id);
 
-    // NOTE(perf) ensure using frame allocator.
-    if (try game.level.searchForEmptyTile(pos, 10, game.allocator)) |empty_pos| {
+    if (try game.level.searchForEmptyTile(pos, 10, game.frame_allocator)) |empty_pos| {
         game.level.entities.removeItem(id, item_id);
         try game.log.log(.droppedItem, .{ item_id, slot });
         try game.log.log(.move, .{ item_id, .blink, .walk, empty_pos });
@@ -515,7 +514,7 @@ fn resolveEatHerb(game: *Game, id: Id, item_id: Id) !void {
 
 fn resolveFacing(game: *Game, id: Id, facing: Direction) !void {
     game.level.entities.facing.set(id, facing);
-    try game.level.updateAllFov();
+    try game.level.updateFov(id);
 }
 
 fn resolveYell(game: *Game, id: Id) !void {
@@ -579,8 +578,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
         // This is playing a little fast and lose- we assume that if
         // the seed of stone hits a tile, that any entity at that tile
         // is something we can destroy like a sword or grass entity.
-        // NOTE(perf) use frame allocator
-        var entity_positions = ArrayList(Id).init(game.allocator);
+        var entity_positions = ArrayList(Id).init(game.frame_allocator);
         try game.level.entitiesAtPos(hit_pos, &entity_positions);
         for (entity_positions.items) |entity_id| {
             game.level.entities.markForRemoval(entity_id);
@@ -588,8 +586,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
         game.level.entities.markForRemoval(item_id);
     } else if (game.level.entities.item.get(item_id) == .seedCache) {
         // Seed cache creates a ground of grass tiles around the hit location.
-        // NOTE(perf) use frame allocator.
-        var floodfill = board.floodfill.FloodFill.init(game.allocator);
+        var floodfill = board.floodfill.FloodFill.init(game.frame_allocator);
         try floodfill.fill(&game.level.map, hit_pos, game.config.seed_cache_radius);
         for (floodfill.flood.items) |seed_pos| {
             if (math.rand.rngTrial(game.rng.random(), 0.70)) {
@@ -600,7 +597,7 @@ fn resolveItemThrow(game: *Game, id: Id, item_id: Id, start: Pos, end: Pos, hard
     } else if (game.level.entities.item.get(item_id) == .smokeBomb) {
         // Smoke bomb creates a group of smoke tiles around the hit location.
         _ = try spawn.spawnSmoke(&game.level.entities, &game.config, hit_pos, game.config.smoke_bomb_fov_block, &game.log);
-        var floodfill = board.floodfill.FloodFill.init(game.allocator);
+        var floodfill = board.floodfill.FloodFill.init(game.frame_allocator);
         try floodfill.fill(&game.level.map, hit_pos, game.config.smoke_bomb_radius);
         for (floodfill.flood.items) |smoke_pos| {
             if (!smoke_pos.pos.eql(hit_pos)) {
@@ -747,8 +744,7 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
     game.level.map.getPtr(pos).center.height = .empty;
     game.level.map.getPtr(pos).center.material = .rubble;
 
-    // NOTE(perf) use frame allocator
-    var hit_entities: ArrayList(Id) = ArrayList(Id).init(game.allocator);
+    var hit_entities: ArrayList(Id) = ArrayList(Id).init(game.frame_allocator);
     try game.level.entitiesAtPos(pos, &hit_entities);
     for (hit_entities.items) |crushed_id| {
         if (crushed_id == id) {

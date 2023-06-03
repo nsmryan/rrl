@@ -489,7 +489,6 @@ pub fn renderPips(game: *Game, painter: *Painter) !void {
     }
 }
 
-// NOTE(memory) provide a frame allocator for display stuff.
 pub fn renderPlayer(game: *Game, painter: *Painter, allocator: Allocator) !void {
     var list: ArrayList([]u8) = ArrayList([]u8).init(allocator);
 
@@ -782,16 +781,14 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
 
         const x_offset: i32 = 1;
 
-        // NOTE(memory) use a frame allocator instead
-        var object_ids = ArrayList(Id).init(game.allocator);
+        var object_ids = ArrayList(Id).init(game.frame_allocator);
         try game.level.entitiesAtPos(info_pos, &object_ids);
 
         var y_pos: i32 = 1;
 
-        // NOTE(memory) use a frame allocator instead
-        var text_list = ArrayList([]u8).init(game.allocator);
+        var text_list = ArrayList([]u8).init(game.frame_allocator);
 
-        try text_list.append(try std.fmt.allocPrint(game.allocator, "({:>2},{:>2})", .{ info_pos.x, info_pos.y }));
+        try text_list.append(try std.fmt.allocPrint(game.frame_allocator, "({:>2},{:>2})", .{ info_pos.x, info_pos.y }));
 
         var text_pos = Pos.init(x_offset, y_pos);
 
@@ -811,9 +808,9 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
             if (entity_in_fov) {
                 drawn_info = true;
 
-                try text_list.append(try std.fmt.allocPrint(game.allocator, "* {s}", .{@tagName(game.level.entities.name.get(obj_id))}));
+                try text_list.append(try std.fmt.allocPrint(game.frame_allocator, "* {s}", .{@tagName(game.level.entities.name.get(obj_id))}));
                 if (game.level.entities.hp.getOrNull(obj_id)) |hp| {
-                    try text_list.append(try std.fmt.allocPrint(game.allocator, " hp {}", .{hp}));
+                    try text_list.append(try std.fmt.allocPrint(game.frame_allocator, " hp {}", .{hp}));
                 } else {
                     try text_list.append("");
                 }
@@ -821,15 +818,15 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
                 // Show facing direction for player and monsters.
                 if (game.level.entities.typ.get(obj_id) == .player or game.level.entities.typ.get(obj_id) == .enemy) {
                     if (game.level.entities.facing.getOrNull(obj_id)) |direction| {
-                        try text_list.append(try std.fmt.allocPrint(game.allocator, " facing {s}", .{@tagName(direction)}));
+                        try text_list.append(try std.fmt.allocPrint(game.frame_allocator, " facing {s}", .{@tagName(direction)}));
                     }
                 }
 
                 if (game.level.entities.hp.getOrNull(obj_id)) |entity_hp| {
                     if (entity_hp == 0) {
-                        try text_list.append(try game.allocator.dupe(u8, "  dead"));
+                        try text_list.append(try game.frame_allocator.dupe(u8, "  dead"));
                     } else if (game.level.entities.behavior.getOrNull(obj_id)) |behave| {
-                        try text_list.append(try std.fmt.allocPrint(game.allocator, " currently {s}", .{@tagName(behave)}));
+                        try text_list.append(try std.fmt.allocPrint(game.frame_allocator, " currently {s}", .{@tagName(behave)}));
                     }
                 }
             }
@@ -853,39 +850,39 @@ pub fn renderInfo(game: *Game, painter: *Painter) !void {
             const info_tile = game.level.map.get(info_pos);
 
             if (info_tile.impassable) {
-                try text_list.append(try game.allocator.dupe(u8, "Tile is water"));
+                try text_list.append(try game.frame_allocator.dupe(u8, "Tile is water"));
             } else {
-                try text_list.append(try std.fmt.allocPrint(game.allocator, "Tile is {s} {s}", .{ @tagName(game.level.map.get(info_pos).center.height), @tagName(game.level.map.get(info_pos).center.material) }));
+                try text_list.append(try std.fmt.allocPrint(game.frame_allocator, "Tile is {s} {s}", .{ @tagName(game.level.map.get(info_pos).center.height), @tagName(game.level.map.get(info_pos).center.material) }));
             }
 
             if (info_tile.down.height != .empty) {
-                try text_list.append(try game.allocator.dupe(u8, "Lower wall"));
+                try text_list.append(try game.frame_allocator.dupe(u8, "Lower wall"));
             }
 
             if (game.level.map.isWithinBounds(info_pos.moveX(1)) and
                 game.level.map.get(info_pos.moveX(1)).left.height != .empty)
             {
-                try text_list.append(try game.allocator.dupe(u8, "Right wall"));
+                try text_list.append(try game.frame_allocator.dupe(u8, "Right wall"));
             }
 
             if (game.level.map.isWithinBounds(info_pos.moveY(-1)) and
                 game.level.map.get(info_pos.moveY(-1)).down.height != .empty)
             {
-                try text_list.append(try game.allocator.dupe(u8, "Top wall"));
+                try text_list.append(try game.frame_allocator.dupe(u8, "Top wall"));
             }
 
             if (info_tile.left.height != .empty) {
-                try text_list.append(try game.allocator.dupe(u8, "Left wall"));
+                try text_list.append(try game.frame_allocator.dupe(u8, "Left wall"));
             }
 
             if (board.blocking.BlockedType.move.tileBlocks(info_tile) != .empty)
-                try text_list.append(try std.fmt.allocPrint(game.allocator, "blocked", .{}));
+                try text_list.append(try std.fmt.allocPrint(game.frame_allocator, "blocked", .{}));
         }
 
         try renderTextList(painter, text_list, text_color, text_pos, 1.0);
     } else {
         // Otherwise show console log messages.
-        var text_list = ArrayList(ColoredText).init(game.allocator);
+        var text_list = ArrayList(ColoredText).init(game.frame_allocator);
         var offset: usize = 0;
         while (offset < ConsoleLog.num_msgs) : (offset += 1) {
             const index = (offset + painter.state.console_log.index) % ConsoleLog.num_msgs;

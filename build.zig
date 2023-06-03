@@ -24,7 +24,7 @@ fn buildMain(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.built
 
     const options = b.addOptions();
     // TODO set to false when build options are working...
-    options.addOption(bool, "remotery", true);
+    options.addOption(bool, "remotery", false);
     exe.addOptions("build_options", options);
 
     exe.addIncludePath("deps/remotery");

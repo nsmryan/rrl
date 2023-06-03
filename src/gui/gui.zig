@@ -4,6 +4,7 @@ const ArrayList = std.ArrayList;
 const assert = std.debug.assert;
 
 const Allocator = std.mem.Allocator;
+const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 
 const utils = @import("utils");
 const Str = utils.intern.Str;
@@ -91,13 +92,17 @@ pub const Gui = struct {
     game: Game,
     state: DisplayState,
     allocator: Allocator,
+    frame_allocator: FixedBufferAllocator,
     profiler: prof.Prof,
     ticks: u64,
     reload_config_timer: Timer,
     panels: Panels,
 
     pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
-        var game = try Game.init(seed, allocator);
+        var fixed_buffer = try allocator.alloc(u8, 1024 * 1024 * 16);
+        var fixed_buffer_allocator = FixedBufferAllocator.init(fixed_buffer);
+
+        var game = try Game.init(seed, allocator, fixed_buffer_allocator.allocator());
         var profiler: prof.Prof = prof.Prof{};
         if (use_profiling and game.config.use_profiling) {
             try profiler.start();
@@ -118,6 +123,7 @@ pub const Gui = struct {
             .state = state,
             .game = game,
             .allocator = allocator,
+            .frame_allocator = fixed_buffer_allocator,
             .profiler = profiler,
             .ticks = 0,
             .reload_config_timer = Timer.init(game.config.reload_config_period),
@@ -131,9 +137,12 @@ pub const Gui = struct {
         gui.game.deinit();
         gui.panels.deinit();
         gui.profiler.end();
+        gui.allocator.free(gui.frame_allocator.buffer);
     }
 
     pub fn step(gui: *Gui, ticks: u64) !bool {
+        gui.frame_allocator.reset();
+
         prof.scope("step");
         defer prof.end();
 
@@ -572,13 +581,13 @@ pub const Gui = struct {
 
         // Render current player information.
         painter.retarget(&gui.panels.player.drawcmds, gui.panels.player.panel.getRect());
-        try rendering.renderPlayer(&gui.game, &painter, gui.allocator);
+        try rendering.renderPlayer(&gui.game, &painter, gui.frame_allocator.allocator());
         gui.display.clear(&gui.panels.player);
         gui.display.draw(&gui.panels.player);
 
         // Render current inventory information.
         painter.retarget(&gui.panels.inventory.drawcmds, gui.panels.inventory.panel.getRect());
-        try rendering.renderInventory(&gui.game, &painter, gui.allocator);
+        try rendering.renderInventory(&gui.game, &painter, gui.frame_allocator.allocator());
         gui.display.clear(&gui.panels.inventory);
         gui.display.draw(&gui.panels.inventory);
 

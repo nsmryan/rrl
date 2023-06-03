@@ -340,7 +340,7 @@ pub fn aiTargetPosCost(game: *Game,
                        id: Id,
                        target_id: Id,
                        check_pos: Pos,
-                       lowest_cost: usize) ?(usize, Pos) {
+                       lowest_cost: usize) ? struct { cost: usize, pos: Pos}  {
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
     const movement = game.level.entities.movement.get(id);
@@ -374,7 +374,7 @@ pub fn aiTargetPosCost(game: *Game,
 
     const next_pos = path[1];
 
-    return (cost, next_pos);
+    return .{ .cost = cost, .pos = next_pos};
 }
 
 pub fn aiAttemptStep(game: *Game, id: EntityId, new_pos: Pos) ?Pos {

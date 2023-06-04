@@ -156,7 +156,7 @@ pub const Level = struct {
         const stance = level.entities.stance.get(id);
         const other_stance = level.entities.stance.getOrNull(other) orelse Stance.standing;
         var view_height: ViewHeight = undefined;
-        if (stance == Stance.crouching or other_stance == Stance.crouching) {
+        if (stance == .crouching or other_stance == .crouching) {
             view_height = .low;
         } else {
             view_height = .high;

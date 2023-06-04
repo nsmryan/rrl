@@ -48,7 +48,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
     // NOTE(generality) this could use the view.pov.visible.iterator and look
     // for entities in FoV if golems need to see other entities besides the
     // player.
-    const fov_result = try game.level.isInFov(id, player_pos, .high);
+    const fov_result = try game.level.entityInFov(id, player_id);
 
     if (fov_result == .inside) {
         try game.log.log(.faceTowards, .{ id, player_pos });
@@ -112,8 +112,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
 
 pub fn stepAiAlert(game: *Game, id: Id, pos: Pos) !void {
     const player_id = Entities.player_id;
-    const player_pos = game.level.entities.pos.get(player_id);
-    const can_see_target = try game.level.posInFov(id, player_pos) == .inside;
+    const can_see_target = try game.level.entityInFov(id, player_id) == .inside;
 
     if (can_see_target) {
         // Can see target- attack
@@ -134,8 +133,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
     const entity_pos = game.level.entities.pos.get(id);
 
     const player_pos = game.level.entities.pos.get(player_id);
-    const player_in_fov = try game.level.isInFov(id, player_pos, .high) == .inside;
-    print("player_in_fov = {}\n", .{player_in_fov});
+    const player_in_fov = try game.level.entityInFov(id, player_id) == .inside;
 
     if (player_in_fov) {
         try game.log.log(.faceTowards, .{ id, player_pos });

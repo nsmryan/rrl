@@ -76,6 +76,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
+        .testMode => |args| try resolveTestMode(game, args),
         else => {},
     }
 }
@@ -876,4 +877,9 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
             try game.log.log(.slash, .{ entity_pos, hit_pos });
         },
     }
+}
+
+fn resolveTestMode(game: *Game, test_mode: bool) !void {
+    _ = test_mode;
+    try game.level.updateAllFov();
 }

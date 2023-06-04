@@ -71,6 +71,8 @@ pub const Msg = union(enum) {
     pierce: struct { origin_pos: Pos, hit_pos: Pos },
     slash: struct { origin_pos: Pos, hit_pos: Pos },
     blunt: struct { origin_pos: Pos, hit_pos: Pos },
+    testMode: bool,
+    debugEnabled: bool,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

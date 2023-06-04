@@ -74,7 +74,6 @@ pub const InputAction = union(enum) {
     exit,
     esc,
     forceExit,
-    exploreAll,
     regenerateMap,
     testMode,
     overlayToggle,
@@ -85,22 +84,71 @@ pub const InputAction = union(enum) {
 };
 
 pub fn resolveAction(game: *Game, input_action: InputAction) !void {
-    switch (game.settings.state) {
-        .playing => try resolveActionPlaying(game, input_action),
-        .win => {},
-        .lose => {},
-        .inventory => {},
-        .skillMenu => {},
-        .classMenu => {},
-        .helpMenu => {},
-        .confirmQuit => {},
-        .splash => try resolveActionSplash(game, input_action),
-        .use => try resolveActionUse(game, input_action),
-        .exit => {},
+    const resolved = try resolveActionUniversal(game, input_action);
+    if (!resolved) {
+        switch (game.settings.state) {
+            .playing => try resolveActionPlaying(game, input_action),
+            .win => {},
+            .lose => {},
+            .inventory => {},
+            .skillMenu => {},
+            .classMenu => {},
+            .helpMenu => {},
+            .confirmQuit => try resolveActionConfirmQuit(game, input_action),
+            .splash => try resolveActionSplash(game, input_action),
+            .use => try resolveActionUse(game, input_action),
+            .exit => {},
+        }
     }
 }
 
-pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
+fn resolveActionUniversal(game: *Game, input_action: InputAction) !bool {
+    switch (input_action) {
+        // NOTE(implement) when map generation is added
+        //.regenerateMap => {
+        //    _ = map_construct(&game.config.map_load.clone(), game);
+        //    try game.log.now(.newLevel, .{});
+        //    return true;
+        //}
+
+        .testMode => {
+            // toggle god mode flag
+            const player_id = Entities.player_id;
+            game.level.entities.status.getPtr(player_id).test_mode =
+                !game.level.entities.status.get(player_id).test_mode;
+
+            try game.log.log(.testMode, game.level.entities.status.get(player_id).test_mode);
+
+            return true;
+        },
+
+        .forceExit => {
+            game.changeState(.exit);
+            return true;
+        },
+
+        .exit => {
+            if (game.settings.state != .confirmQuit) {
+                game.changeState(.confirmQuit);
+                return true;
+            } else {
+                return false;
+            }
+        },
+
+        .debugToggle => {
+            game.settings.debug_enabled = !game.settings.debug_enabled;
+            try game.log.log(.debugEnabled, game.settings.debug_enabled);
+            return true;
+        },
+
+        else => {
+            return false;
+        },
+    }
+}
+
+fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
         .move => |dir| try game.log.log(.tryMove, .{ Entities.player_id, dir, game.level.entities.next_move_mode.get(Entities.player_id).moveAmount() }),
 
@@ -136,13 +184,12 @@ pub fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
         .interact => try use.startInteract(game),
 
-        // TODO for now esc exits, but when menus work only exit should exit the game.
-        .esc => game.changeState(.exit),
+        .esc => game.changeState(.confirmQuit),
         else => {},
     }
 }
 
-pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
+fn resolveActionUse(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
         .run => try game.log.log(.nextMoveMode, .{ Entities.player_id, MoveMode.run }),
 
@@ -191,10 +238,18 @@ pub fn resolveActionUse(game: *Game, input_action: InputAction) !void {
     }
 }
 
-pub fn resolveActionSplash(game: *Game, input_action: InputAction) !void {
+fn resolveActionSplash(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
         .esc => game.changeState(.exit),
         else => game.changeState(.playing),
+    }
+}
+
+fn resolveActionConfirmQuit(game: *Game, input_action: InputAction) !void {
+    switch (input_action) {
+        .esc => game.changeState(.playing),
+        .exit => game.changeState(.exit),
+        else => {},
     }
 }
 

@@ -46,12 +46,9 @@ pub fn main() anyerror!void {
     //gui.game.settings.state = .splash;
     //gui.game.settings.splash.set("player_standing_right"[0..]);
 
-    var timer = try std.time.Timer.start();
     var ticks = sdl2.SDL_GetTicks64();
     while (try gui.step(ticks)) {
-        print("took {d} us\n", .{timer.read() / 1000});
         std.time.sleep(1000000000 / gui.game.config.frame_rate);
         ticks = sdl2.SDL_GetTicks64();
-        timer.reset();
     }
 }

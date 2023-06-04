@@ -256,6 +256,11 @@ pub const Level = struct {
     }
 
     pub fn isInFov(level: *Level, id: Id, other_pos: Pos, view_height: ViewHeight) FovError!FovResult {
+        // If the entity is in test mode, it can see all tiles.
+        if (level.entities.status.get(id).test_mode) {
+            return .inside;
+        }
+
         const in_fov = switch (view_height) {
             .low => level.entities.view.get(id).low.isVisible(other_pos),
             .high => level.entities.view.get(id).high.isVisible(other_pos),

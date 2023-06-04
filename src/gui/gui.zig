@@ -560,8 +560,8 @@ pub const Gui = struct {
         return anim;
     }
 
-    pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {
-        var painter = Painter{
+    fn makePainter(gui: *Gui, delta_ticks: u64) Painter {
+        return Painter{
             .sprites = &gui.display.sprites.sheets,
             .strings = &gui.display.strings,
             .drawcmds = &gui.panels.level.drawcmds,
@@ -569,6 +569,11 @@ pub const Gui = struct {
             .state = &gui.state,
             .dt = delta_ticks,
         };
+    }
+
+    pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {
+        var painter = gui.makePainter(delta_ticks);
+
         try rendering.renderLevel(&gui.game, &painter);
         gui.display.clear(&gui.panels.level);
         gui.display.draw(&gui.panels.level);
@@ -607,9 +612,13 @@ pub const Gui = struct {
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getRect());
+
+        if (gui.game.settings.state == .confirmQuit) {
+            gui.display.fitTexture(&gui.panels.screen, gui.panels.menu_area, &gui.panels.menu, gui.panels.menu.panel.getRect());
+        }
     }
 
-    pub fn drawOverlay(gui: *Gui) !void {
+    pub fn drawOverlay(gui: *Gui, delta_ticks: u64) !void {
         const color = Color.init(0xcd, 0xb4, 0x96, 255);
 
         const offset: f32 = 0.5;
@@ -634,12 +643,21 @@ pub const Gui = struct {
         try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("message log", .center, gui.panels.info_area.position(), text_color, color, @intCast(u32, gui.panels.info_area.width), section_name_scale));
 
         gui.display.draw(&gui.panels.screen);
+
+        if (gui.game.settings.state == .confirmQuit) {
+            var painter = gui.makePainter(delta_ticks);
+
+            painter.retarget(&gui.panels.menu.drawcmds, gui.panels.menu.panel.getRect());
+            try rendering.renderConfirmQuit(&painter);
+            gui.display.clear(&gui.panels.menu);
+            gui.display.draw(&gui.panels.menu);
+        }
     }
 
     pub fn drawPlaying(gui: *Gui, delta_ticks: u64) !void {
         try gui.drawPanels(delta_ticks);
         gui.placePanels();
-        try gui.drawOverlay();
+        try gui.drawOverlay(delta_ticks);
     }
 
     pub fn drawSplash(gui: *Gui) !void {

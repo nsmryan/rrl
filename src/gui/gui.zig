@@ -87,6 +87,8 @@ pub const PIXELS_PER_CELL: usize = 24;
 pub const WINDOW_WIDTH: usize = PIXELS_PER_CELL * SCREEN_CELLS_WIDTH;
 pub const WINDOW_HEIGHT: usize = PIXELS_PER_CELL * SCREEN_CELLS_HEIGHT;
 
+pub const FRAME_ALLOCATOR_NUM_BYTES: usize = 16 * 1024 * 1024;
+
 pub const Gui = struct {
     display: display.Display,
     game: Game,
@@ -99,7 +101,7 @@ pub const Gui = struct {
     panels: Panels,
 
     pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
-        var fixed_buffer = try allocator.alloc(u8, 1024 * 1024 * 16);
+        var fixed_buffer = try allocator.alloc(u8, FRAME_ALLOCATOR_NUM_BYTES);
         var fixed_buffer_allocator = FixedBufferAllocator.init(fixed_buffer);
 
         var game = try Game.init(seed, allocator, fixed_buffer_allocator.allocator());

@@ -93,7 +93,7 @@ pub fn resolveAction(game: *Game, input_action: InputAction) !void {
             .inventory => {},
             .skillMenu => {},
             .classMenu => {},
-            .helpMenu => {},
+            .helpMenu => try resolveActionHelpMenu(game, input_action),
             .confirmQuit => try resolveActionConfirmQuit(game, input_action),
             .splash => try resolveActionSplash(game, input_action),
             .use => try resolveActionUse(game, input_action),
@@ -184,6 +184,8 @@ fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
         .interact => try use.startInteract(game),
 
+        .helpMenu => game.changeState(.helpMenu),
+
         .esc => game.changeState(.confirmQuit),
         else => {},
     }
@@ -249,6 +251,14 @@ fn resolveActionConfirmQuit(game: *Game, input_action: InputAction) !void {
     switch (input_action) {
         .esc => game.changeState(.playing),
         .exit => game.changeState(.exit),
+        else => {},
+    }
+}
+
+fn resolveActionHelpMenu(game: *Game, input_action: InputAction) !void {
+    switch (input_action) {
+        .esc => game.changeState(.playing),
+        .helpMenu => game.changeState(.playing),
         else => {},
     }
 }

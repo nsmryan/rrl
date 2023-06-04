@@ -18,9 +18,9 @@ pub const DrawSpriteScaled = struct { sprite: Sprite, scale: f32, dir: MoveDirec
 pub const DrawSpriteFloat = struct { sprite: Sprite, color: Color, x: f32, y: f32, x_scale: f32, y_scale: f32 };
 pub const DrawHighlightTile = struct { color: Color, pos: Pos };
 pub const DrawOutlineTile = struct { color: Color, pos: Pos };
-pub const DrawText = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, color: Color, pos: Pos, scale: f32 };
-pub const DrawTextFloat = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, x: f32, y: f32, scale: f32 };
-pub const DrawTextJustify = struct { text: [64]u8 = [1]u8{0} ** 64, len: usize, justify: Justify, color: Color, bg_color: Color, pos: Pos, width: u32, scale: f32 };
+pub const DrawText = struct { text: [128]u8 = [1]u8{0} ** 128, len: usize, color: Color, pos: Pos, scale: f32 };
+pub const DrawTextFloat = struct { text: [128]u8 = [1]u8{0} ** 128, len: usize, justify: Justify, color: Color, x: f32, y: f32, scale: f32 };
+pub const DrawTextJustify = struct { text: [128]u8 = [1]u8{0} ** 128, len: usize, justify: Justify, color: Color, bg_color: Color, pos: Pos, width: u32, scale: f32 };
 pub const DrawRect = struct { pos: Pos, width: u32, height: u32, offset_percent: f32, filled: bool, color: Color };
 pub const DrawRectFloat = struct { x: f32, y: f32, width: f32, height: f32, filled: bool, color: Color };
 pub const DrawFill = struct { pos: Pos, color: Color };

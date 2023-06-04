@@ -612,10 +612,6 @@ pub const Gui = struct {
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.player_area, &gui.panels.player, gui.panels.player.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.inventory_area, &gui.panels.inventory, gui.panels.inventory.panel.getRect());
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getRect());
-
-        if (gui.game.settings.state == .confirmQuit) {
-            gui.display.fitTexture(&gui.panels.screen, gui.panels.menu_area, &gui.panels.menu, gui.panels.menu.panel.getRect());
-        }
     }
 
     pub fn drawOverlay(gui: *Gui, delta_ticks: u64) !void {
@@ -644,13 +640,32 @@ pub const Gui = struct {
 
         gui.display.draw(&gui.panels.screen);
 
-        if (gui.game.settings.state == .confirmQuit) {
-            var painter = gui.makePainter(delta_ticks);
+        var painter = gui.makePainter(delta_ticks);
 
-            painter.retarget(&gui.panels.menu.drawcmds, gui.panels.menu.panel.getRect());
-            try rendering.renderConfirmQuit(&painter);
-            gui.display.clear(&gui.panels.menu);
-            gui.display.draw(&gui.panels.menu);
+        if (gui.game.settings.state.isMenu()) {
+            switch (gui.game.settings.state) {
+                .confirmQuit => {
+                    painter.retarget(&gui.panels.menu.drawcmds, gui.panels.menu.panel.getRect());
+                    try rendering.renderConfirmQuit(&painter);
+                    gui.display.clear(&gui.panels.menu);
+                    gui.display.draw(&gui.panels.menu);
+                },
+
+                .helpMenu => {
+                    painter.retarget(&gui.panels.help.drawcmds, gui.panels.help.panel.getRect());
+                    try rendering.renderHelp(&painter);
+                    gui.display.clear(&gui.panels.help);
+                    gui.display.draw(&gui.panels.help);
+                },
+
+                else => std.debug.panic("Menu not yet implemented: {}", .{gui.game.settings.state}),
+            }
+
+            if (gui.game.settings.state == .helpMenu) {
+                gui.display.fitTexture(&gui.panels.screen, gui.panels.help_area, &gui.panels.help, gui.panels.help.panel.getRect());
+            } else {
+                gui.display.fitTexture(&gui.panels.screen, gui.panels.menu_area, &gui.panels.menu, gui.panels.menu.panel.getRect());
+            }
         }
     }
 

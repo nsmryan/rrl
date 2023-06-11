@@ -1,4 +1,5 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 const print = std.debug.print;
 
 const core = @import("core");
@@ -308,12 +309,11 @@ fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
-    sortByDistanceTo(entity_pos, potential_move_targets);
-    const potential_move_targets = potential_move_targets;
+    sortByDistanceTo(entity_pos, &potential_move_targets);
 
     // path_solutions contains the path length, the amount of turning (absolute value), and the
     // next position to go to for this solution.
-    var path_solutions: ArrayList(PathPath) = ArrayList(PathPos).init(game.frame_allocator);
+    var path_solutions: ArrayList(PathPos) = ArrayList(PathPos).init(game.frame_allocator);
 
     // look through all potential positions for the shortest path
     var lowest_cost = std.math.maxInt(usize);
@@ -324,7 +324,7 @@ fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
             const cost = cost_pair.cost;
             const next_pos = cost_pair.next_pos;
 
-            const turn_dir = gam.elevel.entities.faceTo(id, next_pos);
+            const turn_dir = game.level.entities.faceTo(id, next_pos);
             const turn_amount = old_dir.turnAmount(turn_dir);
 
             try path_solutions.append(PathPos { .cost = cost, .turning = turn_amount.abs(), .pos = next_pos});
@@ -362,7 +362,7 @@ pub fn aiTargetPosCost(game: *Game,
     // if the current cost (FOV cost), plus distance (the shortest possible path)
     // if *already* more then the best path so far, this cannot possibly be the best
     // path to take, so skip it
-    if (cost + @intCast(usize, distance(entity_pos, check_pos)) > lowest_cost) {
+    if (cost + @intCast(usize, entity_pos.distance(check_pos)) > lowest_cost) {
         return null;
     }
 
@@ -382,37 +382,35 @@ pub fn aiTargetPosCost(game: *Game,
     return .{ .cost = cost, .pos = next_pos};
 }
 
-pub fn aiAttemptStep(game: *Game, id: EntityId, new_pos: Pos) ?Pos {
+pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) ?Pos {
     const entity_pos = game.level.entities.pos.get(id);
 
     const pos_offset = aiTakeAstarStep(game, id, new_pos, true);
 
-    const step_pos;
+    var step_pos = null;
     if (posMag(pos_offset) > 0) {
         step_pos = entity_pos.add(pos_offset);
-    } else {
-        step_pos = null;
-    }
+    } 
 
     return step_pos;
 }
 
 pub fn aiPosThatHitTarget(game: *Game,
-                          id: EntityId,
-                          target_id: EntityId) !ArrayList(Pos) {
+                          id: Id,
+                          target_id: Id) !ArrayList(Pos) {
     var potential_move_targets = ArrayList.init(game.frame_allocator);
 
-    const target_pos = level.entities.pos[&target_id];
-    const monster_pos = level.entities.pos.get(id);
+    const target_pos = game.level.entities.pos[&target_id];
+    const monster_pos = game.level.entities.pos.get(id);
 
     // check all movement options in case one lets us hit the target
-    const attack = level.entities.attack.get(id);
-    const direction = level.entities.direction.get(id);
+    const attack = game.level.entities.attack.get(id);
+    const direction = game.level.entities.direction.get(id);
     for (Direction.moveActions()) |move_action| {
         for (attack.attacksWithReach(move_action)) |attack_offset| {
             const attackable_pos = target_pos.add(attack_offset);
 
-            if (attackable_pos.eql(monster_pos) or !level.map.isWithinBounds(attackable_pos)) {
+            if (attackable_pos.eql(monster_pos) or !game.level.map.isWithinBounds(attackable_pos)) {
                 continue;
             }
 
@@ -431,13 +429,13 @@ pub fn aiPosThatHitTarget(game: *Game,
     return potential_move_targets;
 }
 
-pub fn aiFovCost(game: *Game, id: EntityId, check_pos: Pos, target_pos: Pos) usize {
-    const monster_pos = level.entities.pos.get(id);
+pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) usize {
+    const monster_pos = game.level.entities.pos.get(id);
 
     // the fov_cost is added in if the next move would leave the target's FOV
     game.level.entities.pos.set(id, check_pos);
-    const cur_dir = game.level.entities.direction[&monster_id];
-    gma.elevel.entities.face.set(id, target_pos);
+    const cur_dir = game.level.entities.direction.get(id);
+    game.level.entities.face.set(id, target_pos);
     var cost: usize= 0;
     if (game.level.posInFov(id, target_pos)) {
          cost = 5;
@@ -448,7 +446,7 @@ pub fn aiFovCost(game: *Game, id: EntityId, check_pos: Pos, target_pos: Pos) usi
     return cost;
 }
 
-fn cmpPos(context: start, a: Pos, b: Pos) bool {
+fn cmpPos(start: Pos, a: Pos, b: Pos) bool {
     return start.distance(a) < start.distance(b);
 }
 

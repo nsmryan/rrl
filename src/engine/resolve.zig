@@ -78,6 +78,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
         .attack => |args| try aiAttack(game, args.id, args.target_id),
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
+        .testMode => |args| try resolveTestMode(game, args),
         else => {},
     }
 }
@@ -991,3 +992,8 @@ fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
 //        }
 //    }
 //}
+
+fn resolveTestMode(game: *Game, test_mode: bool) !void {
+    _ = test_mode;
+    try game.level.updateAllFov();
+}

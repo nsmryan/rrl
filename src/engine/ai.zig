@@ -6,6 +6,7 @@ const Behavior = core.entities.Behavior;
 const Entities = core.entities.Entities;
 const Level = core.level.Level;
 const astarPath = core.pathing.astarPath;
+const Reach = core.movement.Reach;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
@@ -48,7 +49,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
     // NOTE(generality) this could use the view.pov.visible.iterator and look
     // for entities in FoV if golems need to see other entities besides the
     // player.
-    const fov_result = try game.level.isInFov(id, player_pos, .high);
+    const fov_result = try game.level.entityInFov(id, player_id);
 
     if (fov_result == .inside) {
         try game.log.log(.faceTowards, .{ id, player_pos });
@@ -112,8 +113,7 @@ fn stepAiIdle(game: *Game, id: Id) !void {
 
 pub fn stepAiAlert(game: *Game, id: Id, pos: Pos) !void {
     const player_id = Entities.player_id;
-    const player_pos = game.level.entities.pos.get(player_id);
-    const can_see_target = try game.level.posInFov(id, player_pos) == .inside;
+    const can_see_target = try game.level.entityInFov(id, player_id) == .inside;
 
     if (can_see_target) {
         // Can see target- attack
@@ -134,8 +134,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
     const entity_pos = game.level.entities.pos.get(id);
 
     const player_pos = game.level.entities.pos.get(player_id);
-    const player_in_fov = try game.level.isInFov(id, player_pos, .high) == .inside;
-    print("player_in_fov = {}\n", .{player_in_fov});
+    const player_in_fov = try game.level.entityInFov(id, player_id) == .inside;
 
     if (player_in_fov) {
         try game.log.log(.faceTowards, .{ id, player_pos });
@@ -258,7 +257,7 @@ fn stepAiAttack(game: *Game, id: Id, target_id: Id) !void {
 }
 
 fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) bool {
-    var hit_pos = None;
+    var hit_pos = null;
     const entity_pos = game.level.entities.pos.get(id);
 
     // Don't allow hitting from the same tile...
@@ -267,7 +266,7 @@ fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) boo
     }
 
     // We don't use is_in_fov here because the other checks already cover blocked movement.
-    const within_fov = game.level.posInFov(monster_id, target_pos);
+    const within_fov = game.level.posInFov(id, target_pos);
 
     const traps_block = false;
 
@@ -281,7 +280,7 @@ fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) boo
 
     if (within_fov and clear_path and clear_map) {
         // Look through attack positions, in case one hits the target
-        for (reach.reachables.mem) |pos| {
+        for (attack_reach.reachables.mem) |pos| {
             if (target_pos.eql(pos)) {
                 hit_pos = pos;
                 break;
@@ -292,14 +291,20 @@ fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) boo
     return hit_pos;
 }
 
+pub const PathPos = struct {
+    cost: usize,
+    turning: i32,
+    pos: Pos,
+};
+
 fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
     const entity_pos = game.level.entities.pos.get(id);
 
-    const old_dir = level.entities.facing.get(id);
+    const old_dir = game.level.entities.facing.get(id);
 
     var new_pos = entity_pos;
 
-    var potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, level, config);
+    var potential_move_targets = aiPosThatHitTarget(game, id, target_id);
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
@@ -308,30 +313,31 @@ fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
 
     // path_solutions contains the path length, the amount of turning (absolute value), and the
     // next position to go to for this solution.
-    var path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+    var path_solutions: ArrayList(PathPath) = ArrayList(PathPos).init(game.frame_allocator);
 
     // look through all potential positions for the shortest path
-    var lowest_cost = std::usize::MAX;
-    for target in potential_move_targets {
-        const maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, level, config);
+    var lowest_cost = std.math.maxInt(usize);
+    for (potential_move_targets.items) |target| {
+        const maybe_cost = aiTargetPosCost(game, id, target_id, target, lowest_cost);
 
-        if const Some((cost, next_pos)) = maybe_cost {
-            const turn_dir = level.entities.face_to(monster_id, next_pos);
-            const turn_amount = old_dir.turn_amount(turn_dir);
+        if (maybe_cost) |cost_pair| {
+            const cost = cost_pair.cost;
+            const next_pos = cost_pair.next_pos;
 
-            path_solutions.push(((cost, turn_amount.abs()), next_pos));
+            const turn_dir = gam.elevel.entities.faceTo(id, next_pos);
+            const turn_amount = old_dir.turnAmount(turn_dir);
 
-            lowest_cost = std::cmp::min(lowest_cost, cost);
+            try path_solutions.append(PathPos { .cost = cost, .turning = turn_amount.abs(), .pos = next_pos});
+
+            if (lowest_cost < cost) {
+                lowest_cost = cost;
+                new_pos = next_pos;
+            }
         }
     }
 
-    // if there is a solution, get the best one and use it
-    if const Some(best_sol) = path_solutions.iter().min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()) {
-        new_pos = best_sol.1;
-    }
-
     // step towards the closest location that const us hit the target
-    const maybe_pos = ai_attempt_step(monster_id, new_pos, &level);
+    const maybe_pos = aiAttemptStep(game, id, new_pos);
     return maybe_pos;
 }
 
@@ -389,4 +395,63 @@ pub fn aiAttemptStep(game: *Game, id: EntityId, new_pos: Pos) ?Pos {
     }
 
     return step_pos;
+}
+
+pub fn aiPosThatHitTarget(game: *Game,
+                          id: EntityId,
+                          target_id: EntityId) !ArrayList(Pos) {
+    var potential_move_targets = ArrayList.init(game.frame_allocator);
+
+    const target_pos = level.entities.pos[&target_id];
+    const monster_pos = level.entities.pos.get(id);
+
+    // check all movement options in case one lets us hit the target
+    const attack = level.entities.attack.get(id);
+    const direction = level.entities.direction.get(id);
+    for (Direction.moveActions()) |move_action| {
+        for (attack.attacksWithReach(move_action)) |attack_offset| {
+            const attackable_pos = target_pos.add(attack_offset);
+
+            if (attackable_pos.eql(monster_pos) or !level.map.isWithinBounds(attackable_pos)) {
+                continue;
+            }
+
+            game.level.entities.set_pos(id, attackable_pos);
+            game.level.entities.face(id, target_pos);
+            const can_hit = aiCanHitTarget(game, id, target_pos, &attack) != null;
+
+            if (can_hit) {
+                try potential_move_targets.append(attackable_pos);
+            }
+        }
+    }
+    game.level.entities.pos.set(id, monster_pos);
+    game.level.entities.direction.set(id, direction);
+
+    return potential_move_targets;
+}
+
+pub fn aiFovCost(game: *Game, id: EntityId, check_pos: Pos, target_pos: Pos) usize {
+    const monster_pos = level.entities.pos.get(id);
+
+    // the fov_cost is added in if the next move would leave the target's FOV
+    game.level.entities.pos.set(id, check_pos);
+    const cur_dir = game.level.entities.direction[&monster_id];
+    gma.elevel.entities.face.set(id, target_pos);
+    var cost: usize= 0;
+    if (game.level.posInFov(id, target_pos)) {
+         cost = 5;
+    }
+    game.level.entities.direction.set(id, cur_dir);
+    game.level.entities.pos.set(id, monster_pos);
+
+    return cost;
+}
+
+fn cmpPos(context: start, a: Pos, b: Pos) bool {
+    return start.distance(a) < start.distance(b);
+}
+
+pub fn sortByDistanceTo(pos: Pos, positions: *ArrayList(Pos)) void {
+    std.sort.sort(Pos, positions.items, pos, cmpPos);
 }

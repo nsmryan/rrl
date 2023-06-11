@@ -139,7 +139,7 @@ pub fn processDrawCmd(panel: *Panel, renderer: *Renderer, texture: *Texture, spr
     }
 }
 
-pub fn processTextGeneric(canvas: Canvas, text: [64]u8, len: usize, color: Color, pixel_pos: Pos, scale: f32) void {
+pub fn processTextGeneric(canvas: Canvas, text: [128]u8, len: usize, color: Color, pixel_pos: Pos, scale: f32) void {
     const ascii_width = math.utils.ASCII_END - math.utils.ASCII_START;
 
     const cell_dims = canvas.panel.cellDims();

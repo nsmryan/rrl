@@ -957,3 +957,66 @@ fn renderArrow(painter: *Painter, dir: Direction, pos: Pos, color: Color) !void 
 fn renderOutline(painter: *Painter, pos: Pos, color: Color) !void {
     try painter.drawcmds.append(DrawCmd.outlineTile(pos, color));
 }
+
+pub fn renderConfirmQuit(painter: *Painter) !void {
+    // Render header
+    try renderPlacard(painter, "Quit?", 15, 10);
+
+    const y_pos = 2;
+    var text_pos = Pos.init(1, y_pos);
+
+    const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
+
+    try painter.drawcmds.append(DrawCmd.text("q: quit game", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("esc: continue", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("r: restart", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("", text_pos, ui_color, 1.0));
+    text_pos.y += 1;
+
+    try painter.drawcmds.append(DrawCmd.text("?: help", text_pos, ui_color, 1.0));
+}
+
+pub fn renderHelp(painter: *Painter) !void {
+    // Render header
+    try renderPlacard(painter, "Help", 35, 35);
+
+    const help = @embedFile("help.txt");
+
+    const y_pos = 2;
+    var text_pos = Pos.init(1, y_pos);
+
+    const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
+
+    var start: usize = 0;
+    var index: usize = 0;
+    while (index < help.len) : (index += 1) {
+        if (help[index] == '\n') {
+            if (index - start > 1) {
+                try painter.drawcmds.append(DrawCmd.text(help[start..index], text_pos, ui_color, 1.0));
+            }
+            text_pos.y += 1;
+            start = index + 1;
+        }
+    }
+}
+
+fn renderPlacard(painter: *Painter, text: []const u8, width: u32, height: u32) !void {
+    // Draw header text
+    const text_color = Color.init(0, 0, 0, 255);
+    const highlight_color = Color.init(0xcd, 0xb4, 0x96, 255);
+
+    try painter.drawcmds.append(DrawCmd.rect(Pos.init(0, 0), width, height, 0.5, false, highlight_color));
+    try painter.drawcmds.append(DrawCmd.textJustify(text, .center, Pos.init(0, 0), text_color, highlight_color, width, 1.0));
+}

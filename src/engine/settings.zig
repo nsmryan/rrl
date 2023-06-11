@@ -45,7 +45,6 @@ pub const MapLoadConfig = union(enum) {
 
 pub const Settings = struct {
     turn_count: usize = 0,
-    test_mode: bool = false,
     state: GameState = GameState.playing,
     overlay: bool = false,
     mode: Mode = Mode.playing,

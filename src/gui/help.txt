@@ -1,0 +1,42 @@
+? to bring up this help menu
+
+esc to bring up the main menu, or exit the current menu
+
+Arrow keys or number keys to move.
+    There is 8 directional movement.
+
+Items:
+To use an item:
+Z is always the primary item.
+    This will present options for how to apply the item
+
+X is a consumable item.
+    Using a consumable will either act immediately,
+    or present options for where to use the item.
+
+C is always for stones.
+    Using a stone will present directions to throw.
+
+Hold shift to perform 'fast' actions.
+    When moving shift will run
+    When moving the cursor, shift will move two tiles instead of one
+    When using an item, shift may cause an alternate movement or use
+
+Hold ctrl to perform 'slow' actions.
+    When moving ctrl will sneak
+    In cursor mode, ctrl will keep the cursor next to the player
+    In cursor mode, ctrl may cause an alternate movement or use
+    Tab returns the cursor to the player's tile.
+
+Space enters cursor mode
+    Use the arrow keys or number keys to move the cursor.
+    Extra information is given for tiles under the cursor.
+    Hold shift for fast movement.
+    Hold ctrl for tiles around the player.
+
+Skills:
+h brings up the class menu.
+    Currently, a class may be selected at any time.
+j brings up the skill list.
+a, s, d uses the corresponding skill.
+    Skills may apply immediately or show direction.

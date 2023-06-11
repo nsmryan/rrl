@@ -72,6 +72,8 @@ pub const Msg = union(enum) {
     slash: struct { origin_pos: Pos, hit_pos: Pos },
     blunt: struct { origin_pos: Pos, hit_pos: Pos },
     aiAttack: struct { id: Id, target_id: Id },
+    testMode: bool,
+    debugEnabled: bool,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

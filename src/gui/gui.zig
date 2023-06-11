@@ -87,6 +87,8 @@ pub const PIXELS_PER_CELL: usize = 24;
 pub const WINDOW_WIDTH: usize = PIXELS_PER_CELL * SCREEN_CELLS_WIDTH;
 pub const WINDOW_HEIGHT: usize = PIXELS_PER_CELL * SCREEN_CELLS_HEIGHT;
 
+pub const FRAME_ALLOCATOR_NUM_BYTES: usize = 16 * 1024 * 1024;
+
 pub const Gui = struct {
     display: display.Display,
     game: Game,
@@ -99,7 +101,7 @@ pub const Gui = struct {
     panels: Panels,
 
     pub fn init(seed: u64, use_profiling: bool, allocator: Allocator) !Gui {
-        var fixed_buffer = try allocator.alloc(u8, 1024 * 1024 * 16);
+        var fixed_buffer = try allocator.alloc(u8, FRAME_ALLOCATOR_NUM_BYTES);
         var fixed_buffer_allocator = FixedBufferAllocator.init(fixed_buffer);
 
         var game = try Game.init(seed, allocator, fixed_buffer_allocator.allocator());
@@ -560,8 +562,8 @@ pub const Gui = struct {
         return anim;
     }
 
-    pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {
-        var painter = Painter{
+    fn makePainter(gui: *Gui, delta_ticks: u64) Painter {
+        return Painter{
             .sprites = &gui.display.sprites.sheets,
             .strings = &gui.display.strings,
             .drawcmds = &gui.panels.level.drawcmds,
@@ -569,6 +571,11 @@ pub const Gui = struct {
             .state = &gui.state,
             .dt = delta_ticks,
         };
+    }
+
+    pub fn drawPanels(gui: *Gui, delta_ticks: u64) !void {
+        var painter = gui.makePainter(delta_ticks);
+
         try rendering.renderLevel(&gui.game, &painter);
         gui.display.clear(&gui.panels.level);
         gui.display.draw(&gui.panels.level);
@@ -609,7 +616,7 @@ pub const Gui = struct {
         gui.display.stretchTexture(&gui.panels.screen, gui.panels.info_area, &gui.panels.info, gui.panels.info.panel.getRect());
     }
 
-    pub fn drawOverlay(gui: *Gui) !void {
+    pub fn drawOverlay(gui: *Gui, delta_ticks: u64) !void {
         const color = Color.init(0xcd, 0xb4, 0x96, 255);
 
         const offset: f32 = 0.5;
@@ -629,17 +636,45 @@ pub const Gui = struct {
 
         const section_name_scale: f32 = 1.0;
         const text_color = Color.init(0, 0, 0, 255);
-        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("player", .center, gui.panels.player_area.position(), text_color, color, @intCast(u32, gui.panels.player_area.width), section_name_scale));
-        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("inventory", .center, gui.panels.inventory_area.position(), text_color, color, @intCast(u32, gui.panels.inventory_area.width), section_name_scale));
-        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify("message log", .center, gui.panels.info_area.position(), text_color, color, @intCast(u32, gui.panels.info_area.width), section_name_scale));
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify(" player ", .center, gui.panels.player_area.position(), text_color, color, @intCast(u32, gui.panels.player_area.width), section_name_scale));
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify(" inventory ", .center, gui.panels.inventory_area.position(), text_color, color, @intCast(u32, gui.panels.inventory_area.width), section_name_scale));
+        try gui.panels.screen.drawcmds.append(DrawCmd.textJustify(" message log ", .center, gui.panels.info_area.position(), text_color, color, @intCast(u32, gui.panels.info_area.width), section_name_scale));
 
         gui.display.draw(&gui.panels.screen);
+
+        var painter = gui.makePainter(delta_ticks);
+
+        if (gui.game.settings.state.isMenu()) {
+            switch (gui.game.settings.state) {
+                .confirmQuit => {
+                    painter.retarget(&gui.panels.menu.drawcmds, gui.panels.menu.panel.getRect());
+                    try rendering.renderConfirmQuit(&painter);
+                    gui.display.clear(&gui.panels.menu);
+                    gui.display.draw(&gui.panels.menu);
+                },
+
+                .helpMenu => {
+                    painter.retarget(&gui.panels.help.drawcmds, gui.panels.help.panel.getRect());
+                    try rendering.renderHelp(&painter);
+                    gui.display.clear(&gui.panels.help);
+                    gui.display.draw(&gui.panels.help);
+                },
+
+                else => std.debug.panic("Menu not yet implemented: {}", .{gui.game.settings.state}),
+            }
+
+            if (gui.game.settings.state == .helpMenu) {
+                gui.display.fitTexture(&gui.panels.screen, gui.panels.help_area, &gui.panels.help, gui.panels.help.panel.getRect());
+            } else {
+                gui.display.fitTexture(&gui.panels.screen, gui.panels.menu_area, &gui.panels.menu, gui.panels.menu.panel.getRect());
+            }
+        }
     }
 
     pub fn drawPlaying(gui: *Gui, delta_ticks: u64) !void {
         try gui.drawPanels(delta_ticks);
         gui.placePanels();
-        try gui.drawOverlay();
+        try gui.drawOverlay(delta_ticks);
     }
 
     pub fn drawSplash(gui: *Gui) !void {

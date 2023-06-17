@@ -65,6 +65,10 @@ fn stepAiIdle(game: *Game, id: Id) !void {
     } else {
         // Check entity perception for an event to react to.
         switch (game.level.entities.percept.get(id)) {
+            .disappeared => {
+                std.debug.panic("Idle entities are not pursueing anyone, so how could their target disappear?", .{});
+            },
+
             .attacked => |attacker_id| {
                 try game.log.log(.faceTowards, .{ id, entity_pos });
 
@@ -168,6 +172,11 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
             // If no perceptions this turn, just walk towards target.
             // NOTE(design) if hit or attacked, do we take 1 or 2 turns to react?
             switch (game.level.entities.percept.get(id)) {
+                .disappeared => {
+                    std.debug.panic("Investigating entities are not pursueing anyone, so how could their target disappear?", .{});
+                    //try game.log.log(.behaviorChange, .{ id, Behavior.idle });
+                },
+
                 .attacked => {
                     // Just face towards the attacker. We can act on this on the next turn.
                     try game.log.log(.faceTowards, .{ id, entity_pos });
@@ -257,12 +266,12 @@ fn stepAiAttack(game: *Game, id: Id, target_id: Id) !void {
     try game.log.log(.aiAttack, .{ id, target_id });
 }
 
-fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) bool {
-    var hit_pos = null;
+pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) bool {
+    var hit_pos = false;
     const entity_pos = game.level.entities.pos.get(id);
 
     // Don't allow hitting from the same tile...
-    if (target_pos == entity_pos) {
+    if (target_pos.eql(entity_pos)) {
         return false;
     }
 
@@ -277,13 +286,13 @@ fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) boo
     // up to and including the player pos.
     const clear_path = game.level.clearPathUpTo(entity_pos, target_pos, traps_block);
     const clear_map = game.level.entities.attackType.get(id) == .ranged or
-                      game.level.map.pathBlockedMove(entity_pos, target_pos) == null;
+        game.level.map.pathBlockedMove(entity_pos, target_pos) == null;
 
     if (within_fov and clear_path and clear_map) {
         // Look through attack positions, in case one hits the target
         for (attack_reach.reachables.mem) |pos| {
             if (target_pos.eql(pos)) {
-                hit_pos = pos;
+                hit_pos = true;
                 break;
             }
         }
@@ -298,14 +307,14 @@ pub const PathPos = struct {
     pos: Pos,
 };
 
-fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
+pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     const entity_pos = game.level.entities.pos.get(id);
 
     const old_dir = game.level.entities.facing.get(id);
 
     var new_pos = entity_pos;
 
-    var potential_move_targets = aiPosThatHitTarget(game, id, target_id);
+    var potential_move_targets = try aiPosThatHitTarget(game, id, target_id);
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
@@ -327,7 +336,7 @@ fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
             const turn_dir = game.level.entities.faceTo(id, next_pos);
             const turn_amount = old_dir.turnAmount(turn_dir);
 
-            try path_solutions.append(PathPos { .cost = cost, .turning = turn_amount.abs(), .pos = next_pos});
+            try path_solutions.append(PathPos{ .cost = cost, .turning = turn_amount.abs(), .pos = next_pos });
 
             if (lowest_cost < cost) {
                 lowest_cost = cost;
@@ -341,11 +350,7 @@ fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Pos) !?Pos {
     return maybe_pos;
 }
 
-pub fn aiTargetPosCost(game: *Game,
-                       id: Id,
-                       target_id: Id,
-                       check_pos: Pos,
-                       lowest_cost: usize) ? struct { cost: usize, pos: Pos}  {
+pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowest_cost: usize) ?struct { cost: usize, pos: Pos } {
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
     const movement = game.level.entities.movement.get(id);
@@ -379,35 +384,46 @@ pub fn aiTargetPosCost(game: *Game,
 
     const next_pos = path[1];
 
-    return .{ .cost = cost, .pos = next_pos};
+    return .{ .cost = cost, .pos = next_pos };
 }
 
 pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) ?Pos {
     const entity_pos = game.level.entities.pos.get(id);
 
-    const pos_offset = aiTakeAstarStep(game, id, new_pos, true);
+    const reach = game.level.entities.movement.get(id);
+
+    const traps_block = true;
+    const must_reach = true;
+
+    const path = game.level.pathBetween(entity_pos, new_pos, reach, must_reach, traps_block, aiAstarCost);
+
+    var pos_offset = Pos.init(0, 0);
+    if (path.items.len > 1) {
+        pos_offset = entity_pos.stepTowards(path.items[1]);
+    }
 
     var step_pos = null;
-    if (posMag(pos_offset) > 0) {
+    if (pos_offset.mag() > 0) {
         step_pos = entity_pos.add(pos_offset);
-    } 
+    }
 
     return step_pos;
 }
 
-pub fn aiPosThatHitTarget(game: *Game,
-                          id: Id,
-                          target_id: Id) !ArrayList(Pos) {
-    var potential_move_targets = ArrayList.init(game.frame_allocator);
+pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
+    var potential_move_targets = ArrayList(Pos).init(game.frame_allocator);
 
-    const target_pos = game.level.entities.pos[&target_id];
+    const target_pos = game.level.entities.pos.get(target_id);
     const monster_pos = game.level.entities.pos.get(id);
 
     // check all movement options in case one lets us hit the target
     const attack = game.level.entities.attack.get(id);
-    const direction = game.level.entities.direction.get(id);
-    for (Direction.moveActions()) |move_action| {
-        for (attack.attacksWithReach(move_action)) |attack_offset| {
+    const direction = game.level.entities.facing.get(id);
+
+    var attack_offsets = ArrayList(Pos).init(game.frame_allocator);
+    for (Direction.directions()) |move_action| {
+        try attack.attacksWithReach(move_action, &attack_offsets);
+        for (attack_offsets.items) |attack_offset| {
             const attackable_pos = target_pos.add(attack_offset);
 
             if (attackable_pos.eql(monster_pos) or !game.level.map.isWithinBounds(attackable_pos)) {
@@ -436,12 +452,26 @@ pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) usize {
     game.level.entities.pos.set(id, check_pos);
     const cur_dir = game.level.entities.direction.get(id);
     game.level.entities.face.set(id, target_pos);
-    var cost: usize= 0;
+    var cost: usize = 0;
     if (game.level.posInFov(id, target_pos)) {
-         cost = 5;
+        cost = 5;
     }
     game.level.entities.direction.set(id, cur_dir);
     game.level.entities.pos.set(id, monster_pos);
+
+    return cost;
+}
+
+fn aiAstarCost(start: Pos, prev: Pos, next: Pos, game: *Game) ?i32 {
+    _ = start;
+    _ = prev;
+    var cost = 1;
+
+    if (game.level.firstEntityTypeAtPos(next, .trap)) |trap_id| {
+        if (game.level.entities.armed.get(trap_id)) {
+            return null;
+        }
+    }
 
     return cost;
 }

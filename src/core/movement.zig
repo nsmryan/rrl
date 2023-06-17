@@ -153,7 +153,7 @@ pub const Reach = union(enum) {
     }
 
     pub fn attacksWithReach(self: Reach, move_action: Direction, positions: *ArrayList(Pos)) !void {
-        if (self.move_with_reach(move_action)) |pos| {
+        if (self.moveWithReach(move_action)) |pos| {
             for (Line.init(Pos.init(0, 0), pos, true)) |line_pos| {
                 try positions.push(line_pos);
             }

@@ -74,6 +74,8 @@ pub const Msg = union(enum) {
     aiAttack: struct { id: Id, target_id: Id },
     testMode: bool,
     debugEnabled: bool,
+    attack: struct { id: Id, target_id: Id },
+    dodged: Id,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

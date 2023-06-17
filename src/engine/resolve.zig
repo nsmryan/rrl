@@ -230,16 +230,22 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
         }
     }
 
-    // NOTE(implement) player steps out of visiblilty. Uses the entity message system right now,
-    // which may be better off replaced.
     // For blinking movements, check if the entity disappears from the perspective of an entity.
-    //if (move_type == MoveType.blink) {
-    //    for (game.level.entities.behavior.ids.items) |id| {
-    //        if (game.level.entities.behavior.get(behave_id) == Behavior.attacking(id)) {
-    //            game.level.entities.messages.get(behave_id).append(Message.disappeared(id));
-    //        }
-    //    }
-    //}
+    if (move_type == .blink) {
+        for (game.level.entities.behavior.ids.items) |behave_id| {
+            // This is only important for entities with perception.
+            if (!game.level.entities.percept.has(behave_id)) {
+                continue;
+            }
+
+            const behavior = game.level.entities.behavior.get(behave_id);
+            // If the entity is attacking the entity that blinked, they see the entity disappear.
+            if (behavior == .attacking and behavior.attacking == id) {
+                const percept = game.level.entities.percept.get(behave_id);
+                game.level.entities.percept.getPtr(behave_id).* = percept.perceive(Percept.disappeared);
+            }
+        }
+    }
 }
 
 pub fn makeMoveSound(id: Id, original_pos: Pos, pos: Pos, move_mode: MoveMode, game: *Game) !void {
@@ -818,54 +824,68 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
     const entity_pos = game.level.entities.pos.get(id);
 
     if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |hit_entity| {
-        const percept = game.level.entities.percept.get(hit_entity);
-        game.level.entities.percept.getPtr(hit_entity).* = percept.perceive(Percept{ .attacked = id });
-
-        if (game.level.entities.typ.get(hit_entity) == .column) {
-            // if we hit a column, and this is a strong, blunt hit, then
-            // push the column over.
-            if (weapon_type == .blunt and attack_style == .strong) {
-                const dir = Direction.fromPositions(entity_pos, hit_pos).?;
-                try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
+        // Check for a dodge
+        var dodged = false;
+        if (game.level.entities.passive.getOrNull(hit_entity)) |passives| {
+            if (passives.quick_reflexes and
+                math.rand.rngTrial(game.rng.random(), game.config.skill_quick_reflexes_percent))
+            {
+                dodged = true;
+                try game.log.log(.dodged, id);
             }
-        } else {
-            // if we hit an enemy, stun them and make a sound.
-            if (game.level.entities.typ.get(hit_entity) == .enemy) {
-                var hit_sound_radius: usize = 0;
-                var stun_turns: usize = 0;
-                switch (weapon_type) {
-                    .pierce => {
-                        hit_sound_radius = game.config.sound_radius_pierce;
-                        stun_turns = game.config.stun_turns_pierce;
-                    },
+        }
 
-                    .slash => {
-                        hit_sound_radius = game.config.sound_radius_slash;
-                        stun_turns = game.config.stun_turns_slash;
-                    },
+        if (!dodged) {
+            const percept = game.level.entities.percept.get(hit_entity);
+            game.level.entities.percept.getPtr(hit_entity).* = percept.perceive(Percept{ .attacked = id });
 
-                    .blunt => {
-                        hit_sound_radius = game.config.sound_radius_blunt;
-                        stun_turns = game.config.stun_turns_blunt;
-                    },
+            if (game.level.entities.typ.get(hit_entity) == .column) {
+                // if we hit a column, and this is a strong, blunt hit, then
+                // push the column over.
+                if (weapon_type == .blunt and attack_style == .strong) {
+                    const dir = Direction.fromPositions(entity_pos, hit_pos).?;
+                    try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
                 }
+            } else {
+                // if we hit an enemy, stun them and make a sound.
+                if (game.level.entities.typ.get(hit_entity) == .enemy) {
+                    var hit_sound_radius: usize = 0;
+                    var stun_turns: usize = 0;
+                    switch (weapon_type) {
+                        .pierce => {
+                            hit_sound_radius = game.config.sound_radius_pierce;
+                            stun_turns = game.config.stun_turns_pierce;
+                        },
 
-                // whet stone passive adds to sharp weapon stun turns
-                if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
-                    stun_turns += 1;
+                        .slash => {
+                            hit_sound_radius = game.config.sound_radius_slash;
+                            stun_turns = game.config.stun_turns_slash;
+                        },
+
+                        .blunt => {
+                            hit_sound_radius = game.config.sound_radius_blunt;
+                            stun_turns = game.config.stun_turns_blunt;
+                        },
+                    }
+
+                    // whet stone passive adds to sharp weapon stun turns
+                    if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
+                        stun_turns += 1;
+                    }
+
+                    if (attack_style == .strong) {
+                        hit_sound_radius += game.config.sound_radius_extra;
+                        stun_turns += game.config.stun_turns_extra;
+                    }
+
+                    try game.log.log(.stun, .{ hit_entity, stun_turns });
+                    try game.log.log(.sound, .{ id, hit_pos, hit_sound_radius });
                 }
-
-                if (attack_style == .strong) {
-                    hit_sound_radius += game.config.sound_radius_extra;
-                    stun_turns += game.config.stun_turns_extra;
-                }
-
-                try game.log.log(.stun, .{ hit_entity, stun_turns });
-                try game.log.log(.sound, .{ id, hit_pos, hit_sound_radius });
             }
         }
     }
 
+    // The position gets a hit message even if nothing is hit for display or other effects.
     switch (weapon_type) {
         .blunt => {
             try game.log.log(.blunt, .{ entity_pos, hit_pos });
@@ -885,47 +905,30 @@ fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
 
-    const attack_reach = game.level.entities.attack[id];
-    const can_hit_target =
-        ai.aiCanHitTarget(game, id, target_pos, attack_reach);
+    const attack_reach = game.level.entities.attack.get(id);
+    const can_hit_target = ai.aiCanHitTarget(game, id, target_pos, attack_reach);
 
-    if (game.level.entities.state(target_id) == .remove) {
+    // If the target disappeared, change to idle- there is no need to
+    // pursue their last position if we saw them blink away.
+    if (game.level.entities.percept.get(id) == .disappeared) {
+        try game.log.log(.behaviorChange, .{ id, .idle });
+    } else if (game.level.entities.state.get(target_id) == .remove) {
         // If the target is no longer in play, return to idle.
         game.level.entities.turn.getPtr(id).pass = true;
-        try game.log.log(.stateChange, .{ id, Behavior{.idle} });
+        try game.log.log(.behaviorChange, .{ id, Behavior.idle });
     } else if (can_hit_target) {
-        // If the entity can hit its target,
-        var can_attack = true;
-        // If the quick reflexes has quick reflexes they may dodge the attack.
-        if (game.level.entities.passive.getOrNull(target_id)) |passives| {
-            if (passives.quick_reflexes and
-                math.rand.rngTrial(game.rng.random(), game.config.skill_quick_reflexes_percent))
-            {
-                can_attack = false;
-                try game.log.log(.dodged, target_id);
-            }
-        }
-
-        if (can_attack) {
-            // NOTE Golem hits are piercing attacks even though they shoot a beam.
-            try game.log.log(.hit, .{ id, entity_pos, target_pos, WeaponType.pierce, AttackStyle.normal });
-        }
-    } else if (game.level.isInFov(id, target_id) != .inside) {
-        // If the target disappeared, change to idle- there is no need to
-        // pursue their last position if we saw them blink away.
-        if (game.level.entities.target_disappeared(id) != null) {
-            try game.log.log(.stateChange, .{ id, .idle });
-        } else {
-            // If we lose the target, end the turn and investigate their current position.
-            // This allows the golem to 'see' a player move behind a wall and still investigate
-            // them instead of losing track of their position.
-            game.level.entities.turn.getPtr(id).pass = true;
-            const current_target_pos = game.level.entities.pos.get(target_id);
-            try game.log.log(.stateChange, .{ id, Behavior{ .investigating = current_target_pos } });
-        }
+        // NOTE Golem hits are piercing attacks even though they shoot a beam.
+        try game.log.log(.hit, .{ id, entity_pos, target_pos, WeaponType.pierce, AttackStyle.normal });
+    } else if (try game.level.entityInFov(id, target_id) != .inside) {
+        // If we lose the target, end the turn and investigate their current position.
+        // This allows the golem to 'see' a player move behind a wall and still investigate
+        // them instead of losing track of their position.
+        game.level.entities.turn.getPtr(id).pass = true;
+        const current_target_pos = game.level.entities.pos.get(target_id);
+        try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = current_target_pos } });
     } else {
         // Can see target, but can't hit them. try to move to a position where we can hit them
-        const maybe_pos = ai.aiMoveToAttackPos(game, id, target_id);
+        const maybe_pos = try ai.aiMoveToAttackPos(game, id, target_id);
         if (maybe_pos) |move_pos| {
             // Try to move in the given direction.
             const direction = Direction.fromPositions(entity_pos, move_pos).?;

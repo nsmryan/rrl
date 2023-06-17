@@ -70,6 +70,10 @@ pub const Pos = struct {
         return std.math.fabs(std.math.sqrt(x_dist * x_dist + y_dist * y_dist));
     }
 
+    pub fn mag(self: Pos) i32 {
+        return self.distanceMaximum(Pos.init(0, 0));
+    }
+
     pub fn mirrorInX(self: Pos, width: i32) Pos {
         return Pos.init(width - self.x - 1, self.y);
     }

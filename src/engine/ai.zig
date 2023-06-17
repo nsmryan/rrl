@@ -215,7 +215,7 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
                     // If they are next to the target, and it is occupied, they also become idle,
                     // but face towards the target in case they aren't already.
                     // Otherwise they attempt to step towards the target position.
-                    const nearly_reached_target = target_pos.distance(entity_pos) == 1 and game.level.posBlockedMove(target_pos);
+                    const nearly_reached_target = target_pos.distance(entity_pos) == 1 and game.level.checkCollision(entity_pos, Direction.fromPositions(entity_pos, target_pos).?).hit();
                     const reached_target = target_pos.eql(entity_pos);
                     if (reached_target or nearly_reached_target) {
                         if (nearly_reached_target) {
@@ -266,7 +266,7 @@ fn stepAiAttack(game: *Game, id: Id, target_id: Id) !void {
     try game.log.log(.aiAttack, .{ id, target_id });
 }
 
-pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) bool {
+pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) !bool {
     var hit_pos = false;
     const entity_pos = game.level.entities.pos.get(id);
 
@@ -276,21 +276,14 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach)
     }
 
     // We don't use is_in_fov here because the other checks already cover blocked movement.
-    const within_fov = game.level.posInFov(id, target_pos);
+    const within_fov = try game.level.posInFov(id, target_pos);
 
-    const traps_block = false;
+    const collision = game.level.checkCollisionLine(entity_pos, target_pos, false);
 
-    // Both clear_path_up_to and path_blocked_move are used here because
-    // clear_path_up_to checks for entities, not including the target pos
-    // which contains the player, while path_blocked_move only checks the map
-    // up to and including the player pos.
-    const clear_path = game.level.clearPathUpTo(entity_pos, target_pos, traps_block);
-    const clear_map = game.level.entities.attackType.get(id) == .ranged or
-        game.level.map.pathBlockedMove(entity_pos, target_pos) == null;
-
-    if (within_fov and clear_path and clear_map) {
+    if (within_fov == .inside and !collision.hit()) {
         // Look through attack positions, in case one hits the target
-        for (attack_reach.reachables.mem) |pos| {
+        const reachables = try attack_reach.reachables(entity_pos);
+        for (reachables.mem) |pos| {
             if (target_pos.eql(pos)) {
                 hit_pos = true;
                 break;
@@ -325,7 +318,7 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     var path_solutions: ArrayList(PathPos) = ArrayList(PathPos).init(game.frame_allocator);
 
     // look through all potential positions for the shortest path
-    var lowest_cost = std.math.maxInt(usize);
+    var lowest_cost: usize = std.math.maxInt(usize);
     for (potential_move_targets.items) |target| {
         const maybe_cost = aiTargetPosCost(game, id, target_id, target, lowest_cost);
 
@@ -367,7 +360,7 @@ pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowes
     // if the current cost (FOV cost), plus distance (the shortest possible path)
     // if *already* more then the best path so far, this cannot possibly be the best
     // path to take, so skip it
-    if (cost + @intCast(usize, entity_pos.distance(check_pos)) > lowest_cost) {
+    if (cost + @intCast(usize, entity_pos.distanceMaximum(check_pos)) > lowest_cost) {
         return null;
     }
 
@@ -431,8 +424,8 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
             }
 
             game.level.entities.pos.set(id, attackable_pos);
-            game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos));
-            const can_hit = aiCanHitTarget(game, id, target_pos, attack);
+            game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos).?);
+            const can_hit = try aiCanHitTarget(game, id, target_pos, attack);
             if (can_hit) {
                 try potential_move_targets.append(attackable_pos);
             }
@@ -450,7 +443,7 @@ pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) usize {
     // the fov_cost is added in if the next move would leave the target's FOV
     game.level.entities.pos.set(id, check_pos);
     const cur_dir = game.level.entities.facing.get(id);
-    game.level.entities.face.set(id, target_pos);
+    game.level.entities.facing.set(id, target_pos);
     var cost: usize = 0;
     if (game.level.posInFov(id, target_pos)) {
         cost = 5;

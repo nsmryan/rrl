@@ -167,14 +167,14 @@ pub const Reach = union(enum) {
                 const dist = @intCast(i32, reach_dist);
                 const neg_dist = dist * -1;
                 switch (move_action) {
-                    .left => Pos.init(neg_dist, 0),
-                    .right => Pos.init(dist, 0),
-                    .up => Pos.init(0, neg_dist),
-                    .down => Pos.init(0, dist),
-                    .downLeft => Pos.init(neg_dist, dist),
-                    .downRight => Pos.init(dist, dist),
-                    .upLeft => Pos.init(neg_dist, neg_dist),
-                    .upRight => Pos.init(dist, neg_dist),
+                    .left => return Pos.init(neg_dist, 0),
+                    .right => return Pos.init(dist, 0),
+                    .up => return Pos.init(0, neg_dist),
+                    .down => return Pos.init(0, dist),
+                    .downLeft => return Pos.init(neg_dist, dist),
+                    .downRight => return Pos.init(dist, dist),
+                    .upLeft => return Pos.init(neg_dist, neg_dist),
+                    .upRight => return Pos.init(dist, neg_dist),
                 }
             },
 
@@ -182,14 +182,14 @@ pub const Reach = union(enum) {
                 const dist = @intCast(i32, reach_dist);
                 const neg_dist = dist * -1;
                 switch (move_action) {
-                    .left => null,
-                    .right => null,
-                    .up => null,
-                    .down => null,
-                    .downLeft => Pos.init(neg_dist, dist),
-                    .downRight => Pos.init(dist, dist),
-                    .upLeft => Pos.init(neg_dist, neg_dist),
-                    .upRight => Pos.init(dist, neg_dist),
+                    .left => return null,
+                    .right => return null,
+                    .up => return null,
+                    .down => return null,
+                    .downLeft => return Pos.init(neg_dist, dist),
+                    .downRight => return Pos.init(dist, dist),
+                    .upLeft => return Pos.init(neg_dist, neg_dist),
+                    .upRight => return Pos.init(dist, neg_dist),
                 }
             },
 
@@ -197,14 +197,14 @@ pub const Reach = union(enum) {
                 const dist = @intCast(i32, reach_dist);
                 const neg_dist = dist * -1;
                 switch (move_action) {
-                    .left => Pos.init(neg_dist, 0),
-                    .right => Pos.init(dist, 0),
-                    .up => Pos.init(0, neg_dist),
-                    .down => Pos.init(0, dist),
-                    .downLeft => null,
-                    .downRight => null,
-                    .upLeft => null,
-                    .upRight => null,
+                    .left => return Pos.init(neg_dist, 0),
+                    .right => return Pos.init(dist, 0),
+                    .up => return Pos.init(0, neg_dist),
+                    .down => return Pos.init(0, dist),
+                    .downLeft => return null,
+                    .downRight => return null,
+                    .upLeft => return null,
+                    .upRight => return null,
                 }
             },
         }

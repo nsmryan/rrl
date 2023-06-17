@@ -906,7 +906,7 @@ fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
     const target_pos = game.level.entities.pos.get(target_id);
 
     const attack_reach = game.level.entities.attack.get(id);
-    const can_hit_target = ai.aiCanHitTarget(game, id, target_pos, attack_reach);
+    const can_hit_target = try ai.aiCanHitTarget(game, id, target_pos, attack_reach);
 
     // If the target disappeared, change to idle- there is no need to
     // pursue their last position if we saw them blink away.

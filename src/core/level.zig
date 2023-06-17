@@ -70,6 +70,24 @@ pub const Level = struct {
         return collision;
     }
 
+    pub fn checkCollisionLine(level: *const Level, start: Pos, end: Pos, include_end: bool) Collision {
+        var line = Line.init(start, end, false);
+        var prev = start;
+        var collision = Collision.init(start, Direction.fromPositions(start, end).?);
+        while (line.next()) |line_pos| {
+            if (!include_end and line_pos.eql(end)) {
+                break;
+            }
+
+            collision = level.checkCollision(prev, Direction.fromPositions(prev, line_pos).?);
+            if (collision.hit()) {
+                break;
+            }
+            prev = line_pos;
+        }
+        return collision;
+    }
+
     pub fn blockingEntityAt(level: *const Level, pos: Pos) bool {
         for (level.entities.ids.items) |id| {
             if (level.entities.pos.getOrNull(id)) |entity_pos| {
@@ -81,12 +99,14 @@ pub const Level = struct {
         return false;
     }
 
-    pub fn posBlockedMove(level: *const Level, pos: Pos) bool {
-        const in_map = level.map.isWithinBounds(pos);
-        const blocked_by_entity = level.blockingEntityAtPos(pos) != null;
-        const blocked_by_map = BlockedType.move.tileBlocks(level.map.get(pos)) == .empty;
-        return in_map or blocked_by_entity or blocked_by_map;
-    }
+    // NOTE(design) this may be useful for blink, where we care about whether a tile blocks but
+    // not whether we can move into a tile. Use checkCollision for moving into a tile.
+    //pub fn posBlockedMove(level: *const Level, pos: Pos) bool {
+    //    const in_map = level.map.isWithinBounds(pos);
+    //    const blocked_by_entity = level.blockingEntityAtPos(pos) != null;
+    //    const blocked_by_map = BlockedType.move.tileBlocks(level.map.get(pos)) == .empty;
+    //    return in_map or blocked_by_entity or blocked_by_map;
+    //}
 
     pub fn itemAtPos(level: *const Level, pos: Pos) ?Id {
         for (level.entities.item.ids.items) |id| {

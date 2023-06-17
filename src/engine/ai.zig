@@ -418,7 +418,7 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
 
     // check all movement options in case one lets us hit the target
     const attack = game.level.entities.attack.get(id);
-    const direction = game.level.entities.facing.get(id);
+    const original_facing = game.level.entities.facing.get(id);
 
     var attack_offsets = ArrayList(Pos).init(game.frame_allocator);
     for (Direction.directions()) |move_action| {
@@ -430,17 +430,16 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
                 continue;
             }
 
-            game.level.entities.set_pos(id, attackable_pos);
-            game.level.entities.face(id, target_pos);
-            const can_hit = aiCanHitTarget(game, id, target_pos, &attack) != null;
-
+            game.level.entities.pos.set(id, attackable_pos);
+            game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos));
+            const can_hit = aiCanHitTarget(game, id, target_pos, attack);
             if (can_hit) {
                 try potential_move_targets.append(attackable_pos);
             }
         }
     }
     game.level.entities.pos.set(id, monster_pos);
-    game.level.entities.direction.set(id, direction);
+    game.level.entities.facing.set(id, original_facing);
 
     return potential_move_targets;
 }
@@ -450,13 +449,13 @@ pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) usize {
 
     // the fov_cost is added in if the next move would leave the target's FOV
     game.level.entities.pos.set(id, check_pos);
-    const cur_dir = game.level.entities.direction.get(id);
+    const cur_dir = game.level.entities.facing.get(id);
     game.level.entities.face.set(id, target_pos);
     var cost: usize = 0;
     if (game.level.posInFov(id, target_pos)) {
         cost = 5;
     }
-    game.level.entities.direction.set(id, cur_dir);
+    game.level.entities.facing.set(id, cur_dir);
     game.level.entities.pos.set(id, monster_pos);
 
     return cost;

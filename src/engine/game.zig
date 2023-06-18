@@ -5,6 +5,7 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const Random = std.rand.Random;
 const RndGen = std.rand.DefaultPrng;
+const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -213,14 +214,18 @@ comptime {
 }
 
 test "init and deinit game" {
-    var game = try Game.init(0, std.testing.allocator);
+    const allocator = std.testing.allocator;
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     game.deinit();
 }
 
 test "walk around a bit" {
     const allocator = std.testing.allocator;
-
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -248,7 +253,9 @@ test "walk around a bit" {
 test "walk into full tile wall" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -271,7 +278,9 @@ test "walk into full tile wall" {
 test "run around" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -289,7 +298,9 @@ test "run around" {
 test "run blocked" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -321,7 +332,9 @@ test "run blocked" {
 test "interact with intertile wall" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -377,7 +390,9 @@ test "interact with intertile wall" {
 test "interact with intertile corners" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -426,7 +441,9 @@ test "interact with intertile corners" {
 test "basic level fov" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -450,7 +467,9 @@ test "basic level fov" {
 test "short wall level fov" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);
@@ -478,7 +497,9 @@ test "short wall level fov" {
 test "basic level fov" {
     const allocator = std.testing.allocator;
 
-    var game = try Game.init(0, allocator);
+    var fixed_buffer = std.mem.zeroes([8 * 1024]u8);
+    var fixed_buffer_allocator = FixedBufferAllocator.init(&fixed_buffer);
+    var game = try Game.init(0, allocator, fixed_buffer_allocator.allocator());
     defer game.deinit();
 
     try game.startLevel(3, 3);

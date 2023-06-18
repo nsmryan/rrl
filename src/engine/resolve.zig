@@ -76,7 +76,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
-        .attack => |args| try aiAttack(game, args.id, args.target_id),
+        .aiAttack => |args| try aiAttack(game, args.id, args.target_id),
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
         .testMode => |args| try resolveTestMode(game, args),
         else => {},
@@ -782,6 +782,7 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
 }
 
 fn resolveAiStep(game: *Game, id: Id) !void {
+    print("aiStep\n", .{});
     try ai.stepAi(game, id);
 }
 
@@ -902,6 +903,7 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
 }
 
 fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
+    print("aiAttack\n", .{});
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
 

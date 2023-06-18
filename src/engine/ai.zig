@@ -276,7 +276,7 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach)
         return false;
     }
 
-    // We don't use is_in_fov here because the other checks already cover blocked movement.
+    // We don't use isInFov here because the other checks already cover blocked movement.
     const within_fov = try game.level.posInFov(id, target_pos);
 
     const collision = game.level.checkCollisionLine(entity_pos, target_pos, false);
@@ -284,7 +284,7 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach)
     if (within_fov == .inside and !collision.hit()) {
         // Look through attack positions, in case one hits the target
         const reachables = try attack_reach.reachables(entity_pos);
-        for (reachables.mem) |pos| {
+        for (reachables.constSlice()) |pos| {
             if (target_pos.eql(pos)) {
                 hit_pos = true;
                 break;
@@ -399,35 +399,45 @@ pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) !?Pos {
     return step_pos;
 }
 
+/// Create a list of positions that the golem can move to in which it will be able to
+/// hit the target entity with its attack.
 pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
     var potential_move_targets = ArrayList(Pos).init(game.frame_allocator);
 
     const target_pos = game.level.entities.pos.get(target_id);
-    const monster_pos = game.level.entities.pos.get(id);
+    const entity_pos = game.level.entities.pos.get(id);
 
     // check all movement options in case one lets us hit the target
     const attack = game.level.entities.attack.get(id);
+    const movement = game.level.entities.movement.get(id);
+
     const original_facing = game.level.entities.facing.get(id);
 
     var attack_offsets = ArrayList(Pos).init(game.frame_allocator);
-    for (Direction.directions()) |move_action| {
-        try attack.attacksWithReach(move_action, &attack_offsets);
-        for (attack_offsets.items) |attack_offset| {
-            const attackable_pos = target_pos.add(attack_offset);
 
-            if (attackable_pos.eql(monster_pos) or !game.level.map.isWithinBounds(attackable_pos)) {
+    var reachable_by_move = try movement.reachables(entity_pos);
+    for (reachable_by_move.constSlice()) |move_pos| {
+        const move_dir = Direction.fromPositions(entity_pos, move_pos).?;
+        try attack.attacksWithReach(move_pos, move_dir, &attack_offsets);
+        for (attack_offsets.items) |attackable_pos| {
+            if (attackable_pos.eql(entity_pos) or !game.level.map.isWithinBounds(attackable_pos)) {
                 continue;
             }
 
-            game.level.entities.pos.set(id, attackable_pos);
-            game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos).?);
-            const can_hit = try aiCanHitTarget(game, id, target_pos, attack);
+            var can_hit = attackable_pos.eql(target_pos);
+
+            if (!can_hit) {
+                game.level.entities.pos.set(id, attackable_pos);
+                game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos).?);
+                can_hit = try aiCanHitTarget(game, id, target_pos, attack);
+            }
+
             if (can_hit) {
                 try potential_move_targets.append(attackable_pos);
             }
         }
     }
-    game.level.entities.pos.set(id, monster_pos);
+    game.level.entities.pos.set(id, entity_pos);
     game.level.entities.facing.set(id, original_facing);
 
     return potential_move_targets;

@@ -152,11 +152,11 @@ pub const Reach = union(enum) {
         return closest;
     }
 
-    pub fn attacksWithReach(self: Reach, move_action: Direction, positions: *ArrayList(Pos)) !void {
+    pub fn attacksWithReach(self: Reach, move_pos: Pos, move_action: Direction, positions: *ArrayList(Pos)) !void {
         if (self.moveWithReach(move_action)) |pos| {
             var line = Line.init(Pos.init(0, 0), pos, true);
             while (line.next()) |line_pos| {
-                try positions.append(line_pos);
+                try positions.append(line_pos.add(move_pos));
             }
         }
     }
@@ -239,24 +239,18 @@ pub const Reach = union(enum) {
 
             .horiz => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
-                var index: usize = 1;
-                while (index <= dist) : (index += 1) {
-                    try end_points.push(Pos.init(dist, 0));
-                    try end_points.push(Pos.init(0, dist));
-                    try end_points.push(Pos.init(-1 * dist, 0));
-                    try end_points.push(Pos.init(0, -1 * dist));
-                }
+                try end_points.push(Pos.init(dist, 0));
+                try end_points.push(Pos.init(0, dist));
+                try end_points.push(Pos.init(-1 * dist, 0));
+                try end_points.push(Pos.init(0, -1 * dist));
             },
 
             .diag => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
-                var index: usize = 1;
-                while (index <= dist) : (index += 1) {
-                    try end_points.push(Pos.init(dist, dist));
-                    try end_points.push(Pos.init(-1 * dist, dist));
-                    try end_points.push(Pos.init(dist, -1 * dist));
-                    try end_points.push(Pos.init(-1 * dist, -1 * dist));
-                }
+                try end_points.push(Pos.init(dist, dist));
+                try end_points.push(Pos.init(-1 * dist, dist));
+                try end_points.push(Pos.init(dist, -1 * dist));
+                try end_points.push(Pos.init(-1 * dist, -1 * dist));
             },
         }
 
@@ -272,7 +266,7 @@ test "test reach offsets horiz" {
     for (expected_pos) |other| {
         std.debug.assert(offsets.contains(other));
     }
-    std.debug.assert(expected_pos.len == offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.used);
 }
 
 test "test reach offsets diag" {
@@ -283,7 +277,7 @@ test "test reach offsets diag" {
     for (expected_pos) |other| {
         std.debug.assert(offsets.contains(other));
     }
-    std.debug.assert(expected_pos.len == offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.used);
 }
 
 test "test reach offsets single" {
@@ -294,14 +288,23 @@ test "test reach offsets single" {
     for (expected_pos) |other| {
         std.debug.assert(offsets.contains(other));
     }
-    std.debug.assert(expected_pos.len == offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.used);
 }
 
-test "test reach reachables" {
+test "test reach reachables single" {
     const single = Reach.single(1);
     const offsets = try single.offsets();
-    std.debug.assert(8 == offsets.used);
+    try std.testing.expectEqual(@as(usize, 8), offsets.used);
 
     const positions = try single.reachables(Pos.init(5, 5));
-    std.debug.assert(8 == positions.used);
+    try std.testing.expectEqual(@as(usize, 8), positions.used);
+}
+
+test "test reach reachables diag" {
+    const diag = Reach.diag(5);
+    const offsets = try diag.offsets();
+    try std.testing.expectEqual(@as(usize, 4), offsets.used);
+
+    const positions = try diag.reachables(Pos.init(5, 5));
+    try std.testing.expectEqual(@as(usize, 4), positions.used);
 }

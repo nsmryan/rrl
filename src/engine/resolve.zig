@@ -782,7 +782,6 @@ fn resolveCrushed(game: *Game, id: Id, pos: Pos) !void {
 }
 
 fn resolveAiStep(game: *Game, id: Id) !void {
-    print("aiStep\n", .{});
     try ai.stepAi(game, id);
 }
 
@@ -903,12 +902,12 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
 }
 
 fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
-    print("aiAttack\n", .{});
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
 
     const attack_reach = game.level.entities.attack.get(id);
     const can_hit_target = try ai.aiCanHitTarget(game, id, target_pos, attack_reach);
+    print("ai can hit target: {}\n", .{can_hit_target});
 
     // If the target disappeared, change to idle- there is no need to
     // pursue their last position if we saw them blink away.

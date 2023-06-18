@@ -27,7 +27,7 @@ const Reach = @import("movement.zig").Reach;
 // adjustments of costs even though they are integers.
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
-pub const CostFn = fn (*const Level, Pos, Pos) ?i32;
+pub const CostFn = fn (*const Level, Pos) ?i32;
 
 pub fn pathFindDistance(next_pos: Pos, end: Pos) usize {
     return @intCast(usize, next_pos.distanceMaximum(end) * ASTAR_COST_MULTIPLIER);
@@ -60,7 +60,7 @@ pub fn astarPath(level: *const Level, start: Pos, end: Pos, reach: Reach, cost_f
             // NOTE(design) the cost function is used here as an addon to the distance to the target.
             // This seems more often useful then allowing the caller to decide the full cost.
             if (cost_fn) |cost_function| {
-                if (cost_function(level, near_pos, start)) |addon_cost| {
+                if (cost_function(level, near_pos)) |addon_cost| {
                     cost += addon_cost * ASTAR_COST_MULTIPLIER;
                 } else {
                     // If the cost function returns null this signals that we don't want to consider this position.

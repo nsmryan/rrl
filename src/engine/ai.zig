@@ -234,17 +234,18 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
     }
 }
 
-fn aiMoveCostFunction(level: *const Level, current_pos: Pos, start_pos: Pos) ?i32 {
-    _ = start_pos;
+fn aiMoveCostFunction(level: *const Level, current_pos: Pos) ?i32 {
+    var cost: i32 = 0;
 
-    // If the tile has an item, which is a trap, which is armed, then return null to indicate
-    // that this move is not allowed.
-    if (level.itemAtPos(current_pos)) |item_id| {
-        if (level.entities.trap.has(item_id) and level.entities.armed.get(item_id)) {
-            return null;
+    // NOTE(design) originally this had traps totally blocking. This was changed
+    // to have traps be merely costly so an entity may decide to walk into one.
+    for (level.entities.armed.ids.items) |trap_id| {
+        if (level.entities.armed.get(trap_id) and level.entities.pos.get(trap_id).eql(current_pos)) {
+            return 10;
         }
     }
-    return 0;
+
+    return cost;
 }
 
 fn aiMoveTowardsTarget(game: *Game, target_pos: Pos, id: Id) !void {
@@ -329,7 +330,7 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
             const turn_dir = Direction.fromPositions(entity_pos, next_pos).?;
             const turn_amount = old_dir.turnAmount(turn_dir);
 
-            try path_solutions.append(PathPos{ .cost = cost, .turning = std.math.absInt(turn_amount), .pos = next_pos });
+            try path_solutions.append(PathPos{ .cost = cost, .turning = try std.math.absInt(turn_amount), .pos = next_pos });
 
             if (lowest_cost < cost) {
                 lowest_cost = cost;
@@ -364,38 +365,33 @@ pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowes
         return null;
     }
 
-    const must_reach = true;
-    const traps_block = true;
-    const path = game.level.pathBetween(entity_pos, check_pos, movement, must_reach, traps_block, null);
+    const path = try astarPath(&game.level, entity_pos, check_pos, movement, aiMoveCostFunction, game.frame_allocator);
 
     // Paths contain the starting square, so less than 2 is no path at all
-    if (path.len < 2) {
+    if (path.items.len < 2) {
         return null;
     }
 
-    cost += path.len;
+    cost += path.items.len;
 
     const next_pos = path.items[1];
 
     return .{ .cost = cost, .pos = next_pos };
 }
 
-pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) ?Pos {
+pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) !?Pos {
     const entity_pos = game.level.entities.pos.get(id);
 
     const reach = game.level.entities.movement.get(id);
 
-    const traps_block = true;
-    const must_reach = true;
-
-    const path = game.level.pathBetween(entity_pos, new_pos, reach, must_reach, traps_block, aiAstarCost);
+    const path = try astarPath(&game.level, entity_pos, new_pos, reach, aiMoveCostFunction, game.frame_allocator);
 
     var pos_offset = Pos.init(0, 0);
     if (path.items.len > 1) {
         pos_offset = entity_pos.stepTowards(path.items[1]);
     }
 
-    var step_pos = null;
+    var step_pos: ?Pos = null;
     if (pos_offset.mag() > 0) {
         step_pos = entity_pos.add(pos_offset);
     }
@@ -451,20 +447,6 @@ pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) !usize {
     }
     game.level.entities.facing.set(id, cur_dir);
     game.level.entities.pos.set(id, monster_pos);
-
-    return cost;
-}
-
-fn aiAstarCost(start: Pos, prev: Pos, next: Pos, game: *Game) ?i32 {
-    _ = start;
-    _ = prev;
-    var cost = 1;
-
-    if (game.level.firstEntityTypeAtPos(next, .trap)) |trap_id| {
-        if (game.level.entities.armed.get(trap_id)) {
-            return null;
-        }
-    }
 
     return cost;
 }

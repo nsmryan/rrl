@@ -932,7 +932,7 @@ fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
         if (maybe_pos) |move_pos| {
             // Try to move in the given direction.
             const direction = Direction.fromPositions(entity_pos, move_pos).?;
-            try game.log.log(.tryMove, .{ id, direction, 1, .walk });
+            try game.log.log(.tryMove, .{ id, direction, 1 });
         } else {
             // If we can't move anywhere, we just end our turn.
             game.level.entities.turn.getPtr(id).pass = true;

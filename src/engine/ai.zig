@@ -320,16 +320,16 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     // look through all potential positions for the shortest path
     var lowest_cost: usize = std.math.maxInt(usize);
     for (potential_move_targets.items) |target| {
-        const maybe_cost = aiTargetPosCost(game, id, target_id, target, lowest_cost);
+        const maybe_cost = try aiTargetPosCost(game, id, target_id, target, lowest_cost);
 
         if (maybe_cost) |cost_pair| {
             const cost = cost_pair.cost;
-            const next_pos = cost_pair.next_pos;
+            const next_pos = cost_pair.pos;
 
-            const turn_dir = game.level.entities.faceTo(id, next_pos);
+            const turn_dir = Direction.fromPositions(entity_pos, next_pos).?;
             const turn_amount = old_dir.turnAmount(turn_dir);
 
-            try path_solutions.append(PathPos{ .cost = cost, .turning = turn_amount.abs(), .pos = next_pos });
+            try path_solutions.append(PathPos{ .cost = cost, .turning = std.math.absInt(turn_amount), .pos = next_pos });
 
             if (lowest_cost < cost) {
                 lowest_cost = cost;
@@ -343,14 +343,14 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     return maybe_pos;
 }
 
-pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowest_cost: usize) ?struct { cost: usize, pos: Pos } {
+pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowest_cost: usize) !?struct { cost: usize, pos: Pos } {
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
     const movement = game.level.entities.movement.get(id);
 
     var cost: usize = 0;
 
-    cost += aiFovCost(game, id, check_pos, target_pos);
+    cost += try aiFovCost(game, id, check_pos, target_pos);
 
     // if the current cost is already higher then the lowest cost found so far,
     // there is no reason to consider this path
@@ -375,7 +375,7 @@ pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowes
 
     cost += path.len;
 
-    const next_pos = path[1];
+    const next_pos = path.items[1];
 
     return .{ .cost = cost, .pos = next_pos };
 }
@@ -437,15 +437,16 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
     return potential_move_targets;
 }
 
-pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) usize {
+pub fn aiFovCost(game: *Game, id: Id, check_pos: Pos, target_pos: Pos) !usize {
     const monster_pos = game.level.entities.pos.get(id);
 
-    // the fov_cost is added in if the next move would leave the target's FOV
+    // The fov_cost is added in if the next move would leave the target's FOV.
     game.level.entities.pos.set(id, check_pos);
     const cur_dir = game.level.entities.facing.get(id);
-    game.level.entities.facing.set(id, target_pos);
+
+    game.level.entities.facing.set(id, Direction.fromPositions(check_pos, target_pos).?);
     var cost: usize = 0;
-    if (game.level.posInFov(id, target_pos)) {
+    if (try game.level.posInFov(id, target_pos) == .outside) {
         cost = 5;
     }
     game.level.entities.facing.set(id, cur_dir);

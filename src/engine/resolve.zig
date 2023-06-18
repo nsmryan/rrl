@@ -76,7 +76,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .sound => |args| try resolveSound(game, args.id, args.pos, args.amount),
         .faceTowards => |args| try resolveFaceTowards(game, args.id, args.pos),
         .hit => |args| try resolveHit(game, args.id, args.start_pos, args.hit_pos, args.weapon_type, args.attack_style),
-        .aiAttack => |args| try aiAttack(game, args.id, args.target_id),
+        .aiAttack => |args| try resolveAiAttack(game, args.id, args.target_id),
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
         .testMode => |args| try resolveTestMode(game, args),
         else => {},
@@ -901,13 +901,11 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
     }
 }
 
-fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
+fn resolveAiAttack(game: *Game, id: Id, target_id: Id) !void {
     const entity_pos = game.level.entities.pos.get(id);
     const target_pos = game.level.entities.pos.get(target_id);
 
-    const attack_reach = game.level.entities.attack.get(id);
-    const can_hit_target = try ai.aiCanHitTarget(game, id, target_pos, attack_reach);
-    print("ai can hit target: {}\n", .{can_hit_target});
+    const can_hit_target = try ai.aiCanHitTarget(game, id, target_pos);
 
     // If the target disappeared, change to idle- there is no need to
     // pursue their last position if we saw them blink away.
@@ -934,6 +932,7 @@ fn aiAttack(game: *Game, id: Id, target_id: Id) !void {
             // Try to move in the given direction.
             const direction = Direction.fromPositions(entity_pos, move_pos).?;
             try game.log.log(.tryMove, .{ id, direction, 1 });
+            try game.log.log(.faceTowards, .{ id, target_pos });
         } else {
             // If we can't move anywhere, we just end our turn.
             game.level.entities.turn.getPtr(id).pass = true;

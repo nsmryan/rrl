@@ -267,12 +267,13 @@ fn stepAiAttack(game: *Game, id: Id, target_id: Id) !void {
     try game.log.log(.aiAttack, .{ id, target_id });
 }
 
-pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach) !bool {
+pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos) !bool {
     var hit_pos = false;
     const entity_pos = game.level.entities.pos.get(id);
 
     // Don't allow hitting from the same tile...
     if (target_pos.eql(entity_pos)) {
+        print("aiCanHitTarget equal...\n", .{});
         return false;
     }
 
@@ -283,8 +284,11 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos, attack_reach: Reach)
 
     if (within_fov == .inside and !collision.hit()) {
         // Look through attack positions, in case one hits the target
-        const reachables = try attack_reach.reachables(entity_pos);
-        for (reachables.constSlice()) |pos| {
+        var attack_offsets: ArrayList(Pos) = ArrayList(Pos).init(game.frame_allocator);
+        const attack_dir = Direction.fromPositions(entity_pos, target_pos).?;
+        const attack = game.level.entities.attack.get(id);
+        try attack.attacksWithReach(entity_pos, attack_dir, &attack_offsets);
+        for (attack_offsets.items) |pos| {
             if (target_pos.eql(pos)) {
                 hit_pos = true;
                 break;
@@ -309,14 +313,19 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     var new_pos = entity_pos;
 
     var potential_move_targets = try aiPosThatHitTarget(game, id, target_id);
+    print("\n\naiMoveToAttackPos:\n", .{});
+    print("potential_move_targets:\n", .{});
+    for (potential_move_targets.items) |pos| {
+        print("\t{}\n", .{pos});
+    }
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
     sortByDistanceTo(entity_pos, &potential_move_targets);
-
-    // path_solutions contains the path length, the amount of turning (absolute value), and the
-    // next position to go to for this solution.
-    var path_solutions: ArrayList(PathPos) = ArrayList(PathPos).init(game.frame_allocator);
+    print("potential_move_targets:\n", .{});
+    for (potential_move_targets.items) |pos| {
+        print("\t{}\n", .{pos});
+    }
 
     // look through all potential positions for the shortest path
     var lowest_cost: usize = std.math.maxInt(usize);
@@ -324,13 +333,14 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
         const maybe_cost = try aiTargetPosCost(game, id, target_id, target, lowest_cost);
 
         if (maybe_cost) |cost_pair| {
-            const cost = cost_pair.cost;
+            var cost = cost_pair.cost;
             const next_pos = cost_pair.pos;
 
             const turn_dir = Direction.fromPositions(entity_pos, next_pos).?;
             const turn_amount = old_dir.turnAmount(turn_dir);
-
-            try path_solutions.append(PathPos{ .cost = cost, .turning = try std.math.absInt(turn_amount), .pos = next_pos });
+            // NOTE(design) adding the turn amount may be too much pressure to not turn, but it
+            // is a simple way to keep golems moving towards the target.
+            cost += @intCast(usize, try std.math.absInt(turn_amount));
 
             if (lowest_cost < cost) {
                 lowest_cost = cost;
@@ -339,8 +349,13 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
         }
     }
 
-    // step towards the closest location that const us hit the target
-    const maybe_pos = aiAttemptStep(game, id, new_pos);
+    var maybe_pos: ?Pos = new_pos;
+    if (lowest_cost == std.math.maxInt(usize)) {
+        print("no positions hit target, just move towards them\n", .{});
+        maybe_pos = try aiAttemptStep(game, id, game.level.entities.pos.get(target_id));
+    }
+    print("new pos = {}\n", .{new_pos});
+
     return maybe_pos;
 }
 
@@ -365,6 +380,7 @@ pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowes
         return null;
     }
 
+    print("astar from {} to {}, move {}\n", .{ entity_pos, check_pos, movement });
     const path = try astarPath(&game.level, entity_pos, check_pos, movement, aiMoveCostFunction, game.frame_allocator);
 
     // Paths contain the starting square, so less than 2 is no path at all
@@ -386,17 +402,11 @@ pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) !?Pos {
 
     const path = try astarPath(&game.level, entity_pos, new_pos, reach, aiMoveCostFunction, game.frame_allocator);
 
-    var pos_offset = Pos.init(0, 0);
     if (path.items.len > 1) {
-        pos_offset = entity_pos.stepTowards(path.items[1]);
+        return path.items[1];
+    } else {
+        return null;
     }
-
-    var step_pos: ?Pos = null;
-    if (pos_offset.mag() > 0) {
-        step_pos = entity_pos.add(pos_offset);
-    }
-
-    return step_pos;
 }
 
 /// Create a list of positions that the golem can move to in which it will be able to
@@ -413,27 +423,27 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
 
     const original_facing = game.level.entities.facing.get(id);
 
-    var attack_offsets = ArrayList(Pos).init(game.frame_allocator);
+    var attackable_positions = ArrayList(Pos).init(game.frame_allocator);
 
     var reachable_by_move = try movement.reachables(entity_pos);
     for (reachable_by_move.constSlice()) |move_pos| {
+        if (!game.level.map.isWithinBounds(move_pos) or move_pos.eql(target_pos)) {
+            continue;
+        }
+
         const move_dir = Direction.fromPositions(entity_pos, move_pos).?;
-        try attack.attacksWithReach(move_pos, move_dir, &attack_offsets);
-        for (attack_offsets.items) |attackable_pos| {
-            if (attackable_pos.eql(entity_pos) or !game.level.map.isWithinBounds(attackable_pos)) {
+        try attack.attacksWithReach(move_pos, move_dir, &attackable_positions);
+        for (attackable_positions.items) |attackable_pos| {
+            if (!game.level.map.isWithinBounds(attackable_pos)) {
                 continue;
             }
 
-            var can_hit = attackable_pos.eql(target_pos);
-
-            if (!can_hit) {
-                game.level.entities.pos.set(id, attackable_pos);
-                game.level.entities.facing.set(id, Direction.fromPositions(attackable_pos, target_pos).?);
-                can_hit = try aiCanHitTarget(game, id, target_pos, attack);
-            }
+            game.level.entities.pos.set(id, move_pos);
+            game.level.entities.facing.set(id, Direction.fromPositions(move_pos, target_pos).?);
+            const can_hit = try aiCanHitTarget(game, id, target_pos);
 
             if (can_hit) {
-                try potential_move_targets.append(attackable_pos);
+                try potential_move_targets.append(move_pos);
             }
         }
     }

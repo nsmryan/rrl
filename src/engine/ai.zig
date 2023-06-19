@@ -291,14 +291,15 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos) !bool {
 
     if (within_fov == .inside and !collision.hit()) {
         // Look through attack positions, in case one hits the target
-        var attack_offsets: ArrayList(Pos) = ArrayList(Pos).init(game.frame_allocator);
         const attack_dir = Direction.fromPositions(entity_pos, target_pos).?;
         const attack = game.level.entities.attack.get(id);
-        try attack.attacksWithReach(entity_pos, attack_dir, &attack_offsets);
-        for (attack_offsets.items) |pos| {
-            if (target_pos.eql(pos)) {
-                hit_pos = true;
-                break;
+        var maybe_attack_line = attack.reachLineInDirection(entity_pos, attack_dir);
+        if (maybe_attack_line) |*attackLine| {
+            while (attackLine.next()) |pos| {
+                if (target_pos.eql(pos)) {
+                    hit_pos = true;
+                    break;
+                }
             }
         }
     }

@@ -152,13 +152,11 @@ pub const Reach = union(enum) {
         return closest;
     }
 
-    pub fn attacksWithReach(self: Reach, move_pos: Pos, move_action: Direction, positions: *ArrayList(Pos)) !void {
+    pub fn reachLineInDirection(self: Reach, move_pos: Pos, move_action: Direction) ?Line {
         if (self.moveWithReach(move_action)) |pos| {
-            var line = Line.init(Pos.init(0, 0), pos, true);
-            while (line.next()) |line_pos| {
-                try positions.append(line_pos.add(move_pos));
-            }
+            return Line.init(move_pos, move_pos.add(pos), true);
         }
+        return null;
     }
 
     pub fn moveWithReach(self: Reach, move_action: Direction) ?Pos {

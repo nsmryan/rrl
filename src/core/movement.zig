@@ -1,6 +1,5 @@
 const std = @import("std");
 const print = std.debug.print;
-const ArrayList = std.ArrayList;
 
 const board = @import("board");
 const Height = board.tile.Tile.Height;

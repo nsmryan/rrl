@@ -1,10 +1,9 @@
 const std = @import("std");
 const print = std.debug.print;
+const BoundedArray = std.BoundedArray;
 
 const board = @import("board");
 const Height = board.tile.Tile.Height;
-
-const Array = @import("utils").buffer.Array;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -207,47 +206,47 @@ pub const Reach = union(enum) {
         }
     }
 
-    pub fn reachables(self: Reach, start: Pos) !Array(Pos, 8) {
+    pub fn reachables(self: Reach, start: Pos) !BoundedArray(Pos, 8) {
         const offs = try self.offsets();
 
-        var reachable: Array(Pos, 8) = Array(Pos, 8).init();
+        var reachable = try BoundedArray(Pos, 8).init(0);
         for (offs.constSlice()) |offset| {
-            try reachable.push(start.add(offset));
+            try reachable.append(start.add(offset));
         }
 
         return reachable;
     }
 
-    pub fn offsets(self: Reach) !Array(Pos, 8) {
-        var end_points: Array(Pos, 8) = Array(Pos, 8).init();
+    pub fn offsets(self: Reach) !BoundedArray(Pos, 8) {
+        var end_points: BoundedArray(Pos, 8) = try BoundedArray(Pos, 8).init(0);
 
         switch (self) {
             .single => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
-                try end_points.push(Pos.init(0, dist));
-                try end_points.push(Pos.init(-dist, dist));
-                try end_points.push(Pos.init(-dist, 0));
-                try end_points.push(Pos.init(-dist, -dist));
-                try end_points.push(Pos.init(0, -dist));
-                try end_points.push(Pos.init(dist, -dist));
-                try end_points.push(Pos.init(dist, 0));
-                try end_points.push(Pos.init(dist, dist));
+                try end_points.append(Pos.init(0, dist));
+                try end_points.append(Pos.init(-dist, dist));
+                try end_points.append(Pos.init(-dist, 0));
+                try end_points.append(Pos.init(-dist, -dist));
+                try end_points.append(Pos.init(0, -dist));
+                try end_points.append(Pos.init(dist, -dist));
+                try end_points.append(Pos.init(dist, 0));
+                try end_points.append(Pos.init(dist, dist));
             },
 
             .horiz => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
-                try end_points.push(Pos.init(dist, 0));
-                try end_points.push(Pos.init(0, dist));
-                try end_points.push(Pos.init(-1 * dist, 0));
-                try end_points.push(Pos.init(0, -1 * dist));
+                try end_points.append(Pos.init(dist, 0));
+                try end_points.append(Pos.init(0, dist));
+                try end_points.append(Pos.init(-1 * dist, 0));
+                try end_points.append(Pos.init(0, -1 * dist));
             },
 
             .diag => |reach_dist| {
                 const dist = @intCast(i32, reach_dist);
-                try end_points.push(Pos.init(dist, dist));
-                try end_points.push(Pos.init(-1 * dist, dist));
-                try end_points.push(Pos.init(dist, -1 * dist));
-                try end_points.push(Pos.init(-1 * dist, -1 * dist));
+                try end_points.append(Pos.init(dist, dist));
+                try end_points.append(Pos.init(-1 * dist, dist));
+                try end_points.append(Pos.init(dist, -1 * dist));
+                try end_points.append(Pos.init(-1 * dist, -1 * dist));
             },
         }
 

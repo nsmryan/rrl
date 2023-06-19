@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const BoundedArray = std.BoundedArray;
 
 const math = @import("math");
 const Direction = math.direction.Direction;
@@ -31,8 +32,6 @@ const Mode = s.Mode;
 const g = @import("game.zig");
 const Game = g.Game;
 
-const Array = @import("utils").buffer.Array;
-
 pub const ActionMode = enum {
     primary,
     alternate,
@@ -40,10 +39,13 @@ pub const ActionMode = enum {
 
 pub const UseDir = struct {
     move_pos: Pos,
-    hit_positions: Array(Pos, 8),
+    hit_positions: BoundedArray(Pos, 8),
 
     pub fn init() UseDir {
-        var result = UseDir{ .move_pos = Pos.init(-1, -1), .hit_positions = Array(Pos, 8).init() };
+        var result = UseDir{
+            .move_pos = Pos.init(-1, -1),
+            .hit_positions = BoundedArray(Pos, 8).init(0) catch unreachable,
+        };
         return result;
     }
 };
@@ -83,7 +85,7 @@ pub fn startInteract(game: *Game) !void {
 
         const hit_pos = dir.offsetPos(player_pos, 1);
         use_dir.move_pos = player_pos;
-        try use_dir.hit_positions.push(hit_pos);
+        try use_dir.hit_positions.append(hit_pos);
 
         const dir_index = @enumToInt(dir);
         use_result.use_dir[dir_index] = use_dir;
@@ -199,10 +201,10 @@ pub fn useSword(game: *Game) !UseResult {
             use_dir.move_pos = target_pos;
 
             const left_pos = dir.counterclockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(left_pos);
+            try use_dir.hit_positions.append(left_pos);
 
             const right_pos = dir.clockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(right_pos);
+            try use_dir.hit_positions.append(right_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
@@ -228,7 +230,7 @@ pub fn useDagger(game: *Game) !UseResult {
         if (is_crouching and is_clear_path) {
             var use_dir: UseDir = UseDir.init();
             use_dir.move_pos = target_pos;
-            try use_dir.hit_positions.push(hit_pos);
+            try use_dir.hit_positions.append(hit_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
@@ -256,7 +258,7 @@ pub fn useShield(game: *Game) !UseResult {
         if (in_facing_dir and is_clear_path) {
             var use_dir: UseDir = UseDir.init();
             use_dir.move_pos = target_pos;
-            try use_dir.hit_positions.push(hit_pos);
+            try use_dir.hit_positions.append(hit_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
@@ -290,10 +292,10 @@ pub fn useSpear(game: *Game) !UseResult {
 
                 // the spear will hit both intervening positions.
                 const far_target_pos = dir.offsetPos(player_pos, 4);
-                try use_dir.hit_positions.push(far_target_pos);
+                try use_dir.hit_positions.append(far_target_pos);
 
                 const close_target_pos = dir.offsetPos(player_pos, 3);
-                try use_dir.hit_positions.push(close_target_pos);
+                try use_dir.hit_positions.append(close_target_pos);
 
                 const dir_index = @enumToInt(dir);
                 use_result.use_dir[dir_index] = use_dir;
@@ -305,9 +307,9 @@ pub fn useSpear(game: *Game) !UseResult {
 
                 use_dir.move_pos = player_pos;
 
-                try use_dir.hit_positions.push(dir.offsetPos(player_pos, 2));
+                try use_dir.hit_positions.append(dir.offsetPos(player_pos, 2));
 
-                try use_dir.hit_positions.push(dir.offsetPos(player_pos, 3));
+                try use_dir.hit_positions.append(dir.offsetPos(player_pos, 3));
 
                 const dir_index = @enumToInt(dir);
                 use_result.use_dir[dir_index] = use_dir;
@@ -332,7 +334,7 @@ pub fn useKhopesh(game: *Game) !UseResult {
             var use_dir: UseDir = UseDir.init();
 
             use_dir.move_pos = move_pos;
-            try use_dir.hit_positions.push(target_pos);
+            try use_dir.hit_positions.append(target_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
@@ -356,13 +358,13 @@ pub fn useAxe(game: *Game) !UseResult {
 
             use_dir.move_pos = player_pos;
 
-            try use_dir.hit_positions.push(target_pos);
+            try use_dir.hit_positions.append(target_pos);
 
             const left_pos = dir.clockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(left_pos);
+            try use_dir.hit_positions.append(left_pos);
 
             const right_pos = dir.counterclockwise().offsetPos(player_pos, 1);
-            try use_dir.hit_positions.push(right_pos);
+            try use_dir.hit_positions.append(right_pos);
 
             const dir_index = @enumToInt(dir);
             use_result.use_dir[dir_index] = use_dir;
@@ -383,7 +385,7 @@ pub fn useHammer(game: *Game) !UseResult {
         const hit_pos = dir.offsetPos(player_pos, 1);
         // Hammers can always be used in any direction.
         use_dir.move_pos = player_pos;
-        try use_dir.hit_positions.push(hit_pos);
+        try use_dir.hit_positions.append(hit_pos);
 
         const dir_index = @enumToInt(dir);
         use_result.use_dir[dir_index] = use_dir;
@@ -402,7 +404,7 @@ pub fn useSling(game: *Game) !UseResult {
 
         const hit_pos = dir.offsetPos(player_pos, 1);
         use_dir.move_pos = player_pos;
-        try use_dir.hit_positions.push(hit_pos);
+        try use_dir.hit_positions.append(hit_pos);
 
         const dir_index = @enumToInt(dir);
         use_result.use_dir[dir_index] = use_dir;

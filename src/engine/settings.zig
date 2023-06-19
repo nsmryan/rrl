@@ -1,4 +1,5 @@
 const std = @import("std");
+const BoundedArray = std.BoundedArray;
 
 const ArrayList = std.ArrayList;
 
@@ -8,8 +9,6 @@ const Direction = math.direction.Direction;
 const core = @import("core");
 
 const input = @import("input.zig");
-
-const Buffer = @import("utils").buffer.Buffer;
 
 const actions = @import("actions.zig");
 
@@ -54,7 +53,7 @@ pub const Settings = struct {
     map_changed: bool = false,
     exit_condition: LevelExitCondition = LevelExitCondition.rightEdge,
 
-    splash: Buffer(128) = Buffer(128).init(),
+    splash: BoundedArray(u8, 128) = BoundedArray(u8, 128).init(0) catch unreachable,
 
     pub fn init() Settings {
         return Settings{};

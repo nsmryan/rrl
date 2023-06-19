@@ -1,4 +1,5 @@
 const std = @import("std");
+const BoundedArray = std.BoundedArray;
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -9,7 +10,6 @@ const Direction = math.direction.Direction;
 const Dims = math.utils.Dims;
 
 const utils = @import("utils");
-const Array = utils.buffer.Array;
 
 const Tile = @import("tile.zig").Tile;
 const blocking = @import("blocking.zig");
@@ -192,13 +192,13 @@ pub const Map = struct {
         return Pos.init(@mod(@intCast(i32, index), map.width), @divFloor(@intCast(i32, index), map.width));
     }
 
-    pub fn neighbors(map: *const Map, pos: Pos) !Array(Pos, 8) {
-        var result = Array(Pos, 8).init();
+    pub fn neighbors(map: *const Map, pos: Pos) !BoundedArray(Pos, 8) {
+        var result = BoundedArray(Pos, 8).init(0) catch unreachable;
 
         for (Direction.directions()) |dir| {
             const end_pos = dir.offsetPos(pos, 1);
             if (map.isWithinBounds(end_pos)) {
-                try result.push(end_pos);
+                try result.append(end_pos);
             }
         }
 
@@ -207,14 +207,14 @@ pub const Map = struct {
 
     /// Returns an array of positions that are not blocked by any wall.
     /// Note that this considers short walls blocking.
-    pub fn reachableNeighbors(map: *const Map, pos: Pos) !Array(Pos, 8) {
-        var result = Array(Pos, 8).init();
+    pub fn reachableNeighbors(map: *const Map, pos: Pos) !BoundedArray(Pos, 8) {
+        var result = BoundedArray(Pos, 8).init(0) catch unreachable;
 
         for (Direction.directions()) |dir| {
             const blocked = blocking.moveBlocked(map, pos, dir, .move);
             if (blocked == null) {
                 const end_pos = dir.offsetPos(pos, 1);
-                try result.push(end_pos);
+                try result.append(end_pos);
             }
         }
 
@@ -253,7 +253,7 @@ pub const Map = struct {
 //        for delta in neighbors.iter() {
 //            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
 //            if self.is_within_bounds(new_pos) {
-//                result.push(new_pos);
+//                result.append(new_pos);
 //            }
 //        }
 //
@@ -270,7 +270,7 @@ pub const Map = struct {
 //        for delta in neighbors.iter() {
 //            let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
 //            if self.path_blocked_move(pos, end_pos).is_none() {
-//                result.push(add_pos(pos, Pos::new(delta.0, delta.1)));
+//                result.append(add_pos(pos, Pos::new(delta.0, delta.1)));
 //            }
 //        }
 //

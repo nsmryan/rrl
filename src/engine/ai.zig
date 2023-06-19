@@ -1,6 +1,6 @@
 const std = @import("std");
-const ArrayList = std.ArrayList;
 const print = std.debug.print;
+const BoundedArray = std.BoundedArray;
 
 const core = @import("core");
 const Behavior = core.entities.Behavior;
@@ -11,7 +11,6 @@ const Reach = core.movement.Reach;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
-const Array = utils.buffer.Array;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -407,8 +406,8 @@ pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) !?Pos {
 
 /// Create a list of positions that the golem can move to in which it will be able to
 /// hit the target entity with its attack.
-pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !Array(Pos, 8) {
-    var potential_move_targets = Array(Pos, 8).init();
+pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !BoundedArray(Pos, 8) {
+    var potential_move_targets = try BoundedArray(Pos, 8).init(0);
 
     const target_pos = game.level.entities.pos.get(target_id);
     const entity_pos = game.level.entities.pos.get(id);
@@ -434,7 +433,7 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !Array(Pos, 8) {
         const can_hit = try aiCanHitTarget(game, id, target_pos);
 
         if (can_hit) {
-            try potential_move_targets.push(move_pos);
+            try potential_move_targets.append(move_pos);
         }
     }
     game.level.entities.pos.set(id, entity_pos);

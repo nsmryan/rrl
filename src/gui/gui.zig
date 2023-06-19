@@ -525,7 +525,7 @@ pub const Gui = struct {
 
                 .sword => anim = gui.simpleAnimation("sword", id),
 
-                .teleporter => anim = gui.simpleAnimation("seed_pouch", id),
+                .teleporter => anim = gui.simpleAnimation("teleporter", id),
 
                 .shield => anim = gui.simpleAnimation("shield", id),
 

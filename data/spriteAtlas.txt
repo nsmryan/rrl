@@ -110,7 +110,7 @@ mechanism_trap_cardinal 80 32 16 16
 unused_trap_1 96 32 16 16
 freeze_trap 112 32 16 16
 sound_trap 128 32 16 16
-unused_trap_2 144 32 16 16
+teleporter 144 32 16 16
 mechanism_trap_diagonal 160 32 16 16
 unused_trap_3 176 32 16 16
 unused_trap_4 192 32 16 16

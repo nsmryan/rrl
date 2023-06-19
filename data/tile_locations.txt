@@ -39,7 +39,7 @@
 39 unused_trap_1
 40 freeze_trap
 41 sound_trap
-42 unused_trap_2
+42 teleporter
 43 mechanism_trap_diagonal
 44 unused_trap_3
 45 unused_trap_4

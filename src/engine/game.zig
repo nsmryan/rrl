@@ -179,7 +179,7 @@ pub const Game = struct {
 
         // NOTE(remove) this is just for testing
         var id: utils.comp.Id = undefined;
-        const spawn_items = [_]items.Item{ .sword, .stone, .hammer, .seedOfStone, .smokeBomb, .dagger, .shield, .khopesh, .axe, .sling, .spear };
+        const spawn_items = [_]items.Item{ .sword, .stone, .hammer, .seedOfStone, .smokeBomb, .dagger, .shield, .khopesh, .axe, .sling, .spear, .teleporter };
         var index: usize = 0;
         for (spawn_items) |item| {
             id = try spawn.spawnItem(&game.level.entities, item, &game.log, &game.config, game.allocator);

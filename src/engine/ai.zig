@@ -273,7 +273,6 @@ pub fn aiCanHitTarget(game: *Game, id: Id, target_pos: Pos) !bool {
 
     // Don't allow hitting from the same tile...
     if (target_pos.eql(entity_pos)) {
-        print("aiCanHitTarget equal...\n", .{});
         return false;
     }
 
@@ -313,19 +312,10 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
     var new_pos = entity_pos;
 
     var potential_move_targets = try aiPosThatHitTarget(game, id, target_id);
-    print("\n\naiMoveToAttackPos:\n", .{});
-    print("potential_move_targets:\n", .{});
-    for (potential_move_targets.items) |pos| {
-        print("\t{}\n", .{pos});
-    }
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
     sortByDistanceTo(entity_pos, &potential_move_targets);
-    print("potential_move_targets:\n", .{});
-    for (potential_move_targets.items) |pos| {
-        print("\t{}\n", .{pos});
-    }
 
     // look through all potential positions for the shortest path
     var lowest_cost: usize = std.math.maxInt(usize);
@@ -342,7 +332,7 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
             // is a simple way to keep golems moving towards the target.
             cost += @intCast(usize, try std.math.absInt(turn_amount));
 
-            if (lowest_cost < cost) {
+            if (lowest_cost > cost) {
                 lowest_cost = cost;
                 new_pos = next_pos;
             }
@@ -351,10 +341,8 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
 
     var maybe_pos: ?Pos = new_pos;
     if (lowest_cost == std.math.maxInt(usize)) {
-        print("no positions hit target, just move towards them\n", .{});
         maybe_pos = try aiAttemptStep(game, id, game.level.entities.pos.get(target_id));
     }
-    print("new pos = {}\n", .{new_pos});
 
     return maybe_pos;
 }
@@ -380,7 +368,6 @@ pub fn aiTargetPosCost(game: *Game, id: Id, target_id: Id, check_pos: Pos, lowes
         return null;
     }
 
-    print("astar from {} to {}, move {}\n", .{ entity_pos, check_pos, movement });
     const path = try astarPath(&game.level, entity_pos, check_pos, movement, aiMoveCostFunction, game.frame_allocator);
 
     // Paths contain the starting square, so less than 2 is no path at all
@@ -418,12 +405,9 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
     const entity_pos = game.level.entities.pos.get(id);
 
     // check all movement options in case one lets us hit the target
-    const attack = game.level.entities.attack.get(id);
     const movement = game.level.entities.movement.get(id);
 
     const original_facing = game.level.entities.facing.get(id);
-
-    var attackable_positions = ArrayList(Pos).init(game.frame_allocator);
 
     var reachable_by_move = try movement.reachables(entity_pos);
     for (reachable_by_move.constSlice()) |move_pos| {
@@ -431,20 +415,17 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
             continue;
         }
 
-        const move_dir = Direction.fromPositions(entity_pos, move_pos).?;
-        try attack.attacksWithReach(move_pos, move_dir, &attackable_positions);
-        for (attackable_positions.items) |attackable_pos| {
-            if (!game.level.map.isWithinBounds(attackable_pos)) {
-                continue;
-            }
+        if (game.level.checkCollision(entity_pos, Direction.fromPositions(entity_pos, move_pos).?).hit()) {
+            continue;
+        }
 
-            game.level.entities.pos.set(id, move_pos);
-            game.level.entities.facing.set(id, Direction.fromPositions(move_pos, target_pos).?);
-            const can_hit = try aiCanHitTarget(game, id, target_pos);
+        game.level.entities.pos.set(id, move_pos);
+        game.level.entities.facing.set(id, Direction.fromPositions(move_pos, target_pos).?);
 
-            if (can_hit) {
-                try potential_move_targets.append(move_pos);
-            }
+        const can_hit = try aiCanHitTarget(game, id, target_pos);
+
+        if (can_hit) {
+            try potential_move_targets.append(move_pos);
         }
     }
     game.level.entities.pos.set(id, entity_pos);

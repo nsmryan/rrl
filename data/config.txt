@@ -261,6 +261,13 @@ map_window_dist: 4
 # Golem configuration
 gol_attack_distance: 5
 gol_move_distance: 1
+spire_move_distance: 1
+spire_attack_distance: 5
+pawn_move_distance: 1
+pawn_attack_distance: 1
+rook_move_distance: 1
+rook_attack_distance: 5
+armil_move_distance: 1
 
 # Number of turns before armil explodes
 armil_turns_armed: 1

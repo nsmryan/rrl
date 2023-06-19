@@ -104,8 +104,6 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.facing.insert(id, Direction.right);
     try entities.behavior.insert(id, .idle);
     try entities.hp.insert(id, @intCast(usize, config.golem_health));
-    try entities.movement.insert(id, Reach{ .single = config.gol_move_distance });
-    try entities.attack.insert(id, Reach{ .diag = config.gol_attack_distance });
     try entities.view.insert(id, try View.init(Dims.init(0, 0), allocator));
     try entities.stance.insert(id, .standing);
     try entities.percept.insert(id, .none);
@@ -114,11 +112,30 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.status.insert(id, StatusEffect{});
 
     switch (golem) {
-        .gol => try entities.attack_type.insert(id, .ranged),
-        .pawn => try entities.attack_type.insert(id, .melee),
-        .rook => try entities.attack_type.insert(id, .melee),
-        .spire => try entities.attack_type.insert(id, .melee),
-        .armil => try entities.attack_type.insert(id, .push),
+        .gol => {
+            try entities.attack_type.insert(id, .ranged);
+            try entities.movement.insert(id, Reach{ .single = config.gol_move_distance });
+            try entities.attack.insert(id, Reach{ .diag = config.gol_attack_distance });
+        },
+        .pawn => {
+            try entities.attack_type.insert(id, .melee);
+            try entities.movement.insert(id, Reach{ .single = config.gol_move_distance });
+            try entities.attack.insert(id, Reach{ .single = config.pawn_attack_distance });
+        },
+        .rook => {
+            try entities.attack_type.insert(id, .melee);
+            try entities.movement.insert(id, Reach{ .horiz = config.gol_move_distance });
+            try entities.attack.insert(id, Reach{ .horiz = config.rook_attack_distance });
+        },
+        .spire => {
+            try entities.attack_type.insert(id, .melee);
+            try entities.movement.insert(id, Reach{ .single = config.gol_move_distance });
+            try entities.attack.insert(id, Reach{ .single = config.spire_attack_distance });
+        },
+        .armil => {
+            try entities.attack_type.insert(id, .push);
+            try entities.movement.insert(id, Reach{ .single = config.armil_move_distance });
+        },
     }
 
     try log.log(.facing, .{ id, entities.facing.get(id) });

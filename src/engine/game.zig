@@ -187,7 +187,7 @@ pub const Game = struct {
             index += 1;
         }
 
-        id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, 3), .pawn, &game.log, game.allocator);
+        id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, 3), .rook, &game.log, game.allocator);
         try game.log.log(.facing, .{ id, .right });
 
         game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());

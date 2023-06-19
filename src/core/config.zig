@@ -140,6 +140,13 @@ pub const Config = struct {
 
     gol_move_distance: usize,
     gol_attack_distance: usize,
+    spire_move_distance: usize,
+    spire_attack_distance: usize,
+    pawn_move_distance: usize,
+    pawn_attack_distance: usize,
+    rook_move_distance: usize,
+    rook_attack_distance: usize,
+    armil_move_distance: usize,
 
     armil_turns_armed: usize,
 

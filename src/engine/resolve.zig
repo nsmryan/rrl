@@ -230,19 +230,21 @@ fn resolveMove(id: Id, move_type: MoveType, move_mode: MoveMode, pos: Pos, game:
         }
     }
 
-    // For blinking movements, check if the entity disappears from the perspective of an entity.
-    if (move_type == .blink) {
-        for (game.level.entities.behavior.ids.items) |behave_id| {
-            // This is only important for entities with perception.
-            if (!game.level.entities.percept.has(behave_id)) {
-                continue;
-            }
+    // If the entity moves out of sight, entities attacking them perceive this happening.
+    for (game.level.entities.behavior.ids.items) |behave_id| {
+        // This is only important for entities with perception and behavior.
+        if (!game.level.entities.percept.has(behave_id)) {
+            continue;
+        }
 
-            const behavior = game.level.entities.behavior.get(behave_id);
-            // If the entity is attacking the entity that blinked, they see the entity disappear.
-            if (behavior == .attacking and behavior.attacking == id) {
-                const percept = game.level.entities.percept.get(behave_id);
+        const behavior = game.level.entities.behavior.get(behave_id);
+        // If the entity is attacking the entity that blinked, they see the entity disappear.
+        if (behavior == .attacking and behavior.attacking == id) {
+            const percept = game.level.entities.percept.get(behave_id);
+            if (move_type == .blink) {
                 game.level.entities.percept.getPtr(behave_id).* = percept.perceive(Percept.disappeared);
+            } else {
+                game.level.entities.percept.getPtr(behave_id).* = percept.perceive(Percept.targetHidden);
             }
         }
     }
@@ -922,9 +924,9 @@ fn resolveAiAttack(game: *Game, id: Id, target_id: Id) !void {
         // If we lose the target, end the turn and investigate their current position.
         // This allows the golem to 'see' a player move behind a wall and still investigate
         // them instead of losing track of their position.
-        game.level.entities.turn.getPtr(id).pass = true;
         const current_target_pos = game.level.entities.pos.get(target_id);
         try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = current_target_pos } });
+        try game.log.log(.aiStep, id);
     } else {
         // Can see target, but can't hit them. try to move to a position where we can hit them
         const maybe_pos = try ai.aiMoveToAttackPos(game, id, target_id);

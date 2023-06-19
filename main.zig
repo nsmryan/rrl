@@ -37,11 +37,6 @@ pub fn main() anyerror!void {
     try gui.game.startLevel(21, 21);
     try gui.resolveMessages();
 
-    gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
-    gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
-    gui.game.level.map.set(Pos.init(3, 3), board.tile.Tile.grass());
-    gui.game.level.map.set(Pos.init(3, 4), board.tile.Tile.rubble());
-
     // Set up a splash screen.
     //gui.game.settings.state = .splash;
     //gui.game.settings.splash.set("player_standing_right"[0..]);

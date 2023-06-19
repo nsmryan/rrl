@@ -80,6 +80,7 @@ pub const Percept = union(enum) {
     sound: Pos,
     hit: Pos, // this is used when an item is thrown onto an entity.
     attacked: Id,
+    targetHidden,
     disappeared,
 
     pub fn perceive(percept: Percept, new_percept: Percept) Percept {

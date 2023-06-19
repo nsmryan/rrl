@@ -11,6 +11,7 @@ const Reach = core.movement.Reach;
 
 const utils = @import("utils");
 const Id = utils.comp.Id;
+const Array = utils.buffer.Array;
 
 const math = @import("math");
 const Pos = math.pos.Pos;
@@ -322,11 +323,11 @@ pub fn aiMoveToAttackPos(game: *Game, id: Id, target_id: Id) !?Pos {
 
     // Sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
-    sortByDistanceTo(entity_pos, &potential_move_targets);
+    sortByDistanceTo(entity_pos, potential_move_targets.slice());
 
     // look through all potential positions for the shortest path
     var lowest_cost: usize = std.math.maxInt(usize);
-    for (potential_move_targets.items) |target| {
+    for (potential_move_targets.constSlice()) |target| {
         const maybe_cost = try aiTargetPosCost(game, id, target_id, target, lowest_cost);
 
         if (maybe_cost) |cost_pair| {
@@ -405,8 +406,8 @@ pub fn aiAttemptStep(game: *Game, id: Id, new_pos: Pos) !?Pos {
 
 /// Create a list of positions that the golem can move to in which it will be able to
 /// hit the target entity with its attack.
-pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
-    var potential_move_targets = ArrayList(Pos).init(game.frame_allocator);
+pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !Array(Pos, 8) {
+    var potential_move_targets = Array(Pos, 8).init();
 
     const target_pos = game.level.entities.pos.get(target_id);
     const entity_pos = game.level.entities.pos.get(id);
@@ -432,7 +433,7 @@ pub fn aiPosThatHitTarget(game: *Game, id: Id, target_id: Id) !ArrayList(Pos) {
         const can_hit = try aiCanHitTarget(game, id, target_pos);
 
         if (can_hit) {
-            try potential_move_targets.append(move_pos);
+            try potential_move_targets.push(move_pos);
         }
     }
     game.level.entities.pos.set(id, entity_pos);
@@ -463,6 +464,6 @@ fn cmpPos(start: Pos, a: Pos, b: Pos) bool {
     return start.distance(a) < start.distance(b);
 }
 
-pub fn sortByDistanceTo(pos: Pos, positions: *ArrayList(Pos)) void {
-    std.sort.sort(Pos, positions.items, pos, cmpPos);
+pub fn sortByDistanceTo(pos: Pos, positions: []Pos) void {
+    std.sort.sort(Pos, positions, pos, cmpPos);
 }

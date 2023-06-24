@@ -163,6 +163,8 @@ pub const Entities = struct {
     trap: Comp(Trap),
     armed: Comp(bool),
     attack_type: Comp(AttackType),
+    talents: Comp(ArrayList(Talent)),
+    skills: Comp(ArrayList(Skill)),
 
     pub fn init(allocator: Allocator) Entities {
         var entities: Entities = undefined;
@@ -418,64 +420,32 @@ pub const ExtraNames = enum {
     other,
 };
 
-//pub const Name = enum {
-//    player,
-//    gol,
-//    pawn,
-//    rook,
-//    column,
-//    key,
-//    exit,
-//    dagger,
-//    hammer,
-//    spear,
-//    greatSword,
-//    sword,
-//    shield,
-//    lantern,
-//    thumper,
-//    axe,
-//    khopesh,
-//    sling,
-//    seedOfStone,
-//    seedCache,
-//    smokeBomb,
-//    lookingGlass,
-//    glassEye,
-//    teleporter,
-//    spire,
-//    armil,
-//    spikeTrap,
-//    blinkTrap,
-//    freezeTrap,
-//    soundTrap,
-//    gateTrigger,
-//    stone,
-//    mouse,
-//    cursor,
-//    energy,
-//    herb,
-//    grass,
-//    statue,
-//    smoke,
-//    magnifier,
-//    other,
-//};
 pub fn compNames(comptime T: type) [][]const u8 {
-    const fieldInfos = std.meta.fields(T);
-    comptime var names: [fieldInfos.len][]const u8 = undefined;
-
-    comptime var index: usize = 0;
-
-    comptime {
-        @setEvalBranchQuota(2001);
-        inline for (fieldInfos) |field| {
-            if (std.mem.indexOf(u8, @typeName(field.field_type), "Comp(") != null) {
-                names[index] = field.name;
-                index += 1;
-            }
-        }
+    const fields = std.meta.fields(T);
+    comptime var names: [fields.len - 2][]const u8 = undefined;
+    var index: usize = 0;
+    while (index < names.len) : (index += 1) {
+        names[index] = fields[index + 2].name;
     }
 
-    return names[0..index];
+    return &names;
 }
+
+//pub fn compNames(comptime T: type) [][]const u8 {
+//    const fieldInfos = std.meta.fields(T);
+//    comptime var names: [fieldInfos.len][]const u8 = undefined;
+//
+//    comptime var index: usize = 0;
+//
+//    comptime {
+//        @setEvalBranchQuota(2001);
+//        inline for (fieldInfos) |field| {
+//            if (std.mem.indexOf(u8, @typeName(field.field_type), "Comp(") != null) {
+//                names[index] = field.name;
+//                index += 1;
+//            }
+//        }
+//    }
+//
+//    return names[0..index];
+//}

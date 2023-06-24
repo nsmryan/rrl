@@ -995,19 +995,15 @@ pub const DisplayState = struct {
         state.effects = ArrayList(Effect).init(allocator);
         state.particles = ArrayList(Particle).init(allocator);
 
-        comptime var names = entities.compNames(DisplayState);
-        inline for (names) |field_name| {
-            @field(state, field_name) = @TypeOf(@field(state, field_name)).init(allocator);
-        }
+        state.animation = Comp(Animation).init(allocator);
 
         return state;
     }
 
     pub fn deinit(state: *DisplayState) void {
-        comptime var names = entities.compNames(DisplayState);
-        inline for (names) |field_name| {
-            @field(state, field_name).deinit();
-        }
+        state.particles.deinit();
+        state.effects.deinit();
+        state.animation.deinit();
     }
 };
 

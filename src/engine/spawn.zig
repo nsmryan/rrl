@@ -50,6 +50,8 @@ pub fn spawnPlayer(entities: *Entities, log: *MsgLog, config: *const Config, all
     try entities.status.insert(id, StatusEffect{});
     try entities.passive.insert(id, Passive{});
     try entities.attack_type.insert(id, .melee);
+    try entities.talents.insert(id, ArrayList(core.entities.Talent).init(allocator));
+    try entities.skills.insert(id, ArrayList(core.entities.Skill).init(allocator));
 
     try log.log(.spawn, .{ id, Name.player });
     try log.log(.stance, .{ id, entities.stance.get(id) });

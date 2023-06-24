@@ -259,10 +259,14 @@ test "test reach offsets horiz" {
     const offsets = try horiz.offsets();
 
     const expected_pos = [_]Pos{ Pos.init(1, 0), Pos.init(-1, 0), Pos.init(0, 1), Pos.init(0, -1) };
-    for (expected_pos) |other| {
-        std.debug.assert(offsets.contains(other));
+    for (expected_pos) |first| {
+        var found = false;
+        for (offsets.buffer) |second| {
+            found = found or first.eql(second);
+        }
+        std.debug.assert(found);
     }
-    try std.testing.expectEqual(expected_pos.len, offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.len);
 }
 
 test "test reach offsets diag" {
@@ -270,10 +274,14 @@ test "test reach offsets diag" {
     const offsets = try diag.offsets();
 
     const expected_pos = [_]Pos{ Pos.init(-1, -1), Pos.init(1, -1), Pos.init(-1, 1), Pos.init(1, 1) };
-    for (expected_pos) |other| {
-        std.debug.assert(offsets.contains(other));
+    for (expected_pos) |first| {
+        var found = false;
+        for (offsets.buffer) |second| {
+            found = found or first.eql(second);
+        }
+        std.debug.assert(found);
     }
-    try std.testing.expectEqual(expected_pos.len, offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.len);
 }
 
 test "test reach offsets single" {
@@ -281,26 +289,30 @@ test "test reach offsets single" {
     const offsets = try single.offsets();
 
     const expected_pos = [_]Pos{ Pos.init(1, 0), Pos.init(0, 1), Pos.init(-1, 0), Pos.init(0, -1), Pos.init(1, 1), Pos.init(-1, 1), Pos.init(1, -1), Pos.init(-1, -1) };
-    for (expected_pos) |other| {
-        std.debug.assert(offsets.contains(other));
+    for (expected_pos) |first| {
+        var found = false;
+        for (offsets.buffer) |second| {
+            found = found or first.eql(second);
+        }
+        std.debug.assert(found);
     }
-    try std.testing.expectEqual(expected_pos.len, offsets.used);
+    try std.testing.expectEqual(expected_pos.len, offsets.len);
 }
 
 test "test reach reachables single" {
     const single = Reach.single(1);
     const offsets = try single.offsets();
-    try std.testing.expectEqual(@as(usize, 8), offsets.used);
+    try std.testing.expectEqual(@as(usize, 8), offsets.len);
 
     const positions = try single.reachables(Pos.init(5, 5));
-    try std.testing.expectEqual(@as(usize, 8), positions.used);
+    try std.testing.expectEqual(@as(usize, 8), positions.len);
 }
 
 test "test reach reachables diag" {
     const diag = Reach.diag(5);
     const offsets = try diag.offsets();
-    try std.testing.expectEqual(@as(usize, 4), offsets.used);
+    try std.testing.expectEqual(@as(usize, 4), offsets.len);
 
     const positions = try diag.reachables(Pos.init(5, 5));
-    try std.testing.expectEqual(@as(usize, 4), positions.used);
+    try std.testing.expectEqual(@as(usize, 4), positions.len);
 }

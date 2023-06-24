@@ -177,25 +177,6 @@ pub const Game = struct {
         // NOTE(implement) carry over skills/talents/items as per spreadsheet.
         try spawn.spawnPlayer(&game.level.entities, &game.log, &game.config, game.allocator);
 
-        // NOTE(remove) this is just for testing
-        var id: utils.comp.Id = undefined;
-        const spawn_items = [_]items.Item{ .sword, .stone, .hammer, .seedOfStone, .smokeBomb, .dagger, .shield, .khopesh, .axe, .sling, .spear, .teleporter };
-        var index: usize = 0;
-        for (spawn_items) |item| {
-            id = try spawn.spawnItem(&game.level.entities, item, &game.log, &game.config, game.allocator);
-            try game.log.log(.move, .{ id, .blink, .walk, Pos.init(@intCast(i32, index), 0) });
-            index += 1;
-        }
-
-        id = try spawn.spawnGolem(&game.level.entities, &game.config, Pos.init(1, 3), .rook, &game.log, game.allocator);
-        try game.log.log(.facing, .{ id, .right });
-
-        game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
-        game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
-        game.level.map.set(Pos.init(3, 3), board.tile.Tile.grass());
-        game.level.map.set(Pos.init(3, 4), board.tile.Tile.rubble());
-        game.level.map.set(Pos.init(5, 5), board.tile.Tile.tallWall());
-
         try game.log.log(.startLevel, .{});
     }
 

@@ -16,7 +16,10 @@ const board = @import("board");
 const Map = board.map.Map;
 
 const core = @import("core");
+const items = core.items;
+
 const engine = @import("engine");
+const spawn = engine.spawn;
 
 const g = @import("gui");
 const Display = g.display.Display;
@@ -67,11 +70,31 @@ pub fn main() anyerror!void {
     defer gui.deinit();
 
     try gui.game.startLevel(21, 21);
-    try gui.resolveMessages();
 
     // Set up a splash screen.
     //gui.game.settings.state = .splash;
     //gui.game.settings.splash.set("player_standing_right"[0..]);
+
+    // NOTE(remove) this is just for testing
+    var id: utils.comp.Id = undefined;
+    const spawn_items = [_]items.Item{ .sword, .stone, .hammer, .seedOfStone, .smokeBomb, .dagger, .shield, .khopesh, .axe, .sling, .spear, .teleporter };
+    var index: usize = 0;
+    for (spawn_items) |item| {
+        id = try spawn.spawnItem(&gui.game.level.entities, item, &gui.game.log, &gui.game.config, gui.game.allocator);
+        try gui.game.log.log(.move, .{ id, .blink, .walk, Pos.init(@intCast(i32, index), 0) });
+        index += 1;
+    }
+
+    id = try spawn.spawnGolem(&gui.game.level.entities, &gui.game.config, Pos.init(1, 3), .rook, &gui.game.log, gui.game.allocator);
+    try gui.game.log.log(.facing, .{ id, .right });
+
+    gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
+    gui.game.level.map.set(Pos.init(2, 2), board.tile.Tile.tallWall());
+    gui.game.level.map.set(Pos.init(3, 3), board.tile.Tile.grass());
+    gui.game.level.map.set(Pos.init(3, 4), board.tile.Tile.rubble());
+    gui.game.level.map.set(Pos.init(5, 5), board.tile.Tile.tallWall());
+
+    try gui.resolveMessages();
 
     var ticks = sdl2.SDL_GetTicks64();
     while (try gui.step(ticks)) {

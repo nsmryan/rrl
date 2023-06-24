@@ -339,6 +339,64 @@ pub const Trap = enum {
     freeze,
 };
 
+pub const Talent = enum {
+    invigorate,
+    strongAttack,
+    sprint,
+    push,
+    energyShield,
+};
+
+pub const Skill = enum {
+    grassWall,
+    grassThrow,
+    grassBlade,
+    grassShoes,
+    grassCover,
+    blink,
+    swap,
+    sprint,
+    roll,
+    passWall,
+    rubble,
+    stoneThrow,
+    stoneSkin,
+    reform,
+    push,
+    traps,
+    illuminate,
+    heal,
+    farSight,
+    ping,
+    passThrough,
+    whirlWind,
+    swift,
+
+    pub fn class(skill: Skill) SkillClass {
+        return switch (skill) {
+            .grassWall, .GrassThrow, .grassBlade, .grassShoes, .grassCover => .grass,
+            .blink, .swap, .sprint, .roll => .body,
+            .passWall, .rubble, .stoneThrow, .stoneSkin, .reform, .push, .traps => .monolith,
+            .illuminate, .heal, .farSight, .ping => .body,
+            .passThrough, .whirlWind, .swift => .wind,
+        };
+    }
+
+    pub fn mode(skill: Skill) SkillMode {
+        switch (skill) {
+            .grassWall, .grassThrow, .grassBlade, .grassCover, .sprint, .roll, .passWall, .rubble, .stoneThrow, .reform, .push, .traps, .illuminate, .passThrough, .swift => .direction,
+            .grassShoes, .blink, .stoneSkin, .heal, .farSight => .immediate,
+            .ping, .swap, .whirlWind => .cursor,
+        }
+    }
+};
+
+pub const SkillMode = enum {
+    direction,
+    cursor,
+    immediate,
+};
+
 pub const GolemName = enum {
     gol,
     pawn,

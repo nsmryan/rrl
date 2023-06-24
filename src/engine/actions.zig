@@ -41,15 +41,6 @@ pub const InputAction = union(enum) {
     alt,
     move: Direction,
     moveTowardsCursor,
-    skillPos: struct {
-        index: usize,
-        pos: Pos,
-        action: use.ActionMode,
-    },
-    skillFacing: struct {
-        index: usize,
-        action: use.ActionMode,
-    },
     startUseItem: InventorySlot,
     startUseSkill: struct { index: usize, action: use.ActionMode },
     startUseTalent: usize,
@@ -282,7 +273,10 @@ fn cursorToggle(game: *Game) !void {
                     }
                 },
 
-                // NOTE(implement) skill as well.
+                .skill => |args| {
+                        handle_skill(game, args.skill, args.action_mode);
+                },
+
                 else => {},
             }
         }

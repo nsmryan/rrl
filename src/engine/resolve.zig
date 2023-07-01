@@ -79,6 +79,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .aiAttack => |args| try resolveAiAttack(game, args.id, args.target_id),
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
         .testMode => |args| try resolveTestMode(game, args),
+        .itemLanded => |args| resolveItemLanded(game, args.id, args.start, args.hit),
         else => {},
     }
 }
@@ -997,6 +998,12 @@ fn resolveAiAttack(game: *Game, id: Id, target_id: Id) !void {
 //        }
 //    }
 //}
+
+fn resolveItemLanded(game: *Game, item_id: Id, start: Pos, hit_pos: Pos) void {
+    _ = start;
+    _ = hit_pos;
+    game.level.entities.status.getPtr(item_id).active = true;
+}
 
 fn resolveTestMode(game: *Game, test_mode: bool) !void {
     _ = test_mode;

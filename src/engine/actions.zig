@@ -177,7 +177,7 @@ fn resolveActionPlaying(game: *Game, input_action: InputAction) !void {
 
         .helpMenu => game.changeState(.helpMenu),
 
-        .esc => game.changeState(.confirmQuit),
+        .esc => resolveActionEsc(game),
         else => {},
     }
 }
@@ -318,4 +318,12 @@ fn cursorMove(game: *Game, dir: Direction, is_relative: bool, is_long: bool) !vo
 fn cursorReturn(game: *Game) void {
     std.debug.assert(game.settings.mode == .cursor);
     game.settings.mode.cursor.pos = game.level.entities.pos.get(Entities.player_id);
+}
+
+fn resolveActionEsc(game: *Game) void {
+    if (game.settings.mode == .cursor) {
+        game.settings.mode = .playing;
+    } else {
+        game.changeState(.confirmQuit);
+    }
 }

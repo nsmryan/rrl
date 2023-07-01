@@ -180,7 +180,6 @@ pub fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
                         try game.log.log_info(.useOption, .{ hit_pos, *dir});
                     }
 
-                    // TODO this will highlight in red all tiles hittable from any chose of direction.
                     for (use_result.hit_positions.iter()) |hit_pos| {
                         try game.log.log_info(InfoMsg::UseHitPos(*hit_pos));
                     }
@@ -198,7 +197,7 @@ pub fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
             },
 
             .cursor => {
-                if (settings.cursor == null) {
+                if (game.settings.cursor == null) {
                     const player_pos = game.level.entities.pos.get(player_id);
                     game.settings.cursor = player_pos;
                     try game.log.log(.cursorState, .{ true, player_pos } );
@@ -213,7 +212,6 @@ pub fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
 }
 
 pub fn startUseTalent(game: *Game, index: usize) !void {
-    _ = game;
     _ = index;
     // NOTE(implement) the player does not yet have talents, so there is no use in checking for one.
     // check if the indexed talent slot is full.
@@ -221,7 +219,7 @@ pub fn startUseTalent(game: *Game, index: usize) !void {
     if (game.level.find_talent(index)) |talent| {
         switch (talent) {
             .invigorate => {
-                try game.log.log(.refillStamina, player_id);
+                try game.log.log(.refillStamina, Entities.player_id);
             },
 
             .strongAttack => {
@@ -670,13 +668,13 @@ pub fn handleSkill(game: *Game, skill: Skill, action_loc: ActionLoc, action_mode
 
         .passWall => {
             if (direction) |dir| {
-                const target_pos = dir.offset_pos(player_pos, 1);
+                const target_pos = dir.offsetPos(player_pos, 1);
 
-                const (maybe_blocked = game.level.map.path_blocked_move(player_pos, target_pos);
+                const maybe_blocked = game.level.map.pathBlockedMove(player_pos, target_pos);
                 
                 if (maybe_blocked) |blocked| {
-                    if game.level.map.tile_is_blocking(blocked.end_pos) {
-                        const next = next_from_to(player_pos, blocked.end_pos);
+                    if (game.level.map.tileIsBlocking(blocked.end_pos)) {
+                        const next = nextFromTo(player_pos, blocked.end_pos);
                         if  (!game.level.map.tileIsBlocking(next)) {
                             try game.log.log(.passWall, .{ player_id, next } );
                         }
@@ -700,7 +698,7 @@ pub fn handleSkill(game: *Game, skill: Skill, action_loc: ActionLoc, action_mode
         },
 
         .stoneThrow => {
-            const mut near_rubble = game.level.map[player_pos].surface == Surface::Rubble;
+            var near_rubble = game.level.map[player_pos].surface == Surface::Rubble;
             for (game.level.map.neighbors(player_pos)) |pos| {
                 if (game.level.map[pos].surface == .rubble) {
                     near_rubble = true;
@@ -782,7 +780,7 @@ pub fn handleSkill(game: *Game, skill: Skill, action_loc: ActionLoc, action_mode
 
         .swift => {
             if (direction) |dir| {
-                try game.log.log(.trySwift .{ player_id, dir });
+                try game.log.log(.trySwift, .{ player_id, dir });
             }
         },
     }

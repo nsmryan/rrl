@@ -145,7 +145,6 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
     const player_pos = game.level.entities.pos.get(player_id);
     const player_in_fov = try game.level.entityInFov(id, player_id) == .inside;
 
-    print("ai investigate\n", .{});
     if (player_in_fov) {
         try game.log.log(.faceTowards, .{ id, player_pos });
 
@@ -160,7 +159,6 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
             try game.log.log(.behaviorChange, .{ id, Behavior{ .investigating = player_pos } });
         }
     } else {
-        print("ai can't see target\n", .{});
         // Golem cannot see the player- investigate the given position 'target_pos'.
 
         // Handle Armils separately. They can never see the player so we always get here.
@@ -174,7 +172,6 @@ fn stepAiInvestigate(game: *Game, id: Id, target_pos: Pos) !void {
                 try aiMoveTowardsTarget(game, player_pos, id);
             }
         } else {
-            print("ai perceptions {}\n", .{game.level.entities.percept.get(id)});
             // Other golems react to perceptions.
             // If no perceptions this turn, just walk towards target.
             // NOTE(design) if hit or attacked, do we take 1 or 2 turns to react?

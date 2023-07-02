@@ -169,7 +169,7 @@ pub fn startUseSkill(game: *Game, index: usize, action_mode: ActionMode) !void {
     if (index >= game.level.entities.skills.get(player_id).items.len) {
         return;
     }
-    const skill = game.level.entities.skills.get(player_id).items[index];
+    const skill: Skill = game.level.entities.skills.get(player_id).items[index];
 
     const use_action: UseAction = UseAction{ .skill = .{ .skill = skill, .action_mode = action_mode } };
     var use_result = UseResult.init();
@@ -643,18 +643,18 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
         },
 
         .passWall => {
-            const target_pos = skill_dir.offsetPos(player_pos, 1);
+            const collision = game.level.checkCollision(player_pos, skill_dir);
 
-            const maybe_blocked = game.level.map.pathBlockedMove(player_pos, target_pos);
-
-            if (maybe_blocked) |blocked| {
-                if (game.level.map.tileIsBlocking(blocked.end_pos)) {
-                    const next = Direction.continuePast(player_pos, blocked.end_pos).?;
-                    if (!game.level.map.tileIsBlocking(next)) {
-                        try game.log.log(.passWall, .{ player_id, next });
+            if (!collision.entity) {
+                if (collision.wall != null) {
+                    if (blocking.BlockedType.move.tileBlocks(game.level.map.get(skill_pos)) != .empty) {
+                        const next_pos = Direction.continuePast(player_pos, skill_pos).?;
+                        if (blocking.BlockedType.move.tileBlocks(game.level.map.get(next_pos)) == .empty) {
+                            try game.log.log(.passWall, .{ player_id, next_pos });
+                        }
+                    } else {
+                        try game.log.log(.passWall, .{ player_id, skill_pos });
                     }
-                } else {
-                    try game.log.log(.passWall, .{ player_id, skill_pos });
                 }
             }
         },
@@ -672,32 +672,7 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
         },
 
         .stoneThrow => {
-            var near_rubble = game.level.map[player_pos].surface == .rubble;
-            for (game.level.map.neighbors(player_pos)) |pos| {
-                if (game.level.map[pos].surface == .rubble) {
-                    near_rubble = true;
-                }
-
-                if (near_rubble) {
-                    break;
-                }
-            }
-
-            const target_pos = skill_dir.offset_pos(player_pos, 1);
-            try game.log.log(.stoneThrow, .{ player_id, target_pos });
-        },
-
-        .push => {
-            const push_amount = 1;
-            try game.log.log(.push, .{ player_id, skill_dir, push_amount });
-        },
-
-        .traps => {
-            try game.log.log(.interactTrap, .{ player_id, skill_dir });
-        },
-
-        .illuminate => {
-            try game.log.log(.illuminate, .{ player_id, skill_pos, game.config.illuminate_amount });
+            try game.log.log(.stoneThrow, .{ player_id, skill_pos });
         },
 
         .sprint => {
@@ -706,10 +681,6 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
 
         .roll => {
             try game.log.log(.roll, .{ player_id, skill_dir, game.config.skill_roll_amount });
-        },
-
-        .passThrough => {
-            try game.log.log(.tryPassThrough, .{ player_id, skill_dir });
         },
 
         .swift => {

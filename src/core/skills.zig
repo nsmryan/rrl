@@ -11,11 +11,7 @@ pub const Skill = enum {
     stoneThrow,
     stoneSkin,
     reform,
-    push,
-    traps,
-    illuminate,
     ping,
-    passThrough,
     whirlWind,
     swift,
 
@@ -23,17 +19,17 @@ pub const Skill = enum {
         return switch (skill) {
             .grassWall, .GrassThrow, .grassBlade, .grassCover => .grass,
             .blink, .sprint, .roll => .body,
-            .passWall, .rubble, .stoneThrow, .stoneSkin, .reform, .push, .traps => .monolith,
-            .illuminate, .ping => .body,
-            .passThrough, .whirlWind, .swift => .wind,
+            .passWall, .rubble, .stoneThrow, .stoneSkin, .reform => .monolith,
+            .ping => .body,
+            .whirlWind, .swift => .wind,
         };
     }
 
     pub fn mode(skill: Skill) SkillMode {
         switch (skill) {
-            .grassWall, .grassThrow, .grassBlade, .grassCover, .sprint, .roll, .passWall, .rubble, .stoneThrow, .reform, .push, .traps, .illuminate, .passThrough, .swift => .use,
-            .blink, .stoneSkin => .immediate,
-            .ping, .whirlWind => .cursor,
+            .grassWall, .grassThrow, .grassBlade, .grassCover, .sprint, .roll, .passWall, .rubble, .stoneThrow, .reform, .swift => return .use,
+            .blink, .stoneSkin => return .immediate,
+            .ping, .whirlWind => return .cursor,
         }
     }
 };

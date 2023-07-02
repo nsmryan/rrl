@@ -145,6 +145,14 @@ pub const Direction = enum {
     pub fn isFacingPos(self: Direction, start: Pos, end: Pos) bool {
         return self == Direction.fromPositions(start, end);
     }
+
+    pub fn continuePast(self: Pos, towards: Pos) ?Pos {
+        if (Direction.fromPositions(self, towards)) |dir| {
+            return dir.offsetPos(towards, 1);
+        } else {
+            return null;
+        }
+    }
 };
 
 test "test direction turn amount" {

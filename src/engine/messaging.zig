@@ -85,6 +85,13 @@ pub const Msg = union(enum) {
     grassBlade: struct { id: Id, dir: Direction },
     grassWall: struct { id: Id, dir: Direction },
     grassCover: struct { id: Id },
+    passWall: struct { id: Id, pos: Pos },
+    rubble: struct { id: Id, pos: Pos },
+    reform: struct { id: Id, pos: Pos },
+    stoneThrow: struct { id: Id, pos: Pos },
+    sprint: struct { id: Id, dir: Direction, amount: usize },
+    roll: struct { id: Id, dir: Direction, amount: usize },
+    trySwift: struct { id: Id, dir: Direction },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

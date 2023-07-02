@@ -689,40 +689,46 @@ fn renderName(first_word: []u8, second_word: []u8, x_offset: f32, y_offset: f32,
 }
 
 pub fn renderInventorySkill(chr: u8, index: usize, x_offset: f32, y_offset: f32, game: *const Game, painter: *Painter, allocator: Allocator) !void {
-    _ = index;
-    _ = allocator;
-    //const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
-    //const highlight_ui_color = Color.init(0, 0, 0, 255);
+    const ui_color = Color.init(0xcd, 0xb4, 0x96, 255);
+    const highlight_ui_color = Color.init(0, 0, 0, 255);
 
-    //var text_color = ui_color;
+    var text_color = ui_color;
 
-    var button_name_base = [_]u8{ '0', '_', 'B', 'u', 't', 't', 'o', 'n', '_', 'B', 'a', 's', 'e' };
-    //var button_name_highlight = [_]u8{ '0', '_', 'B', 'u', 't', 't', 'o', 'n', '_', 'H', 'i', 'g', 'h', 'l', 'i', 'g', 'h', 't' };
-    var button_name: []u8 = button_name_base[0..];
+    var button_name_base = "0_Button_Base";
+    var button_name_highlight = "0_Button_Highlight";
+    var button_name: [32]u8 = [1]u8{0} ** 32;
+    std.mem.copy(u8, &button_name, button_name_base);
+    var button_name_len = button_name_base.len;
 
-    // NOTE(implement) add when skills are implemented.
-    //if (game.settings.state == .use) {
-    //    if (const UseAction.skill(skill, _action_mode) = game.settings.use_action) {
-    //        if (display_state.skills.iter().position(|sk| *sk == skill)) |index| {
-    //            button_name = button_name_highlight;
-    //            text_color = highlight_ui_color;
-    //        }
-    //    }
-    //} else if (game.settings.cursor_pos.is_some()) {
-    //    if (const Some(UseAction.skill(skill, _action_mode)) = display_state.cursor_action) {
-    //        if (display_state.skills.iter().position(|sk| *sk == skill)) |index| {
-    //            button_name = button_name_highlight;
-    //            text_color = highlight_ui_color;
-    //        }
-    //    }
-    //}
+    if (game.settings.mode == .use) {
+        const enough_skills = game.level.entities.skills.get(Entities.player_id).items.len > index;
+        if (enough_skills) {
+            const use_skill = game.settings.mode.use.use_action.skill.skill;
+            if (game.level.entities.skills.get(Entities.player_id).items[index] == use_skill) {
+                std.mem.copy(u8, &button_name, button_name_highlight);
+                button_name_len = button_name_highlight.len;
+                text_color = highlight_ui_color;
+            }
+        }
+    } else if (game.settings.mode == .cursor) {
+        const enough_skills = game.level.entities.skills.get(Entities.player_id).items.len > index;
+        if (enough_skills) {
+            const cursor_skill = game.settings.mode.cursor.use_action.?.skill.skill;
+            if (game.level.entities.skills.get(Entities.player_id).items[index] == cursor_skill) {
+                std.mem.copy(u8, &button_name, button_name_highlight);
+                button_name_len = button_name_highlight.len;
+                text_color = highlight_ui_color;
+            }
+        }
+    }
     button_name[0] = chr;
 
-    try renderButton(button_name, x_offset, y_offset, painter, &game.config);
-    // NOTE(implement) add when skills are implemented.
-    //if (const Some(skill) = display_state.skills.get(index)) {
-    //    try renderSkill(*skill, x_offset, y_offset, text_color, painter, &game.config);
-    //}
+    try renderButton(button_name[0..button_name_len], x_offset, y_offset, painter, &game.config);
+    if (game.level.entities.skills.get(Entities.player_id).items.len > index) {
+        const skill = game.level.entities.skills.get(Entities.player_id).items[index];
+        var skill_text = try utils.displayName(@tagName(skill), allocator);
+        try renderInventoryButtonText(skill_text.first, skill_text.second, x_offset, y_offset, text_color, game, painter);
+    }
 }
 
 fn shouldHighlightItem(game: *const Game, use_action: UseAction) bool {
@@ -740,6 +746,7 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
     var button_name_base = [_]u8{ '0', '_', 'B', 'u', 't', 't', 'o', 'n', '_', 'B', 'a', 's', 'e' };
     var button_name_highlight = [_]u8{ '0', '_', 'B', 'u', 't', 't', 'o', 'n', '_', 'H', 'i', 'g', 'h', 'l', 'i', 'g', 'h', 't' };
     var button_name: []u8 = button_name_base[0..];
+    var button_len = button_name_base.len;
 
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot) != null) {
         if (shouldHighlightItem(game, UseAction{ .item = slot })) {
@@ -748,21 +755,26 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
         }
     }
     button_name[0] = chr;
-    try renderButton(button_name, x_offset, y_offset, painter, &game.config);
+    try renderButton(button_name[0..button_len], x_offset, y_offset, painter, &game.config);
 
-    const text_x_offset = x_offset + game.config.ui_inv_name_x_offset;
-    const text_y_offset = y_offset + game.config.ui_inv_name_y_offset;
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot)) |item_id| {
         const item = game.level.entities.item.get(item_id);
         var item_text = try utils.displayName(@tagName(item), allocator);
-        if (item_text.second.len > 0) {
-            const name_x_offset = game.config.ui_inv_name_second_x_offset;
-            const name_y_offset = game.config.ui_inv_name_second_y_offset;
-            try painter.drawcmds.append(DrawCmd.textFloat(item_text.first, text_x_offset + name_x_offset, text_y_offset - name_y_offset, .center, text_color, game.config.ui_inv_name_scale));
-            try painter.drawcmds.append(DrawCmd.textFloat(item_text.second, text_x_offset + name_x_offset, text_y_offset + name_y_offset, .center, text_color, game.config.ui_inv_name_scale));
-        } else {
-            try painter.drawcmds.append(DrawCmd.textFloat(item_text.first, text_x_offset, text_y_offset, .center, text_color, game.config.ui_inv_name_scale));
-        }
+        try renderInventoryButtonText(item_text.first, item_text.second, x_offset, y_offset, text_color, game, painter);
+    }
+}
+
+fn renderInventoryButtonText(first: []const u8, second: []const u8, x_offset: f32, y_offset: f32, color: Color, game: *const Game, painter: *Painter) !void {
+    const text_x_offset = x_offset + game.config.ui_inv_name_x_offset;
+    const text_y_offset = y_offset + game.config.ui_inv_name_y_offset;
+
+    if (second.len > 0) {
+        const name_x_offset = game.config.ui_inv_name_second_x_offset;
+        const name_y_offset = game.config.ui_inv_name_second_y_offset;
+        try painter.drawcmds.append(DrawCmd.textFloat(first, text_x_offset + name_x_offset, text_y_offset - name_y_offset, .center, color, game.config.ui_inv_name_scale));
+        try painter.drawcmds.append(DrawCmd.textFloat(second, text_x_offset + name_x_offset, text_y_offset + name_y_offset, .center, color, game.config.ui_inv_name_scale));
+    } else {
+        try painter.drawcmds.append(DrawCmd.textFloat(first, text_x_offset, text_y_offset, .center, color, game.config.ui_inv_name_scale));
     }
 }
 

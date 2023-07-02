@@ -174,7 +174,9 @@ pub fn startUseSkill(game: *Game, index: usize, action_mode: ActionMode) !void {
     const use_action: UseAction = UseAction{ .skill = .{ .skill = skill, .action_mode = action_mode } };
     var use_result = UseResult.init();
     for (Direction.directions()) |dir| {
-        try use_result.use_dir[@enumToInt(dir)].?.hit_positions.append(dir.offsetPos(entity_pos, 1));
+        var use_dir = UseDir.init();
+        try use_dir.hit_positions.append(dir.offsetPos(entity_pos, 1));
+        use_result.use_dir[@enumToInt(dir)] = use_dir;
     }
 
     switch (skill.mode()) {
@@ -197,8 +199,6 @@ pub fn startUseSkill(game: *Game, index: usize, action_mode: ActionMode) !void {
             //    //    try game.log.log_info(InfoMsg::UseHitPos(*hit_pos));
             //    //}
             //}
-
-            try game.log.log(.startUseSkill, player_id);
         },
 
         .immediate => {

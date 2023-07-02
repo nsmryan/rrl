@@ -17,6 +17,7 @@ const Map = board.map.Map;
 
 const core = @import("core");
 const items = core.items;
+const Entities = core.entities.Entities;
 
 const engine = @import("engine");
 const spawn = engine.spawn;
@@ -93,6 +94,11 @@ pub fn main() anyerror!void {
     gui.game.level.map.set(Pos.init(3, 3), board.tile.Tile.grass());
     gui.game.level.map.set(Pos.init(3, 4), board.tile.Tile.rubble());
     gui.game.level.map.set(Pos.init(5, 5), board.tile.Tile.tallWall());
+
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassWall);
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassThrow);
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassBlade);
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassCover);
 
     try gui.resolveMessages();
 

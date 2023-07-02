@@ -78,7 +78,6 @@ pub const Msg = union(enum) {
     dodged: Id,
     ping: struct { id: Id, pos: Pos },
     whirlWind: struct { id: Id, pos: Pos },
-    startUseSkill: Id,
     blink: Id,
     stoneSkin: Id,
     grassThrow: struct { id: Id, dir: Direction },

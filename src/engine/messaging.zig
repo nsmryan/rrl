@@ -76,6 +76,15 @@ pub const Msg = union(enum) {
     debugEnabled: bool,
     attack: struct { id: Id, target_id: Id },
     dodged: Id,
+    ping: struct { id: Id, pos: Pos },
+    whirlWind: struct { id: Id, pos: Pos },
+    startUseSkill: Id,
+    blink: Id,
+    stoneSkin: Id,
+    grassThrow: struct { id: Id, dir: Direction },
+    grassBlade: struct { id: Id, dir: Direction },
+    grassWall: struct { id: Id, dir: Direction },
+    grassCover: struct { id: Id },
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

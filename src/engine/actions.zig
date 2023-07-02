@@ -274,7 +274,7 @@ fn cursorToggle(game: *Game) !void {
                 },
 
                 .skill => |args| {
-                        handle_skill(game, args.skill, args.action_mode);
+                    try use.handleCursorModeSkill(game, args.skill, args.action_mode);
                 },
 
                 else => {},

@@ -28,7 +28,6 @@ pub const Config = struct {
     ping_sound_radius: usize,
     seed_cache_radius: usize,
     smoke_bomb_radius: usize,
-    skill_quick_reflexes_percent: f32,
     fog_of_war: bool,
     player_health: i32,
     golem_health: i32,
@@ -149,6 +148,20 @@ pub const Config = struct {
     armil_move_distance: usize,
 
     armil_turns_armed: usize,
+
+    lantern_illuminate_radius: usize,
+    illuminate_amount: usize,
+    skill_grass_shoes_turns: usize,
+    skill_grass_throw_radius: usize,
+    skill_illuminate_radius: usize,
+    skill_heal_amount: usize,
+    skill_farsight_fov_amount: usize,
+    skill_push_stun_turns: usize,
+    skill_sprint_amount: usize,
+    skill_roll_amount: usize,
+    skill_stone_skin_turns: usize,
+    skill_swift_distance: usize,
+    skill_quick_reflexes_percent: f32,
 
     color_dark_brown: Color,
     color_medium_brown: Color,

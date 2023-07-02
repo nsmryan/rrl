@@ -13,6 +13,7 @@ const InventorySlot = core.items.InventorySlot;
 const AttackStyle = core.items.AttackStyle;
 const Entities = core.entities.Entities;
 const MoveMode = core.movement.MoveMode;
+const Reach = core.movement.Reach;
 
 const gen = @import("gen");
 const MapGenType = gen.make_map.MapGenType;
@@ -141,9 +142,7 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
                 @panic("Item not yet implemented for use-mode!");
             }
             game.settings.mode = Mode{ .use = .{
-                .pos = null,
                 .use_action = UseAction{ .item = slot },
-                .dir = null,
                 .use_result = use_result,
             } };
 
@@ -154,7 +153,7 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
     }
 }
 
-pub fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
+pub fn startUseSkill(game: *Game, index: usize, action_mode: ActionMode) !void {
     // TODO
     // add skills to player
     // index skills to check if slot is full.
@@ -164,81 +163,94 @@ pub fn startUseSkill(game: *Game, index: usize, action: ActionMode) !void {
     // For direction skills, enter use mode with skill as the action.
     // For cursor skills, enter cursor mode with skill as the action.
     const player_id = Entities.player_id;
+    const entity_pos = game.level.entities.pos.get(player_id);
 
-    if (game.level.find_skill(index)) |skill| {
-        const use_action = UseAction::Skill(skill, action_mode);
+    // If using a skill outside our skill list, ignore action.
+    if (index >= game.level.entities.skills.get(player_id).items.len) {
+        return;
+    }
+    const skill = game.level.entities.skills.get(player_id).items[index];
 
-        switch (skill.mode()) {
-            .direction => {
-                initializeUseMode(use_action, settings, msg_log);
+    const use_action: UseAction = UseAction{ .skill = .{ .skill = skill, .action_mode = action_mode } };
+    var use_result = UseResult.init();
+    for (Direction.directions()) |dir| {
+        try use_result.use_dir[@enumToInt(dir)].?.hit_positions.append(dir.offsetPos(entity_pos, 1));
+    }
 
-                for (Direction::moveActions().iter()) |dir| {
-                    const use_result = game.level.calculateUseSkill(player_id, skill, *dir, settings.move_mode);
+    switch (skill.mode()) {
+        .use => {
+            game.settings.mode = Mode{ .use = .{
+                .use_action = use_action,
+                .use_result = use_result,
+            } };
 
-                    if (use_result.pos) |hit_pos| {
-                        try game.log.log_info(.useHitPos, hit_pos);
-                        try game.log.log_info(.useOption, .{ hit_pos, *dir});
-                    }
+            game.changeState(.use);
 
-                    for (use_result.hit_positions.iter()) |hit_pos| {
-                        try game.log.log_info(InfoMsg::UseHitPos(*hit_pos));
-                    }
-                }
+            // NOTE(implement) informational message used for separate display program.
+            //for (Direction.directions()) |dir| {
+            //    if (use_result.pos) |hit_pos| {
+            //        try game.log.log_info(.useHitPos, hit_pos);
+            //        try game.log.log_info(.useOption, .{ hit_pos, *dir});
+            //    }
+            //
+            //    //for (use_result.hit_positions.iter()) |hit_pos| {
+            //    //    try game.log.log_info(InfoMsg::UseHitPos(*hit_pos));
+            //    //}
+            //}
 
-                game.changeState(.use);
+            try game.log.log(.startUseSkill, player_id);
+        },
 
-                try game.log.log(.startUseSkill, player_id);
-            },
+        .immediate => {
+            try handleImmediateSkill(game, skill, action_mode);
+        },
 
-            .immediate => {
-                // Handle the skill immediately, with no action location as the skill should not be
-                // directional or based on a position.
-                handleSkillIndex(game, index, ActionLoc::None, action_mode);
-            },
-
-            .cursor => {
-                if (game.settings.cursor == null) {
-                    const player_pos = game.level.entities.pos.get(player_id);
-                    game.settings.cursor = player_pos;
-                    try game.log.log(.cursorState, .{ true, player_pos } );
-                }
-
-                // Record skill as a use_action.
-                game.settings.cursor_action = use_action;
-                try game.log.log(cursorAction, use_action);
-            },
-        }
+        .cursor => {
+            // If we are not in cursor mode, enter cursor mode with the cursor at the current player position.
+            // If we are in cursor mode, we just set the action to take on exit and leave the cursor where it is.
+            if (game.settings.mode != .cursor) {
+                const player_pos = game.level.entities.pos.get(player_id);
+                game.settings.mode = Mode{ .cursor = .{ .pos = player_pos, .use_action = use_action } };
+                try game.log.log(.cursorStart, player_pos);
+            } else {
+                game.settings.mode.cursor.use_action = use_action;
+            }
+        },
     }
 }
 
 pub fn startUseTalent(game: *Game, index: usize) !void {
-    _ = index;
     // NOTE(implement) the player does not yet have talents, so there is no use in checking for one.
     // check if the indexed talent slot is full.
     // If so, immediately process the talent by emitting a log message to be processed.
-    if (game.level.find_talent(index)) |talent| {
-        switch (talent) {
-            .invigorate => {
-                try game.log.log(.refillStamina, Entities.player_id);
-            },
 
-            .strongAttack => {
-                // TODO extra attack, perhaps as a status checked later?
-            },
+    // If using a talent outside our talent list, ignore action.
+    if (index >= game.level.entities.talents.get(Entities.player_id).items.len) {
+        return;
+    }
+    const talent = game.level.entities.talents.get(Entities.player_id).items[index];
 
-            .sprint => {
-                // TODO extra sprint, perhaps as a status checked later?
-            },
+    switch (talent) {
+        .invigorate => {
+            //try game.log.log(.refillStamina, Entities.player_id);
+        },
 
-            .push => {
-                // TODO push, but with some extra rules. Start with push message from use-mode
-            },
+        .strongAttack => {
+            // TODO extra attack, perhaps as a status checked later?
+        },
 
-            .energyShield => {
-                // TODO add blue health concept. Likely a status effect used when reducing
-                // hp, and get it into the display.
-            },
-        }
+        .sprint => {
+            // TODO extra sprint, perhaps as a status checked later?
+        },
+
+        .push => {
+            // TODO push, but with some extra rules. Start with push message from use-mode
+        },
+
+        .energyShield => {
+            // TODO add blue health concept. Likely a status effect used when reducing
+            // hp, and get it into the display.
+        },
     }
 }
 
@@ -492,7 +504,7 @@ pub fn finalizeUse(game: *Game) !void {
         },
 
         .skill => |params| {
-            try finalizeUseSkill(params.skill, params.action_mode, game);
+            try handleUseModeSkill(game, params.skill, params.action_mode);
         },
 
         .talent => |talent| {
@@ -510,16 +522,6 @@ pub fn finalizeInteract(game: *Game) !void {
     const player_pos = game.level.entities.pos.get(Entities.player_id);
     const interact_pos = dir.offsetPos(player_pos, 1);
     try game.log.log(.interact, .{ Entities.player_id, interact_pos });
-}
-
-pub fn finalizeUseSkill(skill: Skill, action_mode: ActionMode, game: *Game) !void {
-    const dir = settings.use_dir.expect("Finalizing use mode for an skill with no direction to take!");
-    const use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
-
-    if (use_result.hit_positions.len() > 0) {
-        const hit_pos = use_result.hit_positions[0];
-        handleSkill(game, skill, ActionLoc.place(hit_pos), action_mode);
-    }
 }
 
 pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
@@ -586,203 +588,156 @@ pub fn finalizeUseItem(slot: InventorySlot, game: *Game) !void {
     }
 }
 
-pub fn handleSkill(game: *Game, skill: Skill, action_loc: ActionLoc, action_mode: ActionMode) !void {
+pub fn handleCursorModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !void {
+    _ = action_mode;
+
     const player_id = Entities.player_id;
-    const reach = Reach.single(1);
+    const skill_pos = game.settings.mode.cursor.pos;
 
-    // Determine Position Effected
-    const skill_pos;
-    switch (action_loc) {
-        .dir => |dir| {
-            const player_pos = game.level.entities.pos.get(player_id);
-            if (reach.furthestInDirection(player_pos, dir)) |pos| {
-                skill_pos = pos;
-            } else {
-                return;
+    switch (skill) {
+        .ping => {
+            try game.log.log(.ping, .{ player_id, skill_pos });
+        },
+
+        .whirlWind => {
+            if (game.level.map.isWithinBounds(skill_pos)) {
+                try game.log.log(.whirlWind, .{ player_id, skill_pos });
             }
         },
 
-        .place => |pos| {
-            skill_pos = pos;
-        },
-
-        .facing => {
-            const dir = game.level.entities.direction[&player_id];
-            const player_pos = game.level.entities.pos.get(player_id);
-            if (reach.furthestInDirection(player_pos, dir)) |pos| {
-                skill_pos = pos;
-            } else {
-                return;
-            }
-        },
-
-        .none => {
-            //NOTE this used to return, but now uses current position.
-            skill_pos = game.level.entities.pos.get(player_id);
+        else => {
+            std.debug.panic("Skill {} is not immediate!\n", .{skill});
         },
     }
+}
 
+pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !void {
+    _ = action_mode;
+
+    const player_id = Entities.player_id;
     const player_pos = game.level.entities.pos.get(player_id);
-    const dxy = skill_pos.sub(player_pos);
-    const direction = Direction.fromPositiions(player_pos, skill_pos);
+
+    // Determine Position Effected
+    const skill_dir = game.settings.mode.use.dir.?;
+    if (game.settings.mode.use.use_result.?.use_dir[@enumToInt(skill_dir)] == null) {
+        return;
+    }
+    const skill_pos = skill_dir.offsetPos(player_pos, 1);
 
     // Carry Out Skill
     switch (skill) {
         .grassThrow => {
-            if (direction) |dir| {
-                try game.log.log(.grassThrow, .{ player_id, dir });
-            }
+            try game.log.log(.grassThrow, .{ player_id, skill_dir });
         },
 
         .grassBlade => {
-            if (direction) |dir| {
-                try game.log.log(.grassBlade, .{ player_id, action_mode, dir });
-            }
-        },
-
-        .blink => {
-            try game.log.log(.blink, player_id);
-        },
-
-        .grassShoes => {
-            try game.log.log(.grassShoes, .{ player_id, action_mode });
+            try game.log.log(.grassBlade, .{ player_id, skill_dir });
         },
 
         .grassWall => {
-            // TODO should this stay here, or go to StartUseSkill?
-            //settings.use_action = UseAction::Skill(skill, action_mode);
-            //try game.log.log_info(InfoMsg::UseAction(settings.use_action));
-            //settings.use_dir = None;
-            //try game.log.log_info(InfoMsg::UseDirClear);
-            //change_state(settings, GameState::Use, try game.log);
-            // TODO remove when GrassWall is fully implemented with use-mode.
-            // Unless skill use is left as-is in which case remove the code above.
-            if (direction) |dir| {
-                try game.log.log(.grassWall, .{ player_id, dir } );
-            }
+            try game.log.log(.grassWall, .{ player_id, skill_dir });
         },
 
         .grassCover => {
-            try game.log.log(.grassCover, .{ player_id, action_mode });
+            try game.log.log(.grassCover, .{player_id});
         },
 
         .passWall => {
-            if (direction) |dir| {
-                const target_pos = dir.offsetPos(player_pos, 1);
+            const target_pos = skill_dir.offsetPos(player_pos, 1);
 
-                const maybe_blocked = game.level.map.pathBlockedMove(player_pos, target_pos);
-                
-                if (maybe_blocked) |blocked| {
-                    if (game.level.map.tileIsBlocking(blocked.end_pos)) {
-                        const next = nextFromTo(player_pos, blocked.end_pos);
-                        if  (!game.level.map.tileIsBlocking(next)) {
-                            try game.log.log(.passWall, .{ player_id, next } );
-                        }
-                    } else {
-                        try game.log.log(.passWall, .{ player_id, skill_pos });
+            const maybe_blocked = game.level.map.pathBlockedMove(player_pos, target_pos);
+
+            if (maybe_blocked) |blocked| {
+                if (game.level.map.tileIsBlocking(blocked.end_pos)) {
+                    const next = Direction.continuePast(player_pos, blocked.end_pos).?;
+                    if (!game.level.map.tileIsBlocking(next)) {
+                        try game.log.log(.passWall, .{ player_id, next });
                     }
+                } else {
+                    try game.log.log(.passWall, .{ player_id, skill_pos });
                 }
             }
         },
 
         .rubble => {
-            if (distance(player_pos, skill_pos) == 1) {
+            if (player_pos.distanceMaximum(skill_pos) == 1) {
                 try game.log.log(.rubble, .{ player_id, skill_pos });
             }
         },
 
         .reform => {
-            if (distance(player_pos, skill_pos) == 1) {
-                try game.log.log(.reform, .{ player_id, skill_pos } );
+            if (player_pos.distanceMaximum(skill_pos) == 1) {
+                try game.log.log(.reform, .{ player_id, skill_pos });
             }
         },
 
         .stoneThrow => {
-            var near_rubble = game.level.map[player_pos].surface == Surface::Rubble;
+            var near_rubble = game.level.map[player_pos].surface == .rubble;
             for (game.level.map.neighbors(player_pos)) |pos| {
                 if (game.level.map[pos].surface == .rubble) {
                     near_rubble = true;
                 }
-                if near_rubble {
+
+                if (near_rubble) {
                     break;
                 }
             }
 
-            if (direction) |dir| {
-                const target_pos = dir.offset_pos(player_pos, 1);
+            const target_pos = skill_dir.offset_pos(player_pos, 1);
+            try game.log.log(.stoneThrow, .{ player_id, target_pos });
+        },
 
-                try game.log.log(.stoneThrow, .{ player_id, target_pos });
-            }
+        .push => {
+            const push_amount = 1;
+            try game.log.log(.push, .{ player_id, skill_dir, push_amount });
+        },
+
+        .traps => {
+            try game.log.log(.interactTrap, .{ player_id, skill_dir });
+        },
+
+        .illuminate => {
+            try game.log.log(.illuminate, .{ player_id, skill_pos, game.config.illuminate_amount });
+        },
+
+        .sprint => {
+            try game.log.log(.sprint, .{ player_id, skill_dir, game.config.skill_sprint_amount });
+        },
+
+        .roll => {
+            try game.log.log(.roll, .{ player_id, skill_dir, game.config.skill_roll_amount });
+        },
+
+        .passThrough => {
+            try game.log.log(.tryPassThrough, .{ player_id, skill_dir });
+        },
+
+        .swift => {
+            try game.log.log(.trySwift, .{ player_id, skill_dir });
+        },
+
+        else => {
+            std.debug.panic("Skill {} is not use-mode!\n", .{skill});
+        },
+    }
+}
+
+fn handleImmediateSkill(game: *Game, skill: Skill, action_mode: ActionMode) !void {
+    _ = action_mode;
+
+    const player_id = Entities.player_id;
+
+    switch (skill) {
+        .blink => {
+            try game.log.log(.blink, player_id);
         },
 
         .stoneSkin => {
             try game.log.log(.stoneSkin, player_id);
         },
 
-        .swap => {
-            if (game.level.has_blocking_entity(skill_pos)) |entity_id| {
-                try game.log.log(.swap, .{ player_id, entity_id });
-            }
-        },
-
-        .push => {
-            const push_amount = 1;
-            if (direction) |dir| {
-                try game.log.log(.push, .{ player_id, direction, push_amount });
-            }
-        },
-
-        .traps => {
-            if (direction) |dir| {
-                try game.log.log(.interactTrap, .{ player_id, direction });
-            }
-        },
-
-        .illuminate => {
-            try game.log.log(.illuminate, .{ player_id, skill_pos, ILLUMINATE_AMOUNT });
-        },
-
-        .ping => {
-            try game.log.log(.ping, .{ player_id, skill_pos });
-        },
-
-        .heal => {
-            try game.log.log(.healSkill, .{ player_id, SKILL_HEAL_AMOUNT } );
-        },
-
-        .farSight => {
-            try game.log.log(.tryFarSight, .{ player_id, SKILL_FARSIGHT_FOV_AMOUNT } );
-        },
-
-        .sprint => {
-            if (direction) |dir| {
-                try game.log.log(.sprint.{ player_id, dir, SKILL_SPRINT_AMOUNT ]);
-            }
-        },
-
-        .roll => {
-            if (direction) |dir| {
-                try game.log.log(.roll.{ player_id, dir, SKILL_ROLL_AMOUNT });
-            }
-        },
-
-        .passThrough => {
-            if (direction) |dir| {
-                try game.log.log(.tryPassThrough, .{ player_id, dir });
-            }
-        },
-
-        .whirlWind => {
-            if (game.level.map.is_within_bounds(skill_pos)) {
-                try game.log.log(.whirlWind, .{ player_id, skill_pos });
-            }
-        },
-
-        .swift => {
-            if (direction) |dir| {
-                try game.log.log(.trySwift, .{ player_id, dir });
-            }
+        else => {
+            std.debug.panic("Skill {} is not immediate!\n", .{skill});
         },
     }
 }
-

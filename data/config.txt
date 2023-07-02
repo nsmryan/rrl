@@ -64,8 +64,6 @@ seed_cache_radius: 1
 # Radius to spawn smoke when using a smoke bomb
 smoke_bomb_radius: 1
 
-skill_quick_reflexes_percent: 0.5
-
 # Easing functions to use for sound.
 # See src/math/easing.zig for valid values.
 sound_ease_in: linearInterpolation
@@ -271,6 +269,20 @@ armil_move_distance: 1
 
 # Number of turns before armil explodes
 armil_turns_armed: 1
+
+lantern_illuminate_radius: 2
+illuminate_amount: 2
+skill_grass_shoes_turns: 6
+skill_grass_throw_radius: 4
+skill_illuminate_radius: 2
+skill_heal_amount: 2
+skill_farsight_fov_amount: 1
+skill_push_stun_turns: 3
+skill_sprint_amount: 3
+skill_roll_amount: 2
+skill_stone_skin_turns: 4
+skill_swift_distance: 4
+skill_quick_reflexes_percent: 0.5
 
 # Color Palette
 color_dark_brown: 30 25 15 255

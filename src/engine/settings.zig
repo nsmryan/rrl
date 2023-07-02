@@ -21,7 +21,7 @@ pub const LevelExitCondition = enum {
 
 pub const Mode = union(enum) {
     playing,
-    use: struct { pos: ?Pos, use_action: use.UseAction, dir: ?Direction, use_result: ?use.UseResult },
+    use: struct { pos: ?Pos = null, use_action: use.UseAction, dir: ?Direction = null, use_result: ?use.UseResult = null },
     cursor: struct { pos: Pos, use_action: ?use.UseAction },
 };
 

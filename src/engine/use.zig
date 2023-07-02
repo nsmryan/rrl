@@ -154,14 +154,6 @@ pub fn startUseItem(game: *Game, slot: InventorySlot) !void {
 }
 
 pub fn startUseSkill(game: *Game, index: usize, action_mode: ActionMode) !void {
-    // TODO
-    // add skills to player
-    // index skills to check if slot is full.
-    // if so, check skill mode- direction, immediate, cursor.
-    // for immediate, Rust's handle_skill function switches on the skill enum
-    // and processes the skill.
-    // For direction skills, enter use mode with skill as the action.
-    // For cursor skills, enter cursor mode with skill as the action.
     const player_id = Entities.player_id;
     const entity_pos = game.level.entities.pos.get(player_id);
 

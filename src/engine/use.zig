@@ -631,7 +631,7 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
         },
 
         .grassCover => {
-            try game.log.log(.grassCover, .{player_id});
+            try game.log.log(.grassCover, player_id);
         },
 
         .passWall => {

@@ -83,7 +83,7 @@ pub const Msg = union(enum) {
     grassThrow: struct { id: Id, dir: Direction },
     grassBlade: struct { id: Id, dir: Direction },
     grassWall: struct { id: Id, dir: Direction },
-    grassCover: struct { id: Id },
+    grassCover: Id,
     passWall: struct { id: Id, pos: Pos },
     rubble: struct { id: Id, pos: Pos },
     reform: struct { id: Id, pos: Pos },

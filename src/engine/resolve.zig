@@ -80,6 +80,19 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .pickedUp => |args| resolvePickedUp(game, args.id, args.item_id),
         .testMode => |args| try resolveTestMode(game, args),
         .itemLanded => |args| resolveItemLanded(game, args.id, args.start, args.hit),
+        .blink => |args| try resolveBlink(game, args),
+        .stoneSkin => |args| try resolveStoneSkin(game, args),
+        .grassThrow => |args| try resolveGrassThrow(game, args.id, args.dir),
+        .grassBlade => |args| try resolveGlassBlade(game, args.id, args.dir),
+        .grassWall => |args| try resolveGrassWall(game, args.id, args.dir),
+        .grassCover => |args| try resolveGrassCover(game, args),
+        .passWall => |args| try resolvePassWall(game, args.id, args.pos),
+        .rubble => |args| try resolveRubble(game, args.id, args.pos),
+        .reform => |args| try resolveReform(game, args.id, args.pos),
+        .stoneThrow => |args| try resolveStoneThrow(game, args.id, args.pos),
+        .sprint => |args| try resolveSprint(game, args.id, args.dir, args.amount),
+        .roll => |args| try resolveRoll(game, args.id, args.dir, args.amount),
+        .trySwift => |args| try resolveTrySwift(game, args.id, args.dir),
         else => {},
     }
 }
@@ -1008,4 +1021,81 @@ fn resolveItemLanded(game: *Game, item_id: Id, start: Pos, hit_pos: Pos) void {
 fn resolveTestMode(game: *Game, test_mode: bool) !void {
     _ = test_mode;
     try game.level.updateAllFov();
+}
+
+fn resolveBlink(game: *Game, id: Id) !void {
+    _ = game;
+    _ = id;
+}
+
+fn resolveStoneSkin(game: *Game, id: Id) !void {
+    _ = game;
+    _ = id;
+}
+
+fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+}
+
+fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+}
+
+fn resolveGrassWall(game: *Game, id: Id, dir: Direction) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+}
+
+fn resolveGrassCover(game: *Game, id: Id) !void {
+    _ = game;
+    _ = id;
+}
+
+fn resolvePassWall(game: *Game, id: Id, pos: Pos) !void {
+    _ = game;
+    _ = id;
+    _ = pos;
+}
+
+fn resolveRubble(game: *Game, id: Id, pos: Pos) !void {
+    _ = game;
+    _ = id;
+    _ = pos;
+}
+
+fn resolveReform(game: *Game, id: Id, pos: Pos) !void {
+    _ = game;
+    _ = id;
+    _ = pos;
+}
+
+fn resolveStoneThrow(game: *Game, id: Id, pos: Pos) !void {
+    _ = game;
+    _ = id;
+    _ = pos;
+}
+
+fn resolveSprint(game: *Game, id: Id, dir: Direction, amount: usize) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+    _ = amount;
+}
+
+fn resolveRoll(game: *Game, id: Id, dir: Direction, amount: usize) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+    _ = amount;
+}
+
+fn resolveTrySwift(game: *Game, id: Id, dir: Direction) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
 }

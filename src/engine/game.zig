@@ -251,6 +251,8 @@ pub const Game = struct {
 
         if (used_energy) {
             try game.log.log(.usedEnergy, id);
+        } else {
+            try game.log.log(.notEnoughEnergy, id);
         }
 
         return enough_energy;

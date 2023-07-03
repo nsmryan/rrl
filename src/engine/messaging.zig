@@ -124,7 +124,27 @@ pub const Msg = union(enum) {
             },
 
             .move => |params| {
-                return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                switch (params.move_type) {
+                    .move => {
+                        return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                    },
+
+                    .pass => {
+                        return try std.fmt.bufPrint(buf, "{s} pass turn", .{@tagName(entities.typ.get(params.id))});
+                    },
+
+                    .jumpWall => {
+                        return try std.fmt.bufPrint(buf, "{s} wall jumped to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                    },
+
+                    .blink => {
+                        return try std.fmt.bufPrint(buf, "{s} blinked to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                    },
+
+                    .misc => {
+                        return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                    },
+                }
             },
 
             .gainEnergy => |params| {
@@ -133,6 +153,10 @@ pub const Msg = union(enum) {
 
             .collided => |params| {
                 return try std.fmt.bufPrint(buf, "{s} collided with something!", .{@tagName(entities.typ.get(params.id))});
+            },
+
+            .notEnoughEnergy => {
+                return try std.fmt.bufPrint(buf, "Not enough energy!", .{});
             },
 
             else => {},

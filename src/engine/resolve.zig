@@ -839,64 +839,60 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
 
     const entity_pos = game.level.entities.pos.get(id);
 
-    if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |hit_entity| {
-        // Check for a dodge
-        var dodged = false;
-        if (game.level.entities.passive.getOrNull(hit_entity)) |passives| {
-            if (passives.quick_reflexes and
-                math.rand.rngTrial(game.rng.random(), game.config.skill_quick_reflexes_percent))
-            {
-                dodged = true;
-                try game.log.log(.dodged, id);
+    if (game.level.firstEntityTypeAtPos(hit_pos, .player)) |player_id| {
+        if (!try checkDodged(game, player_id)) {
+            if (game.level.entities.takeDamage(player_id)) {
+                try game.log.log(.tookDamage, player_id);
             }
         }
+    }
 
-        if (!dodged) {
+    if (game.level.firstEntityTypeAtPos(hit_pos, .column)) |hit_entity| {
+        // If we hit a column, and this is a strong, blunt hit, then push the column over.
+        if (weapon_type == .blunt and attack_style == .strong) {
+            const dir = Direction.fromPositions(entity_pos, hit_pos).?;
+            try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
+        }
+    }
+
+    if (game.level.firstEntityTypeAtPos(hit_pos, .enemy)) |hit_entity| {
+        if (!try checkDodged(game, hit_entity)) {
             const percept = game.level.entities.percept.get(hit_entity);
             game.level.entities.percept.getPtr(hit_entity).* = percept.perceive(Percept{ .attacked = id });
 
-            if (game.level.entities.typ.get(hit_entity) == .column) {
-                // if we hit a column, and this is a strong, blunt hit, then
-                // push the column over.
-                if (weapon_type == .blunt and attack_style == .strong) {
-                    const dir = Direction.fromPositions(entity_pos, hit_pos).?;
-                    try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
+            // If we hit an enemy, stun them and make a sound.
+            if (game.level.entities.typ.get(hit_entity) == .enemy) {
+                var hit_sound_radius: usize = 0;
+                var stun_turns: usize = 0;
+                switch (weapon_type) {
+                    .pierce => {
+                        hit_sound_radius = game.config.sound_radius_pierce;
+                        stun_turns = game.config.stun_turns_pierce;
+                    },
+
+                    .slash => {
+                        hit_sound_radius = game.config.sound_radius_slash;
+                        stun_turns = game.config.stun_turns_slash;
+                    },
+
+                    .blunt => {
+                        hit_sound_radius = game.config.sound_radius_blunt;
+                        stun_turns = game.config.stun_turns_blunt;
+                    },
                 }
-            } else {
-                // if we hit an enemy, stun them and make a sound.
-                if (game.level.entities.typ.get(hit_entity) == .enemy) {
-                    var hit_sound_radius: usize = 0;
-                    var stun_turns: usize = 0;
-                    switch (weapon_type) {
-                        .pierce => {
-                            hit_sound_radius = game.config.sound_radius_pierce;
-                            stun_turns = game.config.stun_turns_pierce;
-                        },
 
-                        .slash => {
-                            hit_sound_radius = game.config.sound_radius_slash;
-                            stun_turns = game.config.stun_turns_slash;
-                        },
-
-                        .blunt => {
-                            hit_sound_radius = game.config.sound_radius_blunt;
-                            stun_turns = game.config.stun_turns_blunt;
-                        },
-                    }
-
-                    // whet stone passive adds to sharp weapon stun turns
-                    if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
-                        stun_turns += 1;
-                    }
-
-                    if (attack_style == .strong) {
-                        hit_sound_radius += game.config.sound_radius_extra;
-                        stun_turns += game.config.stun_turns_extra;
-                    }
-
-                    try game.log.log(.stun, .{ hit_entity, stun_turns });
-                    try game.log.log(.sound, .{ id, hit_pos, hit_sound_radius });
+                // whet stone passive adds to sharp weapon stun turns
+                if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
+                    stun_turns += 1;
                 }
+
+                if (attack_style == .strong) {
+                    hit_sound_radius += game.config.sound_radius_extra;
+                    stun_turns += game.config.stun_turns_extra;
+                }
+
+                try game.log.log(.stun, .{ hit_entity, stun_turns });
+                try game.log.log(.sound, .{ id, hit_pos, hit_sound_radius });
             }
         }
     }
@@ -1045,6 +1041,7 @@ fn resolveBlink(game: *Game, id: Id) !void {
         }
 
         if (blink_pos) |pos| {
+            game.level.entities.turn.getPtr(id).skill = true;
             try game.log.now(.move, .{ id, .blink, .walk, pos });
         } else {
             try game.log.log(.failedBlink, id);
@@ -1053,8 +1050,10 @@ fn resolveBlink(game: *Game, id: Id) !void {
 }
 
 fn resolveStoneSkin(game: *Game, id: Id) !void {
-    _ = game;
-    _ = id;
+    if (try game.useEnergy(id, .blink)) {
+        game.level.entities.status.getPtr(id).stone = game.config.skill_stone_skin_turns;
+        game.level.entities.turn.getPtr(id).skill = true;
+    }
 }
 
 fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
@@ -1122,4 +1121,18 @@ fn resolveTrySwift(game: *Game, id: Id, dir: Direction) !void {
     _ = game;
     _ = id;
     _ = dir;
+}
+
+pub fn checkDodged(game: *Game, id: Id) !bool {
+    // Check for a dodge
+    var dodged = false;
+    if (game.level.entities.passive.getOrNull(id)) |passives| {
+        if (passives.quick_reflexes and
+            math.rand.rngTrial(game.rng.random(), game.config.skill_quick_reflexes_percent))
+        {
+            dodged = true;
+            try game.log.log(.dodged, id);
+        }
+    }
+    return dodged;
 }

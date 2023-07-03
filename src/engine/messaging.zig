@@ -93,6 +93,7 @@ pub const Msg = union(enum) {
     trySwift: struct { id: Id, dir: Direction },
     failedBlink: Id,
     usedEnergy: Id,
+    tookDamage: Id,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);
@@ -157,6 +158,10 @@ pub const Msg = union(enum) {
 
             .notEnoughEnergy => {
                 return try std.fmt.bufPrint(buf, "Not enough energy!", .{});
+            },
+
+            .tookDamage => |params| {
+                return try std.fmt.bufPrint(buf, "{s} took damage!", .{@tagName(entities.typ.get(params))});
             },
 
             else => {},

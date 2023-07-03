@@ -2,6 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
+const Random = std.rand.Random;
 
 const utils = @import("utils");
 const comp = utils.comp;
@@ -256,6 +257,26 @@ pub const Entities = struct {
         if (!entities.status.get(id).test_mode) {
             entities.energy.getPtr(id).* -= 1;
         }
+    }
+
+    pub fn takeDamage(entities: *Entities, id: Id) bool {
+        var took_damage = false;
+
+        if (entities.status.get(id).alive and entities.status.get(id).stone == 0) {
+            if (entities.hp.getPtrOrNull(id)) |hp| {
+                if (!entities.status.get(id).test_mode and hp.* > @as(usize, 0)) {
+                    hp.* -= 1;
+                    took_damage = true;
+
+                    if (hp.* <= 0) {
+                        entities.status.getPtr(id).alive = false;
+                        entities.status.getPtr(id).active = false;
+                    }
+                }
+            }
+        }
+
+        return took_damage;
     }
 };
 

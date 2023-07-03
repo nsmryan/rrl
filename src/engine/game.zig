@@ -12,6 +12,7 @@ const Pos = math.pos.Pos;
 const Direction = math.direction.Direction;
 
 const utils = @import("utils");
+const Id = utils.comp.Id;
 
 const core = @import("core");
 const fov = core.fov;
@@ -23,6 +24,7 @@ const Stance = core.entities.Stance;
 const GolemName = core.entities.GolemName;
 const Entities = core.entities.Entities;
 const items = core.items;
+const Skill = core.skills.Skill;
 
 const board = @import("board");
 const Map = board.map.Map;
@@ -191,6 +193,67 @@ pub const Game = struct {
         floodfill.dampen_tall_wall = game.config.dampen_tall_wall;
         try floodfill.fill(&game.level.map, pos, amount);
         return floodfill;
+    }
+
+    pub fn useEnergy(game: *Game, id: Id, skill: Skill) bool {
+        const pos = game.level.entities.pos.get(id);
+
+        // Use the Skill's own class instead of the entities.
+        const class = skill.class();
+
+        const has_energy = game.level.entities.status.get(id).test_mode or game.level.entities.energy.get(id) > 0;
+        var enough_energy: bool = false;
+        var used_energy: bool = false;
+        switch (class) {
+            .body => {
+                if (has_energy) {
+                    enough_energy = true;
+                    used_energy = true;
+                    game.level.entities.useEnergy(id);
+                }
+            },
+
+            .grass => {
+                const free_energy = game.level.map.get(pos).center.material == .grass;
+                if (free_energy or has_energy) {
+                    if (!free_energy and has_energy) {
+                        used_energy = true;
+                        game.level.entities.useEnergy(id);
+                    }
+
+                    enough_energy = true;
+                    game.level.map.get(pos).center.material = .floor;
+
+                    if (game.level.entities.getNamesAtPos(pos, .grass)) |grass_id| {
+                        try game.log.log(.remove, grass_id);
+                    }
+                }
+            },
+
+            .monolith => {
+                const free_energy = game.level.map.get(pos).center.material == .rubble;
+                if (free_energy or has_energy) {
+                    if (!free_energy and has_energy) {
+                        game.level.entities.use_energy(id);
+                        used_energy = true;
+                    }
+
+                    enough_energy = true;
+                    game.level.map.getPtr(pos).center.material = .floor;
+                }
+            },
+
+            .wind => {
+                // The wind class does not use energy.
+                enough_energy = true;
+            },
+        }
+
+        if (used_energy) {
+            try game.log.log(.usedEnergy, id);
+        }
+
+        return enough_energy;
     }
 };
 

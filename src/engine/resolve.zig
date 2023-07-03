@@ -1024,8 +1024,32 @@ fn resolveTestMode(game: *Game, test_mode: bool) !void {
 }
 
 fn resolveBlink(game: *Game, id: Id) !void {
-    _ = game;
-    _ = id;
+    if (try game.useEnergy(id, .blink)) {
+        const entity_pos = game.level.entities.pos.get(id);
+
+        var blink_pos: ?Pos = null;
+
+        var floodfill = board.floodfill.FloodFill.init(game.frame_allocator);
+        try floodfill.fill(&game.level.map, entity_pos, game.config.blink_radius);
+        while (floodfill.flood.items.len > 0) {
+            const ix = @intCast(usize, math.rand.rngRangeU32(game.rng.random(), 0, @intCast(u32, floodfill.flood.items.len - 1)));
+            const rand_pos = floodfill.flood.items[ix].pos;
+
+            const entity_blocks = game.level.blockingEntityAt(rand_pos);
+            const tile_blocks = blocking.BlockedType.move.tileBlocks(game.level.map.get(rand_pos)) != .empty;
+            if (!entity_blocks and !tile_blocks) {
+                blink_pos = rand_pos;
+            }
+
+            _ = floodfill.flood.swapRemove(ix);
+        }
+
+        if (blink_pos) |pos| {
+            try game.log.now(.move, .{ id, .blink, .walk, pos });
+        } else {
+            try game.log.log(.failedBlink, id);
+        }
+    }
 }
 
 fn resolveStoneSkin(game: *Game, id: Id) !void {

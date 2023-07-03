@@ -63,6 +63,7 @@ fog_of_war: true
 seed_cache_radius: 1
 # Radius to spawn smoke when using a smoke bomb
 smoke_bomb_radius: 1
+blink_radius: 4
 
 # Easing functions to use for sound.
 # See src/math/easing.zig for valid values.

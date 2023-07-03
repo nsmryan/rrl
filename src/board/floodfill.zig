@@ -16,8 +16,8 @@ const utils = @import("utils");
 const Array = utils.buffer.Array;
 
 pub const HitPos = struct {
-    pos: Pos,
-    force: i32,
+    pos: Pos, // position within the floodfill range.
+    force: i32, // force from the original flood, based on radius and dampening, such as sound strength.
 };
 
 pub const FloodFill = struct {

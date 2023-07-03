@@ -195,7 +195,7 @@ pub const Game = struct {
         return floodfill;
     }
 
-    pub fn useEnergy(game: *Game, id: Id, skill: Skill) bool {
+    pub fn useEnergy(game: *Game, id: Id, skill: Skill) !bool {
         const pos = game.level.entities.pos.get(id);
 
         // Use the Skill's own class instead of the entities.
@@ -222,9 +222,9 @@ pub const Game = struct {
                     }
 
                     enough_energy = true;
-                    game.level.map.get(pos).center.material = .floor;
+                    game.level.map.getPtr(pos).center.material = .stone;
 
-                    if (game.level.entities.getNamesAtPos(pos, .grass)) |grass_id| {
+                    if (game.level.entityNameAtPos(pos, .grass)) |grass_id| {
                         try game.log.log(.remove, grass_id);
                     }
                 }
@@ -234,12 +234,12 @@ pub const Game = struct {
                 const free_energy = game.level.map.get(pos).center.material == .rubble;
                 if (free_energy or has_energy) {
                     if (!free_energy and has_energy) {
-                        game.level.entities.use_energy(id);
+                        game.level.entities.useEnergy(id);
                         used_energy = true;
                     }
 
                     enough_energy = true;
-                    game.level.map.getPtr(pos).center.material = .floor;
+                    game.level.map.getPtr(pos).center.material = .stone;
                 }
             },
 

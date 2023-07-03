@@ -17,7 +17,7 @@ pub const Skill = enum {
 
     pub fn class(skill: Skill) SkillClass {
         return switch (skill) {
-            .grassWall, .GrassThrow, .grassBlade, .grassCover => .grass,
+            .grassWall, .grassThrow, .grassBlade, .grassCover => .grass,
             .blink, .sprint, .roll => .body,
             .passWall, .rubble, .stoneThrow, .stoneSkin, .reform => .monolith,
             .ping => .body,

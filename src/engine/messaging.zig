@@ -91,6 +91,8 @@ pub const Msg = union(enum) {
     sprint: struct { id: Id, dir: Direction, amount: usize },
     roll: struct { id: Id, dir: Direction, amount: usize },
     trySwift: struct { id: Id, dir: Direction },
+    failedBlink: Id,
+    usedEnergy: Id,
 
     pub fn genericMsg(comptime msg_type: MsgType, args: anytype) Msg {
         const fields = std.meta.fields(Msg);

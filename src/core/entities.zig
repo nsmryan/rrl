@@ -251,6 +251,12 @@ pub const Entities = struct {
     pub fn hasEnoughEnergy(entities: *const Entities, id: Id, amount: u32) bool {
         return entities.energy.get(id) >= amount;
     }
+
+    pub fn useEnergy(entities: *Entities, id: Id) void {
+        if (!entities.status.get(id).test_mode) {
+            entities.energy.getPtr(id).* -= 1;
+        }
+    }
 };
 
 test "basic entities" {

@@ -20,6 +20,7 @@ const core = @import("core");
 const Skill = core.skills.Skill;
 const Talent = core.talents.Talent;
 const ItemClass = core.items.ItemClass;
+const Item = core.items.Item;
 const WeaponType = core.items.WeaponType;
 const AttackStyle = core.items.AttackStyle;
 const MoveMode = core.movement.MoveMode;
@@ -1089,9 +1090,12 @@ fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
 }
 
 fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {
-    _ = game;
-    _ = id;
-    _ = dir;
+    const pos = game.level.entities.pos.get(id);
+
+    const attack_pos = dir.offsetPos(pos, 1);
+    try game.log.log(.hit, .{ id, pos, attack_pos, Item.dagger.weaponType().?, .stealth });
+
+    game.level.entities.turn.getPtr(id).skill = true;
 }
 
 fn resolveGrassWall(game: *Game, id: Id, dir: Direction) !void {

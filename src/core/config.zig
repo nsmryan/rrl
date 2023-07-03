@@ -153,7 +153,7 @@ pub const Config = struct {
     lantern_illuminate_radius: usize,
     illuminate_amount: usize,
     skill_grass_shoes_turns: usize,
-    skill_grass_throw_radius: usize,
+    skill_grass_throw_radius: i32,
     skill_illuminate_radius: usize,
     skill_heal_amount: usize,
     skill_farsight_fov_amount: usize,

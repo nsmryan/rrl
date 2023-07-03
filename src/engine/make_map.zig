@@ -23,8 +23,7 @@ pub fn ensureGrass(game: *Game, pos: Pos) !Id {
     if (game.level.entityNameAtPos(pos, .grass)) |grass_id| {
         id = grass_id;
     } else {
-        id = try spawn.spawnGrass(&game.level.entities, &game.log);
-        try game.log.log(.move, .{ id, MoveType.blink, MoveMode.walk, pos });
+        id = try spawn.spawnGrass(&game.level.entities, pos, &game.log);
     }
 
     return id;

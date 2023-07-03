@@ -76,12 +76,12 @@ pub fn spawnItem(entities: *Entities, item: Item, log: *MsgLog, config: *const C
     return id;
 }
 
-pub fn spawnGrass(entities: *Entities, log: *MsgLog) !Id {
+pub fn spawnGrass(entities: *Entities, pos: Pos, log: *MsgLog) !Id {
     const id = try entities.createEntity(Pos.init(0, 0), .grass, .environment);
     entities.blocking.getPtr(id).* = false;
 
     try log.log(.spawn, .{ id, .grass });
-    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, Pos.init(0, 0) });
+    try log.log(.move, .{ id, MoveType.blink, MoveMode.walk, pos });
 
     return id;
 }

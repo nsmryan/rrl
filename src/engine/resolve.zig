@@ -1057,9 +1057,35 @@ fn resolveStoneSkin(game: *Game, id: Id) !void {
 }
 
 fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
-    _ = game;
-    _ = id;
-    _ = dir;
+    if (try game.useEnergy(id, .blink)) {
+        const pos = game.level.entities.pos.get(id);
+
+        var line = math.line.Line.init(pos, dir.offsetPos(pos, game.config.skill_grass_throw_radius), false);
+        while (line.next()) |grass_pos| {
+            // Percent chance of not marking a tile.
+            if (math.rand.rngTrial(game.rng.random(), 0.75)) {
+                if (game.level.map.isWithinBounds(grass_pos) and game.level.map.get(grass_pos).center.height == .empty) {
+                    _ = try make_map.ensureGrass(game, grass_pos);
+                }
+            }
+
+            // Percent chance of marking a nearby tile.
+            if (math.rand.rngTrial(game.rng.random(), 0.35)) {
+                var other_pos: Pos = undefined;
+                if (math.rand.rngTrial(game.rng.random(), 0.5)) {
+                    other_pos = dir.clockwise().clockwise().offsetPos(grass_pos, 1);
+                } else {
+                    other_pos = dir.counterclockwise().counterclockwise().offsetPos(grass_pos, 1);
+                }
+
+                if (game.level.map.isWithinBounds(other_pos)) {
+                    game.level.map.getPtr(other_pos).center.material = .grass;
+                    _ = try make_map.ensureGrass(game, grass_pos);
+                }
+            }
+        }
+        game.level.entities.turn.getPtr(id).skill = true;
+    }
 }
 
 fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {

@@ -1,5 +1,5 @@
 
-.PHONY: rebuild retest run build test atlas
+.PHONY: rebuild retest run build test atlas sloc
 
 run:
 	zig build run
@@ -18,3 +18,6 @@ retest:
 
 atlas:
 	zig build atlas
+
+sloc: 
+	cloc src/*/*.zig

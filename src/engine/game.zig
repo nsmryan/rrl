@@ -86,6 +86,14 @@ pub const Game = struct {
     }
 
     pub fn step(game: *Game, input_event: InputEvent, ticks: u64) !void {
+        // All entities previously spawned are now playing.
+        for (game.level.entities.state.ids.items) |id| {
+            if (game.level.entities.state.get(id) == .spawn) {
+                game.level.entities.state.getPtr(id).* = .play;
+            }
+        }
+
+        // Handle player input.
         try game.inputEvent(input_event, ticks);
         try game.resolveMessages();
 

@@ -125,26 +125,28 @@ pub const Msg = union(enum) {
             },
 
             .move => |params| {
-                switch (params.move_type) {
-                    .move => {
-                        return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
-                    },
+                if (entities.state.get(params.id) == .play) {
+                    switch (params.move_type) {
+                        .move => {
+                            return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                        },
 
-                    .pass => {
-                        return try std.fmt.bufPrint(buf, "{s} pass turn", .{@tagName(entities.typ.get(params.id))});
-                    },
+                        .pass => {
+                            return try std.fmt.bufPrint(buf, "{s} pass turn", .{@tagName(entities.typ.get(params.id))});
+                        },
 
-                    .jumpWall => {
-                        return try std.fmt.bufPrint(buf, "{s} wall jumped to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
-                    },
+                        .jumpWall => {
+                            return try std.fmt.bufPrint(buf, "{s} wall jumped to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                        },
 
-                    .blink => {
-                        return try std.fmt.bufPrint(buf, "{s} blinked to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
-                    },
+                        .blink => {
+                            return try std.fmt.bufPrint(buf, "{s} blinked to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                        },
 
-                    .misc => {
-                        return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
-                    },
+                        .misc => {
+                            return try std.fmt.bufPrint(buf, "{s} moved to {}, {}", .{ @tagName(entities.typ.get(params.id)), params.pos.x, params.pos.y });
+                        },
+                    }
                 }
             },
 

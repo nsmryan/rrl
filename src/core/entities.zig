@@ -217,7 +217,7 @@ pub const Entities = struct {
         try self.status.insert(id, StatusEffect{});
         try self.blocking.insert(id, false);
         try self.turn.insert(id, Turn.init());
-        try self.state.insert(id, .play);
+        try self.state.insert(id, .spawn);
     }
 
     pub fn idValid(entities: *Entities, id: Id) bool {

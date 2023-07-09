@@ -1090,18 +1090,39 @@ fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
 }
 
 fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {
-    const pos = game.level.entities.pos.get(id);
+    if (try game.useEnergy(id, .blink)) {
+        const pos = game.level.entities.pos.get(id);
 
-    const attack_pos = dir.offsetPos(pos, 1);
-    try game.log.log(.hit, .{ id, pos, attack_pos, Item.dagger.weaponType().?, .stealth });
+        const attack_pos = dir.offsetPos(pos, 1);
+        try game.log.log(.hit, .{ id, pos, attack_pos, Item.dagger.weaponType().?, .stealth });
 
-    game.level.entities.turn.getPtr(id).skill = true;
+        game.level.entities.turn.getPtr(id).skill = true;
+    }
 }
 
 fn resolveGrassWall(game: *Game, id: Id, dir: Direction) !void {
-    _ = game;
-    _ = id;
-    _ = dir;
+    if (try game.useEnergy(id, .blink)) {
+        const pos = game.level.entities.pos.get(id);
+
+        game.level.entities.turn.getPtr(id).skill = true;
+
+        switch (dir) {
+            .left, .right, .up, .down => {
+                game.level.map.place_intertile_wall(pos, .grass, dir);
+                const next_to = dir.clockwise().clockwise().offsetPos(pos, 1);
+                game.level.map.place_intertile_wall(next_to, .grass, dir);
+                const next_to = dir.counterclockwise().counterclockwise().offsetPos(pos, 1);
+                game.level.map.place_intertile_wall(next_to, .grass, dir);
+            },
+
+            .downLeft, .downRight, .upLeft, .upRight => {
+                const next_to = dir.clockwise().offsetPos(pos, 1);
+                game.level.map.place_intertile_wall(next_to, .grass, dir.counterclockwise());
+                const next_to = dir.counterclockwise().offsetPos(pos, 1);
+                game.level.map.place_intertile_wall(next_to, .grass, dir.clockwise());
+            },
+        }
+    }
 }
 
 fn resolveGrassCover(game: *Game, id: Id) !void {

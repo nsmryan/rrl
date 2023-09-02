@@ -107,7 +107,6 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
     for (painter.state.animation.ids.items) |id| {
         if (game.level.entities.typ.get(id) == .item and game.level.entities.status.get(id).active) {
             if (painter.state.animation.get(id).draw()) |drawcmd| {
-                std.debug.print("item {} active {}\n", .{ id, game.level.entities.status.get(id).active });
                 try painter.drawcmds.append(drawcmd);
             }
         }

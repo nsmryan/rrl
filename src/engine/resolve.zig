@@ -1011,7 +1011,9 @@ fn resolveAiAttack(game: *Game, id: Id, target_id: Id) !void {
 fn resolveItemLanded(game: *Game, item_id: Id, start: Pos, hit_pos: Pos) void {
     _ = start;
     _ = hit_pos;
-    game.level.entities.status.getPtr(item_id).active = true;
+    if (game.level.entities.state.get(item_id) == .play) {
+        game.level.entities.status.getPtr(item_id).active = true;
+    }
 }
 
 fn resolveTestMode(game: *Game, test_mode: bool) !void {

@@ -389,8 +389,6 @@ pub const Gui = struct {
     }
 
     fn moveEntity(gui: *Gui, id: Id, pos: Pos) !void {
-        // Remove the animation, so the idle will be replayed in the new location.
-        //gui.state.animation.remove(id);
         if (gui.state.animation.getPtrOrNull(id)) |anim| {
             anim.position = pos;
         }
@@ -435,6 +433,9 @@ pub const Gui = struct {
 
     pub fn assignAllIdleAnimations(gui: *Gui) !void {
         for (gui.game.level.entities.name.ids.items) |id| {
+            if (!gui.game.level.entities.status.get(id).active) {
+                continue;
+            }
             var anim: Animation = undefined;
 
             switch (gui.game.level.entities.name.get(id)) {

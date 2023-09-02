@@ -86,7 +86,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .grassThrow => |args| try resolveGrassThrow(game, args.id, args.dir),
         .grassBlade => |args| try resolveGlassBlade(game, args.id, args.dir),
         .grassWall => |args| try resolveGrassWall(game, args.id, args.dir),
-        .grassCover => |args| try resolveGrassCover(game, args),
+        .grassCover => |args| try resolveGrassCover(game, args.id, args.dir),
         .passWall => |args| try resolvePassWall(game, args.id, args.pos),
         .rubble => |args| try resolveRubble(game, args.id, args.pos),
         .reform => |args| try resolveReform(game, args.id, args.pos),
@@ -1125,11 +1125,10 @@ fn resolveGrassWall(game: *Game, id: Id, dir: Direction) !void {
     }
 }
 
-fn resolveGrassCover(game: *Game, id: Id) !void {
+fn resolveGrassCover(game: *Game, id: Id, dir: Direction) !void {
     if (try game.useEnergy(id, .grassCover)) {
         const entity_pos = game.level.entities.pos.get(id);
-        const facing = game.level.entities.facing.get(id);
-        const next_pos = facing.offsetPos(entity_pos, 1);
+        const next_pos = dir.offsetPos(entity_pos, 1);
         game.level.map.set(next_pos, Tile.tallGrass());
         _ = try make_map.ensureGrass(game, next_pos);
         game.level.entities.turn.getPtr(id).skill = true;

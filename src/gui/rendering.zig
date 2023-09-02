@@ -123,7 +123,8 @@ fn renderEntities(game: *Game, painter: *Painter) !void {
 }
 
 fn renderMapMiddle(game: *Game, painter: *Painter) !void {
-    const wall_sprite = painter.sprite("horizontal_wall");
+    const stone_wall_sprite = painter.sprite("horizontal_wall");
+    const grass_wall_sprite = painter.sprite("tall_grass");
 
     var y: i32 = 0;
     while (y < game.level.map.height) : (y += 1) {
@@ -135,6 +136,10 @@ fn renderMapMiddle(game: *Game, painter: *Painter) !void {
             try renderWallShadow(pos, game, painter);
 
             if (tile.center.height == .tall) {
+                var wall_sprite = stone_wall_sprite;
+                if (tile.center.material == .grass) {
+                    wall_sprite = grass_wall_sprite;
+                }
                 try painter.drawcmds.append(DrawCmd.sprite(wall_sprite, Color.white(), pos));
             }
             try renderIntertileWalls(pos, game, painter);
@@ -713,11 +718,13 @@ pub fn renderInventorySkill(chr: u8, index: usize, x_offset: f32, y_offset: f32,
     } else if (game.settings.mode == .cursor) {
         const enough_skills = game.level.entities.skills.get(Entities.player_id).items.len > index;
         if (enough_skills) {
-            const cursor_skill = game.settings.mode.cursor.use_action.?.skill.skill;
-            if (game.level.entities.skills.get(Entities.player_id).items[index] == cursor_skill) {
-                std.mem.copy(u8, &button_name, button_name_highlight);
-                button_name_len = button_name_highlight.len;
-                text_color = highlight_ui_color;
+            if (game.settings.mode.cursor.use_action) |use_action| {
+                const cursor_skill = use_action.skill.skill;
+                if (game.level.entities.skills.get(Entities.player_id).items[index] == cursor_skill) {
+                    std.mem.copy(u8, &button_name, button_name_highlight);
+                    button_name_len = button_name_highlight.len;
+                    text_color = highlight_ui_color;
+                }
             }
         }
     }

@@ -95,7 +95,7 @@ pub fn main() anyerror!void {
     gui.game.level.map.set(Pos.init(3, 4), board.tile.Tile.rubble());
     gui.game.level.map.set(Pos.init(5, 5), board.tile.Tile.tallWall());
 
-    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.blink);
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.passWall);
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassThrow);
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassBlade);
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassCover);

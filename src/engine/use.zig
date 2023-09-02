@@ -637,16 +637,16 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
         .passWall => {
             const collision = game.level.checkCollision(player_pos, skill_dir);
 
-            if (!collision.entity) {
-                if (collision.wall != null) {
-                    if (blocking.BlockedType.move.tileBlocks(game.level.map.get(skill_pos)) != .empty) {
-                        const next_pos = Direction.continuePast(player_pos, skill_pos).?;
-                        if (blocking.BlockedType.move.tileBlocks(game.level.map.get(next_pos)) == .empty) {
-                            try game.log.log(.passWall, .{ player_id, next_pos });
-                        }
-                    } else {
-                        try game.log.log(.passWall, .{ player_id, skill_pos });
+            if (!collision.entity and collision.wall != null) {
+                // Pass wall through a full tile wall to the position past the wall.
+                if (blocking.BlockedType.move.tileBlocks(game.level.map.get(skill_pos)) != .empty) {
+                    const next_pos = Direction.continuePast(player_pos, skill_pos).?;
+                    if (blocking.BlockedType.move.tileBlocks(game.level.map.get(next_pos)) == .empty) {
+                        try game.log.log(.passWall, .{ player_id, next_pos });
                     }
+                } else {
+                    // Pass wall through an inter-tile wall to the position next to the entity.
+                    try game.log.log(.passWall, .{ player_id, skill_pos });
                 }
             }
         },

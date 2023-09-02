@@ -1032,7 +1032,7 @@ fn resolveBlink(game: *Game, id: Id) !void {
             const ix = @intCast(usize, math.rand.rngRangeU32(game.rng.random(), 0, @intCast(u32, floodfill.flood.items.len - 1)));
             const rand_pos = floodfill.flood.items[ix].pos;
 
-            const entity_blocks = game.level.blockingEntityAt(rand_pos);
+            const entity_blocks = game.level.blockingEntityAtPos(rand_pos) != null;
             const tile_blocks = blocking.BlockedType.move.tileBlocks(game.level.map.get(rand_pos)) != .empty;
             if (!entity_blocks and !tile_blocks) {
                 blink_pos = rand_pos;
@@ -1136,9 +1136,14 @@ fn resolveGrassCover(game: *Game, id: Id, dir: Direction) !void {
 }
 
 fn resolvePassWall(game: *Game, id: Id, pos: Pos) !void {
-    _ = game;
-    _ = id;
-    _ = pos;
+    // The wall conditions where already checked when generating this message, so we can just
+    // check for energy and emit messages to pass through the wall.
+    if (try game.useEnergy(id, .grassCover)) {
+        // This move is a kind of blink, as we have already ensured that the movement will not
+        // hit anything, and we go directly to the destination without a TryMove (which would
+        // just run right into the golem we are passing through).
+        try game.log.log(.move, .{ id, .blink, .walk, pos });
+    }
 }
 
 fn resolveRubble(game: *Game, id: Id, pos: Pos) !void {

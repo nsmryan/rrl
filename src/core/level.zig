@@ -65,7 +65,7 @@ pub const Level = struct {
             collision.wall = HitWall.init(blocked.height, blocked.blocked_tile);
         }
 
-        collision.entity = level.blockingEntityAt(dir.move(pos));
+        collision.entity = level.blockingEntityAtPos(dir.move(pos)) != null;
 
         return collision;
     }
@@ -86,17 +86,6 @@ pub const Level = struct {
             prev = line_pos;
         }
         return collision;
-    }
-
-    pub fn blockingEntityAt(level: *const Level, pos: Pos) bool {
-        for (level.entities.ids.items) |id| {
-            if (level.entities.pos.getOrNull(id)) |entity_pos| {
-                if (entity_pos.eql(pos) and level.entities.blocking.has(id)) {
-                    return level.entities.blocking.get(id);
-                }
-            }
-        }
-        return false;
     }
 
     // NOTE(design) this may be useful for blink, where we care about whether a tile blocks but

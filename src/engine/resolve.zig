@@ -89,7 +89,6 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .grassCover => |args| try resolveGrassCover(game, args.id, args.dir),
         .passWall => |args| try resolvePassWall(game, args.id, args.pos),
         .rubble => |args| try resolveRubble(game, args.id, args.pos),
-        .reform => |args| try resolveReform(game, args.id, args.pos),
         .stoneThrow => |args| try resolveStoneThrow(game, args.id, args.pos),
         .sprint => |args| try resolveSprint(game, args.id, args.dir, args.amount),
         .roll => |args| try resolveRoll(game, args.id, args.dir, args.amount),
@@ -1138,7 +1137,7 @@ fn resolveGrassCover(game: *Game, id: Id, dir: Direction) !void {
 fn resolvePassWall(game: *Game, id: Id, pos: Pos) !void {
     // The wall conditions where already checked when generating this message, so we can just
     // check for energy and emit messages to pass through the wall.
-    if (try game.useEnergy(id, .grassCover)) {
+    if (try game.useEnergy(id, .passWall)) {
         // This move is a kind of blink, as we have already ensured that the movement will not
         // hit anything, and we go directly to the destination without a TryMove (which would
         // just run right into the golem we are passing through).
@@ -1150,6 +1149,20 @@ fn resolveRubble(game: *Game, id: Id, pos: Pos) !void {
     _ = game;
     _ = id;
     _ = pos;
+    //let pos = game.level.entities.pos[&entity_id];
+    //let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
+
+    //if let Some(blocked) = blocked {
+    //    resolve_rubble(blocked, &mut game.level.map);
+    //} else if let Some(blocked_id) = game.level.has_blocking_entity(rubble_pos) {
+    //    // if we hit a column, turn it into rubble
+    //    if game.level.entities.typ[&blocked_id] == EntityType::Column {
+    //        remove_entity(blocked_id, &mut game.level);
+    //        game.level.map[rubble_pos].surface = Surface::Rubble;
+    //    }
+    //}
+
+    //game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolveReform(game: *Game, id: Id, pos: Pos) !void {
@@ -1158,12 +1171,115 @@ fn resolveReform(game: *Game, id: Id, pos: Pos) !void {
     _ = pos;
 }
 
+// NOTE called stone bending in spreadsheet
 fn resolveStoneThrow(game: *Game, id: Id, pos: Pos) !void {
     _ = game;
     _ = id;
     _ = pos;
+    //let entity_pos = game.level.entities.pos[&entity_id];
+
+    //let mut rubble_pos = None;
+    //if game.level.map[entity_pos].surface == Surface::Rubble {
+    //    rubble_pos = Some(entity_pos);
+    //}
+
+    //for pos in game.level.map.neighbors(entity_pos) {
+    //    if game.level.map[pos].surface == Surface::Rubble {
+    //        rubble_pos = Some(pos);
+    //    }
+    //}
+
+    //if let Some(rubble_pos) = rubble_pos {
+    //    for target_id in game.level.get_entities_at_pos(target_pos) {
+    //        let target_pos = game.level.entities.pos[&target_id];
+    //        let direction = Direction::from_positions(entity_pos, target_pos).expect("The player is on the same tile as a column?");
+
+    //        if game.level.entities.typ[&target_id] == EntityType::Enemy {
+    //            let move_into = false;
+    //            push_attack(entity_id, target_id, direction, move_into, &mut game.level, &game.config, &mut game.msg_log);
+    //        } else if game.level.entities.typ[&target_id] == EntityType::Column {
+    //            game.msg_log.log(Msg::Pushed(entity_id, target_id, direction, 1, false));
+    //        }
+    //    }
+
+    //    game.level.map[rubble_pos].surface = Surface::Floor;
+
+    //    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
+    //}
 }
 
+//fn resolvePassThrough(game: *Game, id: Id, pos: Pos) !void {
+//    if (try game.useEnergy(id, .grassCover)) {
+//        const entity_pos = game.level.entities.pos.get(id);
+//        const dest = direction.offsetPos(entity_pos, 3);
+//        const next_pos = direction.offsetPos(entity_pos, 1);
+//
+//        // Is there a blocking entity next to the 'id' entity?
+//        const passed_entity_id = game.level.blockingEntityAtPos(next_pos);
+//        // Are there no blocking walls in the environment on the next two tiles?
+//        var map_clear_path = blocking.moveBlocked(&game.level.checkCollisionLine(entity_pos, dir, .move) == null and blocking.moveBlocked(&game.level.map, next_pos, dir, .move) == null;
+//        // Is the destination free of blocking entities?
+//        const dest_clear_pos = !game.level.blockingEntityAt(dest);
+//        if (map_clear_path and dest_clear_pos and pass_through_entity != null) {
+//
+//            // This move is a kind of blink, as we have already ensured that the movement will not
+//            // hit anything, and we go directly to the destination without a TryMove (which would
+//            // just run right into the golem we are passing through).
+//            try game.log.log(.moved, .{ id, .blink, .walk, dest} );
+//            try game.log.log(.forget, other_id);
+//            try game.log.log(.passThrough, id);
+//        }
+//    }
+//}
+
+//fn resolveWhirlwind(game: *Game, id: Id, pos: Pos) !void {
+//    let entity_pos = game.level.entities.pos[&entity_id];
+//    let mut near_walls = false;
+//    for dir in &Direction::directions() {
+//        let dir_pos = dir.offset_pos(pos, 1);
+//
+//        if !game.level.map.is_within_bounds(dir_pos) {
+//            continue;
+//        }
+//
+//        if game.level.map.move_blocked(pos, dir_pos, BlockedType::Move).is_some() {
+//            near_walls = true;
+//            break;
+//        }
+//    }
+//
+//    let traps_block = false;
+//    if !near_walls && game.level.clear_path(entity_pos, pos, traps_block) {
+//        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, pos));
+//    } // NOTE could create a failed whirlwind message, or generic failed skill message
+
+fn resolveTrySwift(game: *Game, id: Id, dir: Direction) !void {
+    _ = game;
+    _ = id;
+    _ = dir;
+    //let entity_pos = game.level.entities.pos[&entity_id];
+    //let dest = direction.offset_pos(entity_pos, SKILL_SWIFT_DISTANCE as i32);
+
+    //if game.level.map.is_within_bounds(dest) {
+
+    //    let mut near_walls = false;
+    //    for dir in &Direction::directions() {
+    //        if game.level.map.move_blocked(dest, dir.offset_pos(dest, 1), BlockedType::Move).is_some() {
+    //            near_walls = true;
+    //            break;
+    //        }
+    //    }
+
+    //    let traps_block = false;
+    //    if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
+    //        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
+    //        game.msg_log.log(Msg::Swift(entity_id, dest));
+    //    }
+    //}
+}
+
+// NOTE These are body skiils. Probably still implement them, although there are only two right now.
+// sprint just runs an extra tile.
 fn resolveSprint(game: *Game, id: Id, dir: Direction, amount: usize) !void {
     _ = game;
     _ = id;
@@ -1171,17 +1287,13 @@ fn resolveSprint(game: *Game, id: Id, dir: Direction, amount: usize) !void {
     _ = amount;
 }
 
+// Silent roll. Mabye only perform while crouching. moves two tiles, low noise, perhaps doesn't
+// show up in middle tile at all like a blink?
 fn resolveRoll(game: *Game, id: Id, dir: Direction, amount: usize) !void {
     _ = game;
     _ = id;
     _ = dir;
     _ = amount;
-}
-
-fn resolveTrySwift(game: *Game, id: Id, dir: Direction) !void {
-    _ = game;
-    _ = id;
-    _ = dir;
 }
 
 pub fn checkDodged(game: *Game, id: Id) !bool {

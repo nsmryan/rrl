@@ -102,12 +102,12 @@ fn renderMapLow(game: *Game, painter: *Painter) !void {
 }
 
 fn renderEntities(game: *Game, painter: *Painter) !void {
-    // Render items first, then all other entities so items will appear
-    // to be at the entities feet.
+    // Render items first, then all other entities so items will appear to be at the entities feet.
 
     for (painter.state.animation.ids.items) |id| {
         if (game.level.entities.typ.get(id) == .item and game.level.entities.status.get(id).active) {
             if (painter.state.animation.get(id).draw()) |drawcmd| {
+                std.debug.print("item {} active {}\n", .{ id, game.level.entities.status.get(id).active });
                 try painter.drawcmds.append(drawcmd);
             }
         }
@@ -719,11 +719,13 @@ pub fn renderInventorySkill(chr: u8, index: usize, x_offset: f32, y_offset: f32,
         const enough_skills = game.level.entities.skills.get(Entities.player_id).items.len > index;
         if (enough_skills) {
             if (game.settings.mode.cursor.use_action) |use_action| {
-                const cursor_skill = use_action.skill.skill;
-                if (game.level.entities.skills.get(Entities.player_id).items[index] == cursor_skill) {
-                    std.mem.copy(u8, &button_name, button_name_highlight);
-                    button_name_len = button_name_highlight.len;
-                    text_color = highlight_ui_color;
+                if (use_action == .skill) {
+                    const skill = use_action.skill.skill;
+                    if (game.level.entities.skills.get(Entities.player_id).items[index] == skill) {
+                        std.mem.copy(u8, &button_name, button_name_highlight);
+                        button_name_len = button_name_highlight.len;
+                        text_color = highlight_ui_color;
+                    }
                 }
             }
         }
@@ -758,6 +760,7 @@ fn renderInventoryItem(chr: u8, slot: items.InventorySlot, x_offset: f32, y_offs
     if (game.level.entities.inventory.get(Entities.player_id).accessSlot(slot) != null) {
         if (shouldHighlightItem(game, UseAction{ .item = slot })) {
             button_name = button_name_highlight[0..];
+            button_len = button_name_highlight.len;
             text_color = highlight_ui_color;
         }
     }

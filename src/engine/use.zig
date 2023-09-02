@@ -657,12 +657,6 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
             }
         },
 
-        .reform => {
-            if (player_pos.distanceMaximum(skill_pos) == 1) {
-                try game.log.log(.reform, .{ player_id, skill_pos });
-            }
-        },
-
         .stoneThrow => {
             try game.log.log(.stoneThrow, .{ player_id, skill_pos });
         },

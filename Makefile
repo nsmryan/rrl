@@ -1,5 +1,5 @@
 
-.PHONY: rebuild retest run build test atlas sloc
+.PHONY: rebuild retest run build test atlas sloc edit
 
 run:
 	zig build run
@@ -21,3 +21,6 @@ atlas:
 
 sloc: 
 	cloc src/*/*.zig
+
+edit:
+	vim -c "args src/*/*.zig" -c "args main.zig Makefile" -c "b main.zig"

@@ -1051,14 +1051,14 @@ fn resolveBlink(game: *Game, id: Id) !void {
 }
 
 fn resolveStoneSkin(game: *Game, id: Id) !void {
-    if (try game.useEnergy(id, .blink)) {
+    if (try game.useEnergy(id, .stoneSkin)) {
         game.level.entities.status.getPtr(id).stone = game.config.skill_stone_skin_turns;
         game.level.entities.turn.getPtr(id).skill = true;
     }
 }
 
 fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
-    if (try game.useEnergy(id, .blink)) {
+    if (try game.useEnergy(id, .grassThrow)) {
         const pos = game.level.entities.pos.get(id);
 
         var line = math.line.Line.init(pos, dir.offsetPos(pos, game.config.skill_grass_throw_radius), false);
@@ -1090,7 +1090,7 @@ fn resolveGrassThrow(game: *Game, id: Id, dir: Direction) !void {
 }
 
 fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {
-    if (try game.useEnergy(id, .blink)) {
+    if (try game.useEnergy(id, .grassBlade)) {
         const pos = game.level.entities.pos.get(id);
 
         const attack_pos = dir.offsetPos(pos, 1);
@@ -1101,33 +1101,39 @@ fn resolveGlassBlade(game: *Game, id: Id, dir: Direction) !void {
 }
 
 fn resolveGrassWall(game: *Game, id: Id, dir: Direction) !void {
-    if (try game.useEnergy(id, .blink)) {
+    if (try game.useEnergy(id, .grassWall)) {
         const pos = game.level.entities.pos.get(id);
 
         game.level.entities.turn.getPtr(id).skill = true;
 
         switch (dir) {
             .left, .right, .up, .down => {
-                game.level.map.place_intertile_wall(pos, .grass, dir);
-                const next_to = dir.clockwise().clockwise().offsetPos(pos, 1);
-                game.level.map.place_intertile_wall(next_to, .grass, dir);
-                const next_to = dir.counterclockwise().counterclockwise().offsetPos(pos, 1);
-                game.level.map.place_intertile_wall(next_to, .grass, dir);
+                game.level.map.placeIntertileWall(pos, .grass, dir);
+                var next_to = dir.clockwise().clockwise().offsetPos(pos, 1);
+                game.level.map.placeIntertileWall(next_to, .grass, dir);
+                next_to = dir.counterclockwise().counterclockwise().offsetPos(pos, 1);
+                game.level.map.placeIntertileWall(next_to, .grass, dir);
             },
 
             .downLeft, .downRight, .upLeft, .upRight => {
-                const next_to = dir.clockwise().offsetPos(pos, 1);
-                game.level.map.place_intertile_wall(next_to, .grass, dir.counterclockwise());
-                const next_to = dir.counterclockwise().offsetPos(pos, 1);
-                game.level.map.place_intertile_wall(next_to, .grass, dir.clockwise());
+                var next_to = dir.clockwise().offsetPos(pos, 1);
+                game.level.map.placeIntertileWall(next_to, .grass, dir.counterclockwise());
+                next_to = dir.counterclockwise().offsetPos(pos, 1);
+                game.level.map.placeIntertileWall(next_to, .grass, dir.clockwise());
             },
         }
     }
 }
 
 fn resolveGrassCover(game: *Game, id: Id) !void {
-    _ = game;
-    _ = id;
+    if (try game.useEnergy(id, .grassCover)) {
+        const entity_pos = game.level.entities.pos.get(id);
+        const facing = game.level.entities.facing.get(id);
+        const next_pos = facing.offsetPos(entity_pos, 1);
+        game.level.map.set(next_pos, Tile.tallGrass());
+        _ = try make_map.ensureGrass(game, next_pos);
+        game.level.entities.turn.getPtr(id).skill = true;
+    }
 }
 
 fn resolvePassWall(game: *Game, id: Id, pos: Pos) !void {

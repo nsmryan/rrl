@@ -220,6 +220,48 @@ pub const Map = struct {
 
         return result;
     }
+
+    pub fn placeIntertileWall(map: *Map, pos: Pos, material: Tile.Material, direction: Direction) void {
+        const new_pos = direction.offsetPos(pos, 1);
+        const tile_supports_wall = map.isWithinBounds(new_pos) and
+            blocking.BlockedType.move.tileBlocks(map.get(new_pos)) == .empty and
+            !map.get(pos).impassable;
+        if (tile_supports_wall) {
+            switch (direction) {
+                .left => {
+                    if (map.get(pos).left.height == .empty) {
+                        map.getPtr(pos).left.height = .short;
+                        map.getPtr(pos).left.material = material;
+                    }
+                },
+
+                .right => {
+                    if (map.get(pos).left.height == .empty) {
+                        map.getPtr(pos).left.height = .short;
+                        map.getPtr(pos).left.material = material;
+                    }
+                },
+
+                .up => {
+                    if (map.get(pos).down.height == .empty) {
+                        map.getPtr(pos).down.height = .short;
+                        map.getPtr(pos).down.material = material;
+                    }
+                },
+
+                .down => {
+                    if (map.get(pos).down.height == .empty) {
+                        map.getPtr(pos).down.height = .short;
+                        map.getPtr(pos).down.material = material;
+                    }
+                },
+
+                else => {
+                    std.debug.panic("Placing an intertile wall on a diagonal makes no sense!", .{});
+                },
+            }
+        }
+    }
 };
 
 // NOTE add these back in if needed

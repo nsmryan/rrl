@@ -112,6 +112,7 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
     try entities.move_mode.insert(id, MoveMode.walk);
     try entities.next_move_mode.insert(id, MoveMode.walk);
     try entities.status.insert(id, StatusEffect{});
+    try entities.passive.insert(id, Passive{});
 
     switch (golem) {
         .gol => {

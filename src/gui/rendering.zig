@@ -706,12 +706,16 @@ pub fn renderInventorySkill(chr: u8, index: usize, x_offset: f32, y_offset: f32,
 
     if (game.settings.mode == .use) {
         const enough_skills = game.level.entities.skills.get(Entities.player_id).items.len > index;
-        if (enough_skills) {
-            const use_skill = game.settings.mode.use.use_action.skill.skill;
-            if (game.level.entities.skills.get(Entities.player_id).items[index] == use_skill) {
-                std.mem.copy(u8, &button_name, button_name_highlight);
-                button_name_len = button_name_highlight.len;
-                text_color = highlight_ui_color;
+        if (enough_skills and game.settings.mode == .cursor) {
+            if (game.settings.mode.cursor.use_action) |use_action| {
+                if (use_action == .skill) {
+                    const use_skill = game.settings.mode.use.use_action.skill.skill;
+                    if (game.level.entities.skills.get(Entities.player_id).items[index] == use_skill) {
+                        std.mem.copy(u8, &button_name, button_name_highlight);
+                        button_name_len = button_name_highlight.len;
+                        text_color = highlight_ui_color;
+                    }
+                }
             }
         }
     } else if (game.settings.mode == .cursor) {

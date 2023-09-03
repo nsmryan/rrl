@@ -86,7 +86,8 @@ pub fn main() anyerror!void {
         index += 1;
     }
 
-    id = try spawn.spawnColumn(&gui.game.level.entities, Pos.init(3, 2), &gui.game.log);
+    id = try spawn.spawnColumn(&gui.game.level.entities, Pos.init(4, 2), &gui.game.log);
+    gui.game.level.map.set(Pos.init(4, 2), board.tile.Tile.shortLeftAndDownWall());
 
     id = try spawn.spawnGolem(&gui.game.level.entities, &gui.game.config, Pos.init(1, 6), .rook, &gui.game.log, gui.game.allocator);
     try gui.game.log.log(.facing, .{ id, .right });

@@ -131,6 +131,10 @@ fn resolveTryMove(id: Id, dir: Direction, amount: usize, game: *Game) !void {
             // NOTE land roll flag could be checks to move one more tile here. Generate another move msg.
             try game.log.now(.jumpWall, .{ id, start_pos, move_pos });
             try game.log.now(.move, .{ id, MoveType.jumpWall, move_mode, move_pos });
+        } else if (collision.entity != null and game.level.entities.typ.get(collision.entity.?) == .column) {
+            try game.log.now(.pushed, .{ id, collision.entity.?, dir });
+            // NOTE maybe its better to not walk into the column, like you pushed it over instead? Easier in the code at least.
+            //try game.log.now(.move, .{ id, MoveType.move, move_mode, move_pos });
         } else {
             // We hit a wall. Generate messages about this, but don't move the entity.
             try game.log.now(.faceTowards, .{ id, move_pos });
@@ -880,11 +884,16 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
                     .blunt => {
                         hit_sound_radius = game.config.sound_radius_blunt;
                         stun_turns = game.config.stun_turns_blunt;
+
+                        if (attack_style == .strong) {
+                            const dir = Direction.fromPositions(entity_pos, hit_pos).?;
+                            try game.log.log(.pushed, .{ id, hit_entity, dir });
+                        }
                     },
                 }
 
-                // whet stone passive adds to sharp weapon stun turns
-                if (game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
+                // Whet stone passive adds to sharp weapon stun turns.
+                if (game.level.entities.passive.has(id) and game.level.entities.passive.get(id).whet_stone and weapon_type.sharp()) {
                     stun_turns += 1;
                 }
 
@@ -1173,8 +1182,8 @@ fn resolveRubble(game: *Game, id: Id, dir: Direction) !void {
                 game.level.entities.turn.getPtr(id).skill = true;
             }
         } else {
-            removeItertileWallsInDirection(game, entity_pos, dir);
-            if (try game.useEnergy(id, .rubble)) {
+            const removed = removeItertileWallsInDirection(game, entity_pos, dir);
+            if (removed and try game.useEnergy(id, .rubble)) {
                 game.level.map.getPtr(hit_pos).center.material = .rubble;
                 game.level.map.getPtr(hit_pos).center.height = .empty;
                 game.level.entities.turn.getPtr(id).skill = true;
@@ -1321,22 +1330,6 @@ pub fn checkDodged(game: *Game, id: Id) !bool {
     return dodged;
 }
 
-// TODO
-// if a column and no blocked tile next to it, rubble in next tile and 'crush' that tile in case there are entities.
-//   consider pushing the next tile, and only crush entity if push into wall (in push code, not here)
-//   if intertile walls before next tile, remove them. if diagonal, remove both walls.
-//   note that if next tile has a column, need to push that column. maybe this indicates that the better
-//   approach is to push that tile. this makes columns less useful, but maybe that is good? maybe a strong
-//   blunt hit instead of a crush?
-// if entity, try to move to next tile. if next tile is blocked, destroy them?
-// this makes pushing rather powerful... maybe just generate a 'crushed' on tiles hit by columns, and make
-// it later in log. if entity is pushed off the tile, they are not crushed. if they can't be pushed off,
-// they are crushed by column.
-// pushing against a wall would be no better then normal pushing in this case. maybe add 1 or 2 to stun
-// turns if can't move the entity by emitting a stun message.
-//
-// should remove push amount? I don't think it was ever used in Rust version.
-//
 fn resolvePushed(game: *Game, pusher: Id, pushed: Id, direction: Direction) !void {
     const pushed_pos = game.level.entities.pos.get(pushed);
     const next_pos = direction.offsetPos(pushed_pos, 1);
@@ -1348,14 +1341,17 @@ fn resolvePushed(game: *Game, pusher: Id, pushed: Id, direction: Direction) !voi
         // wall blocking it (checked by being blocked but not by a blocking tile.
         const blocking_tile = blocking.BlockedType.move.tileBlocks(game.level.map.get(next_pos));
         if (blocked == null or blocking_tile == .empty) {
-            game.level.entities.markForRemoval(pushed);
+            // Only process if removed an intertile wall, or no wall was present.
+            const removed = removeItertileWallsInDirection(game, pushed_pos, direction);
+            if (removed) {
+                game.level.entities.markForRemoval(pushed);
 
-            // Queue a crushed message to destroy anything in the hit tile.
-            // The 'hit' message is queued next using 'now' so we will push anything out
-            // of that tile first if possible.
-            try game.log.now(.crushed, .{ pusher, next_pos });
-            try game.log.now(.hit, .{ pushed, pushed_pos, next_pos, .blunt, .strong });
-            removeItertileWallsInDirection(game, pushed_pos, direction);
+                // Queue a crushed message to destroy anything in the hit tile.
+                // The 'hit' message is queued next using 'now' so we will push anything out
+                // of that tile first if possible.
+                try game.log.now(.hit, .{ pushed, pushed_pos, next_pos, .blunt, .strong });
+                try game.log.now(.crushed, .{ pusher, next_pos });
+            }
         } else {
             // Column hit a wall, just destroy it where it is.
             try game.log.now(.crushed, .{ pusher, pushed_pos });
@@ -1377,46 +1373,33 @@ fn resolveStun(game: *Game, id: Id, amount: usize) !void {
     game.level.entities.status.getPtr(id).stunned += amount;
 }
 
-fn removeItertileWallsInDirection(game: *Game, pos: Pos, dir: Direction) void {
+fn removeItertileWallsInDirection(game: *Game, pos: Pos, dir: Direction) bool {
+    var removed = false;
     const next_pos = dir.offsetPos(pos, 1);
     if (dir.horiz()) {
-        // Inter-tile wall.
         switch (dir) {
             .left => {
                 game.level.map.getPtr(pos).left = Wall.empty();
+                removed = true;
             },
 
             .right => {
                 game.level.map.getPtr(next_pos).left = Wall.empty();
+                removed = true;
             },
 
             .up => {
                 game.level.map.getPtr(next_pos).down = Wall.empty();
+                removed = true;
             },
 
             .down => {
                 game.level.map.getPtr(pos).down = Wall.empty();
+                removed = true;
             },
 
-            .downRight => {
-                game.level.map.getPtr(next_pos).left = Wall.empty();
-                game.level.map.getPtr(Direction.right.offsetPos(pos, 1)).left = Wall.empty();
-            },
-
-            .downLeft => {
-                game.level.map.getPtr(Direction.down.offsetPos(pos, 1)).left = Wall.empty();
-                game.level.map.getPtr(Direction.left.offsetPos(pos, 1)).down = Wall.empty();
-            },
-
-            .upRight => {
-                game.level.map.getPtr(next_pos).left = Wall.empty();
-                game.level.map.getPtr(next_pos).down = Wall.empty();
-            },
-
-            .upLeft => {
-                game.level.map.getPtr(next_pos).down = Wall.empty();
-                game.level.map.getPtr(Direction.up.offsetPos(pos, 1)).left = Wall.empty();
-            },
+            else => {},
         }
     }
+    return removed;
 }

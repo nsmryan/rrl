@@ -23,7 +23,7 @@ pub const HitWall = struct {
 };
 
 pub const Collision = struct {
-    entity: bool = false,
+    entity: ?Id = null,
     wall: ?HitWall = null,
     pos: Pos = Pos.init(0, 0),
     dir: Direction = Direction.left,
@@ -33,7 +33,15 @@ pub const Collision = struct {
     }
 
     pub fn hit(collision: Collision) bool {
-        return collision.entity or collision.wall != null;
+        return collision.entity != null or collision.wall != null;
+    }
+
+    pub fn onlyHitEntity(collision: Collision) bool {
+        return collision.entity != null and collision.wall == null;
+    }
+
+    pub fn onlyHitWall(collision: Collision) bool {
+        return collision.entity == null and collision.wall != null;
     }
 };
 

@@ -88,7 +88,7 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .grassWall => |args| try resolveGrassWall(game, args.id, args.dir),
         .grassCover => |args| try resolveGrassCover(game, args.id, args.dir),
         .passWall => |args| try resolvePassWall(game, args.id, args.pos),
-        .rubble => |args| try resolveRubble(game, args.id, args.pos),
+        .rubble => |args| try resolveRubble(game, args.id, args.dir),
         .stoneThrow => |args| try resolveStoneThrow(game, args.id, args.pos),
         .sprint => |args| try resolveSprint(game, args.id, args.dir, args.amount),
         .roll => |args| try resolveRoll(game, args.id, args.dir, args.amount),
@@ -1144,27 +1144,64 @@ fn resolvePassWall(game: *Game, id: Id, pos: Pos) !void {
         // hit anything, and we go directly to the destination without a TryMove (which would
         // just run right into the golem we are passing through).
         try game.log.log(.move, .{ id, .blink, .walk, pos });
+        game.level.entities.turn.getPtr(id).skill = true;
     }
 }
 
-fn resolveRubble(game: *Game, id: Id, pos: Pos) !void {
-    _ = game;
-    _ = id;
-    _ = pos;
-    //let pos = game.level.entities.pos[&entity_id];
-    //let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
+fn resolveRubble(game: *Game, id: Id, dir: Direction) !void {
+    const entity_pos = game.level.entities.pos.get(id);
+    const collision = game.level.checkCollision(entity_pos, dir);
+    const hit_pos = dir.offsetPos(entity_pos, 1);
+    if (collision.entity) |hit_entity| {
+        // Check for a column to turn into rubble.
+        if (game.level.entities.name.get(id) == .column) {
+            if (try game.useEnergy(id, .rubble)) {
+                game.level.entities.markForRemoval(hit_entity);
+                game.level.map.set(collision.pos, board.tile.Tile.rubble());
+                game.level.entities.turn.getPtr(id).skill = true;
+            }
+        }
+    } else if (collision.wall != null) {
+        // Check for full or intertile stone walls to turn into rubble.
+        const tile = game.level.map.get(hit_pos);
+        if (tile.center.height != .empty and tile.center.material != .grass) {
+            if (try game.useEnergy(id, .rubble)) {
+                // Full tile wall.
+                game.level.map.set(hit_pos, board.tile.Tile.rubble());
+                game.level.entities.turn.getPtr(id).skill = true;
+            }
+        } else {
+            if (dir.horiz()) {
+                // Inter-tile wall.
+                switch (dir) {
+                    .left => {
+                        game.level.map.getPtr(entity_pos).left = Wall.empty();
+                    },
 
-    //if let Some(blocked) = blocked {
-    //    resolve_rubble(blocked, &mut game.level.map);
-    //} else if let Some(blocked_id) = game.level.has_blocking_entity(rubble_pos) {
-    //    // if we hit a column, turn it into rubble
-    //    if game.level.entities.typ[&blocked_id] == EntityType::Column {
-    //        remove_entity(blocked_id, &mut game.level);
-    //        game.level.map[rubble_pos].surface = Surface::Rubble;
-    //    }
-    //}
+                    .right => {
+                        game.level.map.getPtr(hit_pos).left = Wall.empty();
+                    },
 
-    //game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
+                    .up => {
+                        game.level.map.getPtr(hit_pos).down = Wall.empty();
+                    },
+
+                    .down => {
+                        game.level.map.getPtr(entity_pos).down = Wall.empty();
+                    },
+
+                    else => {},
+                }
+
+                if (try game.useEnergy(id, .rubble)) {
+                    game.level.map.getPtr(hit_pos).center.material = .rubble;
+                    game.level.map.getPtr(hit_pos).center.height = .empty;
+                    game.level.entities.turn.getPtr(id).skill = true;
+                }
+            }
+        }
+    }
+    // TODO consider a message indicating that the skill failed.
 }
 
 fn resolveReform(game: *Game, id: Id, pos: Pos) !void {

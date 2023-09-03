@@ -637,7 +637,7 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
         .passWall => {
             const collision = game.level.checkCollision(player_pos, skill_dir);
 
-            if (!collision.entity and collision.wall != null) {
+            if (collision.onlyHitWall()) {
                 // Pass wall through a full tile wall to the position past the wall.
                 if (blocking.BlockedType.move.tileBlocks(game.level.map.get(skill_pos)) != .empty) {
                     const next_pos = Direction.continuePast(player_pos, skill_pos).?;
@@ -653,7 +653,7 @@ pub fn handleUseModeSkill(game: *Game, skill: Skill, action_mode: ActionMode) !v
 
         .rubble => {
             if (player_pos.distanceMaximum(skill_pos) == 1) {
-                try game.log.log(.rubble, .{ player_id, skill_pos });
+                try game.log.log(.rubble, .{ player_id, skill_dir });
             }
         },
 

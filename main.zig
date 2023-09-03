@@ -86,7 +86,7 @@ pub fn main() anyerror!void {
         index += 1;
     }
 
-    id = try spawn.spawnGolem(&gui.game.level.entities, &gui.game.config, Pos.init(1, 3), .rook, &gui.game.log, gui.game.allocator);
+    id = try spawn.spawnGolem(&gui.game.level.entities, &gui.game.config, Pos.init(1, 6), .rook, &gui.game.log, gui.game.allocator);
     try gui.game.log.log(.facing, .{ id, .right });
 
     gui.game.level.map.set(Pos.init(1, 1), board.tile.Tile.shortLeftAndDownWall());
@@ -97,7 +97,7 @@ pub fn main() anyerror!void {
 
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.passWall);
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassThrow);
-    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassBlade);
+    try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.rubble);
     try gui.game.level.entities.skills.getPtr(Entities.player_id).append(.grassCover);
 
     try gui.resolveMessages();

@@ -122,6 +122,7 @@ push_stun_turns: 3
 stun_turns_throw_stone: 0
 stun_turns_throw_spear: 3
 stun_turns_throw_default: 1
+stun_turns_push_against_wall: 2
 
 # draw numeric overlay of diagonal offsets
 overlay_directions: false

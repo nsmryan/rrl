@@ -540,6 +540,8 @@ pub const Gui = struct {
 
                 .sling => anim = gui.simpleAnimation("sling", id),
 
+                .column => anim = gui.simpleAnimation("column", id),
+
                 else => {
                     continue;
                 },

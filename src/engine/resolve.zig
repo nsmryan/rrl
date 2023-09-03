@@ -93,6 +93,8 @@ pub fn resolveMsg(game: *Game, msg: Msg) !void {
         .sprint => |args| try resolveSprint(game, args.id, args.dir, args.amount),
         .roll => |args| try resolveRoll(game, args.id, args.dir, args.amount),
         .trySwift => |args| try resolveTrySwift(game, args.id, args.dir),
+        .stun => |args| try resolveStun(game, args.id, args.num_turns),
+        .pushed => |args| try resolvePushed(game, args.attacker, args.attacked, args.dir),
         else => {},
     }
 }
@@ -851,7 +853,7 @@ fn resolveHit(game: *Game, id: Id, start_pos: Pos, hit_pos: Pos, weapon_type: We
         // If we hit a column, and this is a strong, blunt hit, then push the column over.
         if (weapon_type == .blunt and attack_style == .strong) {
             const dir = Direction.fromPositions(entity_pos, hit_pos).?;
-            try game.log.log(.pushed, .{ id, hit_entity, dir, 1 });
+            try game.log.log(.pushed, .{ id, hit_entity, dir });
         }
     }
 
@@ -1171,80 +1173,50 @@ fn resolveRubble(game: *Game, id: Id, dir: Direction) !void {
                 game.level.entities.turn.getPtr(id).skill = true;
             }
         } else {
-            if (dir.horiz()) {
-                // Inter-tile wall.
-                switch (dir) {
-                    .left => {
-                        game.level.map.getPtr(entity_pos).left = Wall.empty();
-                    },
-
-                    .right => {
-                        game.level.map.getPtr(hit_pos).left = Wall.empty();
-                    },
-
-                    .up => {
-                        game.level.map.getPtr(hit_pos).down = Wall.empty();
-                    },
-
-                    .down => {
-                        game.level.map.getPtr(entity_pos).down = Wall.empty();
-                    },
-
-                    else => {},
-                }
-
-                if (try game.useEnergy(id, .rubble)) {
-                    game.level.map.getPtr(hit_pos).center.material = .rubble;
-                    game.level.map.getPtr(hit_pos).center.height = .empty;
-                    game.level.entities.turn.getPtr(id).skill = true;
-                }
+            removeItertileWallsInDirection(game, entity_pos, dir);
+            if (try game.useEnergy(id, .rubble)) {
+                game.level.map.getPtr(hit_pos).center.material = .rubble;
+                game.level.map.getPtr(hit_pos).center.height = .empty;
+                game.level.entities.turn.getPtr(id).skill = true;
             }
         }
     }
     // TODO consider a message indicating that the skill failed.
 }
 
-fn resolveReform(game: *Game, id: Id, pos: Pos) !void {
-    _ = game;
-    _ = id;
-    _ = pos;
-}
-
 // NOTE called stone bending in spreadsheet
 fn resolveStoneThrow(game: *Game, id: Id, pos: Pos) !void {
-    _ = game;
-    _ = id;
-    _ = pos;
-    //let entity_pos = game.level.entities.pos[&entity_id];
+    const entity_pos = game.level.entities.pos.get(id);
 
-    //let mut rubble_pos = None;
-    //if game.level.map[entity_pos].surface == Surface::Rubble {
-    //    rubble_pos = Some(entity_pos);
-    //}
+    var maybe_rubble_pos: ?Pos = null;
+    if (game.level.map.get(entity_pos).center.material == .rubble) {
+        maybe_rubble_pos = entity_pos;
+    }
 
-    //for pos in game.level.map.neighbors(entity_pos) {
-    //    if game.level.map[pos].surface == Surface::Rubble {
-    //        rubble_pos = Some(pos);
-    //    }
-    //}
+    const neighbors = try game.level.map.neighbors(entity_pos);
+    for (neighbors.constSlice()) |neighbor_pos| {
+        if (game.level.map.get(neighbor_pos).center.material == .rubble) {
+            maybe_rubble_pos = neighbor_pos;
+        }
+    }
 
-    //if let Some(rubble_pos) = rubble_pos {
-    //    for target_id in game.level.get_entities_at_pos(target_pos) {
-    //        let target_pos = game.level.entities.pos[&target_id];
-    //        let direction = Direction::from_positions(entity_pos, target_pos).expect("The player is on the same tile as a column?");
+    if (maybe_rubble_pos) |rubble_pos| {
+        var entities: ArrayList(Id) = ArrayList(Id).init(game.frame_allocator);
+        try game.level.entitiesAtPos(pos, &entities);
+        for (entities.items) |target_id| {
+            const target_pos = game.level.entities.pos.get(target_id);
+            const direction = Direction.fromPositions(entity_pos, target_pos).?;
 
-    //        if game.level.entities.typ[&target_id] == EntityType::Enemy {
-    //            let move_into = false;
-    //            push_attack(entity_id, target_id, direction, move_into, &mut game.level, &game.config, &mut game.msg_log);
-    //        } else if game.level.entities.typ[&target_id] == EntityType::Column {
-    //            game.msg_log.log(Msg::Pushed(entity_id, target_id, direction, 1, false));
-    //        }
-    //    }
+            if (game.level.entities.typ.get(target_id) == .enemy) {
+                try game.log.log(.hit, .{ target_id, entity_pos, target_pos, .blunt, .strong });
+            } else if (game.level.entities.typ.get(target_id) == .column) {
+                try game.log.log(.pushed, .{ id, target_id, direction });
+            }
+        }
 
-    //    game.level.map[rubble_pos].surface = Surface::Floor;
-
-    //    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
-    //}
+        game.level.map.getPtr(rubble_pos).center.material = .stone;
+        game.level.entities.turn.getPtr(id).skill = true;
+    }
 }
 
 //fn resolvePassThrough(game: *Game, id: Id, pos: Pos) !void {
@@ -1347,4 +1319,104 @@ pub fn checkDodged(game: *Game, id: Id) !bool {
         }
     }
     return dodged;
+}
+
+// TODO
+// if a column and no blocked tile next to it, rubble in next tile and 'crush' that tile in case there are entities.
+//   consider pushing the next tile, and only crush entity if push into wall (in push code, not here)
+//   if intertile walls before next tile, remove them. if diagonal, remove both walls.
+//   note that if next tile has a column, need to push that column. maybe this indicates that the better
+//   approach is to push that tile. this makes columns less useful, but maybe that is good? maybe a strong
+//   blunt hit instead of a crush?
+// if entity, try to move to next tile. if next tile is blocked, destroy them?
+// this makes pushing rather powerful... maybe just generate a 'crushed' on tiles hit by columns, and make
+// it later in log. if entity is pushed off the tile, they are not crushed. if they can't be pushed off,
+// they are crushed by column.
+// pushing against a wall would be no better then normal pushing in this case. maybe add 1 or 2 to stun
+// turns if can't move the entity by emitting a stun message.
+//
+// should remove push amount? I don't think it was ever used in Rust version.
+//
+fn resolvePushed(game: *Game, pusher: Id, pushed: Id, direction: Direction) !void {
+    const pushed_pos = game.level.entities.pos.get(pushed);
+    const next_pos = direction.offsetPos(pushed_pos, 1);
+
+    if (game.level.entities.typ.get(pushed) == .column) {
+        const blocked = blocking.moveBlocked(&game.level.map, next_pos, direction, .move);
+
+        // If there is a path from the column to the next tile, or the tile has an intertile
+        // wall blocking it (checked by being blocked but not by a blocking tile.
+        const blocking_tile = blocking.BlockedType.move.tileBlocks(game.level.map.get(next_pos));
+        if (blocked == null or blocking_tile == .empty) {
+            game.level.entities.markForRemoval(pushed);
+
+            // Queue a crushed message to destroy anything in the hit tile.
+            // The 'hit' message is queued next using 'now' so we will push anything out
+            // of that tile first if possible.
+            try game.log.now(.crushed, .{ pusher, next_pos });
+            try game.log.now(.hit, .{ pushed, pushed_pos, next_pos, .blunt, .strong });
+            removeItertileWallsInDirection(game, pushed_pos, direction);
+        } else {
+            // Column hit a wall, just destroy it where it is.
+            try game.log.now(.crushed, .{ pusher, pushed_pos });
+        }
+    } else if (game.level.entities.status.get(pushed).alive) {
+        // Check if can move entity. If so, move them. If not, emit a stun.
+        const collision = game.level.checkCollision(pushed_pos, direction);
+        if (!collision.hit()) {
+            try game.log.now(.move, .{ pushed, .move, .walk, next_pos });
+        } else {
+            try game.log.log(.stun, .{ pushed, game.config.stun_turns_push_against_wall });
+        }
+    } else {
+        std.debug.panic("Tried to push entity {}, alive = {}!", .{ game.level.entities.typ.get(pushed), game.level.entities.status.get(pushed).alive });
+    }
+}
+
+fn resolveStun(game: *Game, id: Id, amount: usize) !void {
+    game.level.entities.status.getPtr(id).stunned += amount;
+}
+
+fn removeItertileWallsInDirection(game: *Game, pos: Pos, dir: Direction) void {
+    const next_pos = dir.offsetPos(pos, 1);
+    if (dir.horiz()) {
+        // Inter-tile wall.
+        switch (dir) {
+            .left => {
+                game.level.map.getPtr(pos).left = Wall.empty();
+            },
+
+            .right => {
+                game.level.map.getPtr(next_pos).left = Wall.empty();
+            },
+
+            .up => {
+                game.level.map.getPtr(next_pos).down = Wall.empty();
+            },
+
+            .down => {
+                game.level.map.getPtr(pos).down = Wall.empty();
+            },
+
+            .downRight => {
+                game.level.map.getPtr(next_pos).left = Wall.empty();
+                game.level.map.getPtr(Direction.right.offsetPos(pos, 1)).left = Wall.empty();
+            },
+
+            .downLeft => {
+                game.level.map.getPtr(Direction.down.offsetPos(pos, 1)).left = Wall.empty();
+                game.level.map.getPtr(Direction.left.offsetPos(pos, 1)).down = Wall.empty();
+            },
+
+            .upRight => {
+                game.level.map.getPtr(next_pos).left = Wall.empty();
+                game.level.map.getPtr(next_pos).down = Wall.empty();
+            },
+
+            .upLeft => {
+                game.level.map.getPtr(next_pos).down = Wall.empty();
+                game.level.map.getPtr(Direction.up.offsetPos(pos, 1)).left = Wall.empty();
+            },
+        }
+    }
 }

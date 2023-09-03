@@ -67,7 +67,7 @@ pub const Msg = union(enum) {
     aiStep: Id,
     behaviorChange: struct { id: Id, behavior: Behavior },
     stun: struct { id: Id, num_turns: usize },
-    pushed: struct { attacker: Id, attacked: Id, dir: Direction, amount: usize },
+    pushed: struct { attacker: Id, attacked: Id, dir: Direction },
     pierce: struct { origin_pos: Pos, hit_pos: Pos },
     slash: struct { origin_pos: Pos, hit_pos: Pos },
     blunt: struct { origin_pos: Pos, hit_pos: Pos },

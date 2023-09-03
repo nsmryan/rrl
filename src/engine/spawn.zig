@@ -147,3 +147,13 @@ pub fn spawnGolem(entities: *Entities, config: *const Config, pos: Pos, golem: G
 
     return id;
 }
+
+pub fn spawnColumn(entities: *Entities, pos: Pos, log: *MsgLog) !Id {
+    const id = try entities.createEntity(pos, .column, .column);
+
+    entities.blocking.getPtr(id).* = true;
+    try entities.status.insert(id, StatusEffect{ .alive = false });
+    try log.log(.spawn, .{ id, .column });
+
+    return id;
+}

@@ -64,6 +64,7 @@ pub const Config = struct {
     stun_turns_throw_stone: usize,
     stun_turns_throw_spear: usize,
     stun_turns_throw_default: usize,
+    stun_turns_push_against_wall: usize,
     overlay_directions: bool,
     overlay_player_fov: bool,
     overlay_floodfill: bool,
